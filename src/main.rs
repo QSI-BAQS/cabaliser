@@ -1,5 +1,7 @@
 //use crate::aligned_chunk;
 mod aligned_chunk;
+mod tableau;
+
 
 fn main() {
 
@@ -23,7 +25,7 @@ fn main() {
     for chk in 0..ac.len() {
         let chunk = ac.get_chunk(chk); 
         for i in 0..chunk.len() {
-            let val : u8 = ac.get_chunk(chk).get_bit(i); 
+            let val : u64 = ac.get_chunk(chk).get_bit(i); 
             assert_eq!(val, 0);
         }
     }
@@ -33,7 +35,7 @@ fn main() {
     for chk in 0..ac.len() {
         let chunk = ac.get_chunk(chk); 
         for i in 0..chunk.len() {
-            let val : u8 = ac.get_chunk(chk).get_bit(i); 
+            let val : u64 = ac.get_chunk(chk).get_bit(i); 
             assert_eq!(val, 1 << i);
         }
     }
@@ -43,7 +45,7 @@ fn main() {
     for chk in 0..ac.len() {
         let chunk = ac.get_chunk(chk); 
         for i in 0..chunk.len() {
-            let val : u8 = ac.get_chunk(chk).get_bit(i); 
+            let val : u64 = ac.get_chunk(chk).get_bit(i); 
             assert_eq!(val, 0);
         }
     }
@@ -73,26 +75,26 @@ fn main() {
     // Expected value: 0x00 0xff 0xff 0x00
     ac.xor(&bc);
     for i in 0..ac.get_chunk(0).len() {
-        let val : u8 = ac.get_chunk(0).get_bit(i); 
+        let val : u64 = ac.get_chunk(0).get_bit(i); 
         assert_eq!(val, 0);
-        let val : u8 = ac.get_chunk(1).get_bit(i); 
+        let val : u64 = ac.get_chunk(1).get_bit(i); 
         assert_eq!(val, 1 << i);
-        let val : u8 = ac.get_chunk(2).get_bit(i); 
+        let val : u64 = ac.get_chunk(2).get_bit(i); 
         assert_eq!(val, 1 << i);
-        let val : u8 = ac.get_chunk(3).get_bit(i); 
+        let val : u64 = ac.get_chunk(3).get_bit(i); 
         assert_eq!(val, 0);
     }
 
     // Expected value: 0x00 0x00 0xff 0xff
     ac.xor(&bc);
     for i in 0..ac.get_chunk(0).len() {
-        let val : u8 = ac.get_chunk(0).get_bit(i); 
+        let val : u64 = ac.get_chunk(0).get_bit(i); 
         assert_eq!(val, 0);
-        let val : u8 = ac.get_chunk(1).get_bit(i); 
+        let val : u64 = ac.get_chunk(1).get_bit(i); 
         assert_eq!(val, 0);
-        let val : u8 = ac.get_chunk(2).get_bit(i); 
+        let val : u64 = ac.get_chunk(2).get_bit(i); 
         assert_eq!(val, 1 << i);
-        let val : u8 = ac.get_chunk(3).get_bit(i); 
+        let val : u64 = ac.get_chunk(3).get_bit(i); 
         assert_eq!(val, 1 << i);
     }
 
@@ -100,13 +102,13 @@ fn main() {
     // Expected value: 0x00 0x00 0xff 0xff
     ac.partial_xor(&bc, 3);
     for i in 0..ac.get_chunk(0).len() {
-        let val : u8 = ac.get_chunk(0).get_bit(i); 
+        let val : u64 = ac.get_chunk(0).get_bit(i); 
         assert_eq!(val, 0);
-        let val : u8 = ac.get_chunk(1).get_bit(i); 
+        let val : u64 = ac.get_chunk(1).get_bit(i); 
         assert_eq!(val, 0);
-        let val : u8 = ac.get_chunk(2).get_bit(i); 
+        let val : u64 = ac.get_chunk(2).get_bit(i); 
         assert_eq!(val, 1 << i);
-        let val : u8 = ac.get_chunk(3).get_bit(i); 
+        let val : u64 = ac.get_chunk(3).get_bit(i); 
         assert_eq!(val, 0);
     }
 
