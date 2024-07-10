@@ -74,34 +74,35 @@ typedef union instruction_stream instruction_stream_u;
 
 
 /*
- * instruction_queue
+ * clifford_queue
  * Implemented a fixed length queue of single qubit Clifford instructions
  * Single qubit additions to the queue simply twirl the queue 
  * Two qubit additions to the queue either:
  *   - Commute through and twirl performing a local operation on the graph state 
  *   - Trigger a dump of the instructions to the tableau 
  */
-struct instruction_queue
+struct clifford_queue
 {
     size_t n_qubits; // Number of qubits
-    instruction_t** table; // Queued instructions for each qubit 
+    instruction_t* table; // Queued instructions for each qubit 
+    instruction_t* non_clifford; // Terminating non-clifford instructions 
 };
-typedef struct instruction_queue instruction_queue_t;
+typedef struct clifford_queue clifford_queue_t;
 
 /*
- * instruction_queue_create
+ * clifford_queue_create
  * Constructor for an instruction queue
  * :: n_qubits : const size_t :: Number of qubits supported by the queue
- * Queue is allocated on the heap and requires the us of the destructor function instruction_queue_destroy
+ * Queue is allocated on the heap and requires the us of the destructor function clifford_queue_destroy
  */
-instruction_queue_t* instruction_queue_create(const size_t n_qubits);
+clifford_queue_t* clifford_queue_create(const size_t n_qubits);
 
 /*
- * instruction_queue_destroy
+ * clifford_queue_destroy
  * Destructor for an instruction queue 
- * :: que : instruction_queue_t* :: Instruction queue to be deallocated
+ * :: que : clifford_queue_t* :: Instruction queue to be deallocated
  * Frees queue related memory from the heap
  */
-void instruction_queue_destroy(instruction_queue_t* que);
+void clifford_queue_destroy(clifford_queue_t* que);
 
 #endif

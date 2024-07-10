@@ -18,11 +18,8 @@ void __inline_slice_set_bit(
     const size_t index,
     const uint8_t value)
 {
-    CHUNK_OBJ mask = (1ull & value) << (index % CHUNK_SIZE_BITS); 
 
-    slice[index / CHUNK_SIZE_BITS] |= (1ull & value) << (index % CHUNK_SIZE_BITS);; 
-
-    DPRINT(DEBUG_3, "\t\tSetting bit %u at index %ju on chunk %ju using mask %ju,  %p: %ju\n", (uint32_t)value, index % CHUNK_SIZE_BITS, index / CHUNK_SIZE_BITS,  mask, slice + (index / CHUNK_SIZE_BITS), slice[index / CHUNK_SIZE_BITS]);
+    slice[index / CHUNK_SIZE_BITS] |= (1ull & value) << (index % CHUNK_SIZE_BITS); 
 
     return; 
 }
@@ -44,7 +41,7 @@ void slice_set_bit(
  */
 static inline
 uint8_t __inline_slice_get_bit(
-    CHUNK_OBJ* slice,
+    tableau_slice_p slice,
     const size_t index)
 {
     CHUNK_OBJ mask = 1ull << (index % CHUNK_SIZE_BITS);
@@ -57,7 +54,6 @@ uint8_t slice_get_bit(
 {
     return __inline_slice_get_bit(slice, index);
 }
-
 
 
 /*

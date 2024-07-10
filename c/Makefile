@@ -66,3 +66,4 @@ ${TESTDIR}/%.out : ${OBJFILES} ${TEST_SRCDIR}/%.c
 # Clean build directory
 clean: 
 	rm -rf ${BUILDDIR}
+	rm -rf ${TESTDIR}/*.out
