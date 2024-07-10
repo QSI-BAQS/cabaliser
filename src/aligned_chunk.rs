@@ -4,11 +4,11 @@
 use std::mem;
 use std::ops;
 
-const BITS_TO_BYTE : usize = 8;
-const CACHE_LINE_SIZE : usize = 64;
-const CACHE_LINE_SIZE_BITS : usize = CACHE_LINE_SIZE * BITS_TO_BYTE;
-const USIZE_CACHE_LINE : usize = CACHE_LINE_SIZE / mem::size_of::<u64>();
-const USIZE_U64 : usize = 64; 
+const BITS_TO_BYTE: usize = 8;
+const CACHE_LINE_SIZE_BYTES: usize = 64;
+const CACHE_LINE_SIZE_BITS: usize = CACHE_LINE_SIZE * BITS_TO_BYTE;
+const USIZE_CACHE_LINE: usize = CACHE_LINE_SIZE_BYTES / mem::size_of::<u64>();
+const USIZE_U64: usize = 64;
 
 /*
  * AlignedChunk
@@ -67,15 +67,14 @@ impl AlignedChunk {
         }
     }
 
-    pub fn len(&self) -> usize
-    {
-        return USIZE_CACHE_LINE; 
+    pub fn len(&self) -> usize {
+        return USIZE_CACHE_LINE;
     }
 
-    pub fn get(&mut self, idx: usize) -> &mut u64 {
-        assert!(idx < USIZE_CACHE_LINE);
-        return &mut self.chunk[idx];
-    }
+//    pub fn get(&mut self, idx: usize) -> &mut u64 {
+//        assert!(idx < USIZE_CACHE_LINE);
+//        return &mut self.chunk[idx];
+//    }
 
     /*
      * get_bit
@@ -103,11 +102,13 @@ impl ops::BitXorAssign for AlignedChunk {
  * AlignedChunk enforces cache line alignment, while this struct collects and distributes functions
  * over the individual chunks.
  */
-pub struct AlignedChunks {
-    chunks: Vec<AlignedChunk>,
+pub struct Tableau {
+    chunks: Vec<mut AlignedChunk>,
+    x_indices : Vec<mut usize>,
+    z_indices : Vec<mut usize>,
 }
 
-impl AlignedChunks {
+impl Tableau {
     /*
      * new
      * Constructor for AlignedChunks
@@ -115,21 +116,26 @@ impl AlignedChunks {
      * Each qubit is managed by a single bit
      */
     pub fn new(n_qubits: usize) -> Self {
+        let slice_size : usize = (n_qubits / CACHE_LINE_SIZE) ;  
         let mut aligned_chunks = Self {
-            chunks: Vec::with_capacity(1 + n_qubits / CACHE_LINE_SIZE),
+            chunks: Vec::with_capacity(),
         };
 
         for _i in 0..(1 + n_qubits / CACHE_LINE_SIZE) {
-            aligned_chunks.chunks.push(AlignedChunk::new());
+            let mut tmp : AlignedChunk = AlignedChunk::new();
+            aligned_chunks.chunks.push(tmp);
         }
         return aligned_chunks;
     }
 
-    pub fn new_z(n_qubits: usize, idx : usize) -> Self {
+    pub fn new_z(n_qubits: usize, idx: usize) -> Self {
         let mut aligned_chunks = Self::new(n_qubits);
 
-        let chunk_idx = (idx / CACHE_LINE_SIZE); 
-        aligned_chunks.chunks[chunk_idx].chunk[(idx % CACHE_LINE_SIZE) / USIZE_U64] ^= ( 1 << (idx % USIZE_U64)); 
+        let chunk_idx = (idx / CACHE_LINE_SIZE);
+        unsafe {
+        (*aligned_chunks.chunks[chunk_idx]).chunk[(idx % CACHE_LINE_SIZE) / USIZE_U64] ^=
+            (1 << (idx % USIZE_U64));
+        }
         return aligned_chunks;
     }
 
@@ -143,18 +149,21 @@ impl AlignedChunks {
      */
     pub fn xor(&mut self, other: &AlignedChunks) {
         for i in 0..self.len() {
-            self.chunks[i].xor(&other.chunks[i]);
+            unsafe {
+                (*self.chunks[i]).xor(&*other.chunks[i]);
+            }
         }
     }
 
     /*
      * partial_xor
-     * For cases where we know that the first n terms may be ignored 
+     * For cases where we know that the first n terms may be ignored
      */
-    pub fn partial_xor(&mut self, other: &AlignedChunks, idx : usize) 
-    {
+    pub fn partial_xor(&mut self, other: &AlignedChunks, idx: usize) {
         for i in idx..self.len() {
-            self.chunks[i].xor(&other.chunks[i]);
+            unsafe {
+                (*self.chunks[i]).xor(&*other.chunks[i]);
+            }
         }
     }
 
@@ -164,19 +173,29 @@ impl AlignedChunks {
      */
     pub fn inv(&mut self) {
         for i in 0..self.len() {
-            self.chunks[i].negate();
+            unsafe {
+                (*self.chunks[i]).negate();
+            }
         }
     }
 
-    pub fn get_chunk(&mut self, idx: usize) -> &mut AlignedChunk {
-        assert!(idx < self.len());
-        return &mut self.chunks[idx];
-    }
+//    pub fn get_chunk(&mut self, idx: usize) -> &mut AlignedChunk {
+//        assert!(idx < self.len());
+//        return &mut *self.chunks[idx];
+//    }
 
-    pub fn iter_mut(&mut self) -> IterCounterSizedMut<AlignedChunk> {
-        return IterCounterSizedMut::<AlignedChunk> {
-            reference: &mut self.chunks,
-            counter: 0,
-        };
-    }
+//    pub fn swap_ref(&mut self, other: &mut Self) {
+//        unsafe {
+//            let tmp = &mut self.chunks;
+//            self.chunks = other.chunks;
+//            other.chunks = *tmp;
+//        }
+//    }
+//
+    //    pub fn iter_mut(&mut self) -> IterCounterSizedMut<AlignedChunk> {
+    //        return IterCounterSizedMut::<AlignedChunk> {
+    //            reference: &mut self.chunks,
+    //            counter: 0,
+    //        };
+    //    }
 }

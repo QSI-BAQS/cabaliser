@@ -7,6 +7,8 @@
 #define CACHE_SIZE (64)
 #endif
 
+#define CLZ_SENTINEL (0xff_ff_ff_ff_ff_ff_ff_ff)
+
 #define CACHE_SIZE_BITS (CACHE_SIZE * BITS_TO_BYTE)
 
 #endif

@@ -18,31 +18,28 @@
 // Always add one so that we can do offset alignment if the manual alignment fails
 #define SLICE_LEN(n_qubits) ((n_qubits / CACHE_SIZE) + (!((n_qubits % CACHE_SIZE) == 0))) 
 
+#define CHUNK_OBJ uint64_t
 
-#define CHUNK_OBJ __uint128_t
-#define CACHE_CHUNKS (CACHE_SIZE / sizeof(CHUNK_OBJ)) 
+#define CHUNK_SIZE_BYTES (sizeof(CHUNK_OBJ))
+#define CHUNK_SIZE_BITS (CHUNK_SIZE_BYTES * BITS_TO_BYTE)
+#define CACHE_CHUNKS (CACHE_SIZE / CHUNK_SIZE_BYTES) 
 
-#ifdef SIMD
-    typedef CHUNK_OBJ vchunk __attribute__ ((vector_size (CACHE_SIZE)));
-#else
-    typedef CHUNK_OBJ vchunk;  
-#endif
+#define __CHUNK_CTZ __builtin_ctzll 
+
 
 struct aligned_chunk {
    CHUNK_OBJ components[CACHE_CHUNKS]; 
 };
+typedef CHUNK_OBJ* tableau_slice_p;
 
-struct tableau_slice {
-    struct aligned_chunk* chunks; 
-};
 
 typedef struct {
     size_t n_qubits;
     size_t slice_len;
     void* chunks; // Pointer to allocated chunks
-    struct tableau_slice** slices_x; // Slice representation pointers 
-    struct tableau_slice** slices_z; // Slice representation pointers 
-    struct tableau_slice* phases; // Phase terms
+    tableau_slice_p* slices_x; // Slice representation pointers 
+    tableau_slice_p* slices_z; // Slice representation pointers 
+    tableau_slice_p phases; // Phase terms
     bool orientation; // Row or column major order
 } tableau_t;
 
@@ -76,7 +73,7 @@ void tableau_destroy(tableau_t* tab);
  * non static inlined method. 
  * The enforced behaviour of static inline is only guaranteed for gcc
  */
-void slice_set_bit(struct tableau_slice const* slice, const size_t index, const uint8_t value);
+void slice_set_bit(tableau_slice_p slice, const size_t index, const uint8_t value);
 
 /*
  * slice_get_bit
@@ -85,7 +82,7 @@ void slice_set_bit(struct tableau_slice const* slice, const size_t index, const 
  * non static inlined method. 
  * The enforced behaviour of static inline is only guaranteed for gcc 
  */
-uint8_t slice_get_bit(const struct tableau_slice* slice, const size_t index);
+uint8_t slice_get_bit(tableau_slice_p slice, const size_t index);
 
 /*
  * tableau_print 
@@ -137,7 +134,6 @@ void tableau_cnot(tableau_t const* tab, const size_t ctrl, const size_t targ);
  *  :: tab : const tableau_t* :: The tableau object
  *  :: idx : const size_t :: Index of the slice
  */
-
 bool tableau_slice_empty_x(const tableau_t* tab, size_t idx);
 
 /*
@@ -148,6 +144,13 @@ bool tableau_slice_empty_x(const tableau_t* tab, size_t idx);
  */
 bool tableau_slice_empty_z(const tableau_t* tab, size_t idx);
 
+/*
+ * tableau_ctz
+ * Fast operation for checking if an x slice is empty
+ *  :: tab : const tableau_t* :: The tableau object
+ *  :: idx : const size_t :: Index of the slice
+ */
+size_t tableau_ctz(CHUNK_OBJ* slice, const size_t len);
 
 
 #endif 

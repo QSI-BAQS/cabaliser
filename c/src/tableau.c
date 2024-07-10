@@ -14,19 +14,20 @@
  */
 static inline
 void __inline_slice_set_bit(
-    struct tableau_slice const* slice,
+    tableau_slice_p slice,
     const size_t index,
     const uint8_t value)
 {
-    CHUNK_OBJ mask = ~((~((CHUNK_OBJ)0)) ^ ((CHUNK_OBJ)(value & 1) << (index % sizeof(CHUNK_OBJ))));  
-    ((CHUNK_OBJ*)slice)[index / sizeof(CHUNK_OBJ)] |= mask; 
-    DPRINT(DEBUG_3, "\t\tSetting bit using mask %lu\n", mask);
-    DPRINT(DEBUG_3, "\t\tSlice %lu\n", ((CHUNK_OBJ*)slice)[index / sizeof(CHUNK_OBJ)]);
-    
+    CHUNK_OBJ mask = (1ull & value) << (index % CHUNK_SIZE_BITS); 
+
+    slice[index / CHUNK_SIZE_BITS] |= (1ull & value) << (index % CHUNK_SIZE_BITS);; 
+
+    DPRINT(DEBUG_3, "\t\tSetting bit %u at index %ju on chunk %ju using mask %ju,  %p: %ju\n", (uint32_t)value, index % CHUNK_SIZE_BITS, index / CHUNK_SIZE_BITS,  mask, slice + (index / CHUNK_SIZE_BITS), slice[index / CHUNK_SIZE_BITS]);
+
     return; 
 }
 void slice_set_bit(
-    struct tableau_slice const* slice,
+    tableau_slice_p slice,
     const size_t index,
     const uint8_t value)
 {
@@ -43,15 +44,15 @@ void slice_set_bit(
  */
 static inline
 uint8_t __inline_slice_get_bit(
-    const struct tableau_slice* slice,
+    CHUNK_OBJ* slice,
     const size_t index)
 {
-    CHUNK_OBJ mask = 1ull << (index % sizeof(CHUNK_OBJ));
-    return !!(((CHUNK_OBJ*)slice)[index / sizeof(CHUNK_OBJ)] & mask); 
+    CHUNK_OBJ mask = 1ull << (index % CHUNK_SIZE_BITS);
+    return !!(slice[index / CHUNK_SIZE_BITS] & mask); 
 } 
 // Non-inlined wrapper
 uint8_t slice_get_bit(
-    const struct tableau_slice* slice,
+    tableau_slice_p slice,
     const size_t index)
 {
     return __inline_slice_get_bit(slice, index);
@@ -79,7 +80,7 @@ tableau_t* tableau_create(const size_t n_qubits)
 
     // Set map to all zeros
     memset(tableau_bitmap, 0x00, tableau_bytes);
-    DPRINT(DEBUG_2, "\tAllocated %ld bytes for tableau\n", slice_len * n_qubits * 2);
+    DPRINT(DEBUG_2, "\tAllocated %ld bytes for tableau\n", tableau_bytes);
 
     // Construct start of X and Z segments 
     void* z_start = tableau_bitmap;
@@ -89,7 +90,8 @@ tableau_t* tableau_create(const size_t n_qubits)
     void* slice_ptrs_z = malloc(sizeof(void*) * n_qubits); 
     void* slice_ptrs_x = malloc(sizeof(void*) * n_qubits); 
 
-    void* phases = malloc(sizeof(slice_len));
+    void* phases = malloc(slice_len);
+    memset(phases, 0x00, slice_len);
 
     // Create the tableau struct and assign variables   
     tableau_t* tab = malloc(sizeof(tableau_t)); 
@@ -105,9 +107,9 @@ tableau_t* tableau_create(const size_t n_qubits)
     #pragma GCC unroll 8 
     for (size_t i = 0; i < n_qubits; i++)
     {   
-        tab->slices_x[i] = x_start + slice_len * i; 
         tab->slices_z[i] = z_start + slice_len * i; 
-        slice_set_bit(tab->slices_z[i], i , 1); 
+        slice_set_bit(tab->slices_z[i], i, 1); 
+        tab->slices_x[i] = x_start + slice_len * i; 
     }
     return tab;
 }
@@ -224,8 +226,8 @@ void tableau_transpose(tableau_t* tab)
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
         // Inner loop should run along the current orientation, and hence along the cache lines 
-        struct tableau_slice* ptr_x = tab->slices_x[i]; 
-        struct tableau_slice* ptr_z = tab->slices_z[i];
+        tableau_slice_p ptr_x = tab->slices_x[i]; 
+        tableau_slice_p ptr_z = tab->slices_z[i];
         #pragma GCC unroll 8
         for (size_t j = i + 1; j < tab->n_qubits; j++)
         {
@@ -262,8 +264,8 @@ void gs_tableau_transpose(tableau_t* tab, const size_t input_qubits)
     for (size_t i = 0; i < input_qubits; i++)
     {
         // Inner loop should run along the current orientation, and hence along the cache lines 
-        struct tableau_slice* ptr_x = tab->slices_x[i]; 
-        struct tableau_slice* ptr_z = tab->slices_z[i];
+        tableau_slice_p ptr_x = tab->slices_x[i]; 
+        tableau_slice_p ptr_z = tab->slices_z[i];
         #pragma GCC unroll 8
         for (size_t j = input_qubits; j < tab->n_qubits; j++)
         {
@@ -285,8 +287,8 @@ void gs_tableau_transpose(tableau_t* tab, const size_t input_qubits)
     for (size_t i = input_qubits; i < tab->n_qubits; i++)
     {
         // Inner loop should run along the current orientation, and hence along the cache lines 
-        struct tableau_slice* ptr_x = tab->slices_x[i]; 
-        struct tableau_slice* ptr_z = tab->slices_z[i];
+        tableau_slice_p ptr_x = tab->slices_x[i]; 
+        tableau_slice_p ptr_z = tab->slices_z[i];
         #pragma GCC unroll 8
         for (size_t j = i + 1; j < tab->n_qubits; j++)
         {
@@ -362,10 +364,10 @@ void tableau_parse_instructions(
  * :: len : const size_t :: Length of the slice in elements of CHUNK_OBJ
  */
 static inline
-bool __inline_slice_empty(const struct tableau_slice* slice, const size_t len)
+bool __inline_slice_empty(tableau_slice_p slice, const size_t len)
 {
     bool empty_slice = 0; 
-    for (const struct tableau_slice* ptr = slice;
+    for (CHUNK_OBJ* ptr = slice;
          ptr < slice + len;
          ptr++)
     {
@@ -380,12 +382,12 @@ bool __inline_slice_empty(const struct tableau_slice* slice, const size_t len)
         // Checking if constantly leads to slowdowns, collect and then check  
         if (empty_slice)
         {
-            return 0;
+            return 1;
         }
     }
-    return 1;
+    return 0;
 }
-bool slice_empty(const struct tableau_slice* slice, const size_t len)
+bool slice_empty(tableau_slice_p slice, const size_t len)
 {
     return __inline_slice_empty(slice, len);
 }
@@ -398,8 +400,12 @@ bool slice_empty(const struct tableau_slice* slice, const size_t len)
  */
 bool tableau_slice_empty_x(const tableau_t* tab, size_t idx)
 {
+    DPRINT(DEBUG_1, "\t\tChecking X slice %lu is empty\n", idx);
+
+
     return __inline_slice_empty(tab->slices_x[idx], tab->slice_len);
 } 
+
 
 /*
  * tableau_slice_empty_z
@@ -410,5 +416,32 @@ bool tableau_slice_empty_x(const tableau_t* tab, size_t idx)
 bool tableau_slice_empty_z(const tableau_t* tab, size_t idx)
 {
     return __inline_slice_empty(tab->slices_z[idx], tab->slice_len);
+}
+
+
+/*
+ * tableau_ctz
+ * Gets the index of the first non-zero bit in the slice
+ * :: tableau_slice_p ::
+ *
+ */
+size_t tableau_ctz(CHUNK_OBJ* slice, const size_t n_qubits)
+{
+    #pragma GCC unroll 8
+    for (size_t i = 0;
+         i < (n_qubits / CHUNK_SIZE_BITS) + 1;
+         i++)
+    {
+        DPRINT(DEBUG_3, 
+            "%p %lu\n",
+            slice + i,
+            *(slice + i));
+           
+        if (0 < *(slice + i))
+        {
+            return CHUNK_SIZE_BITS * i + __CHUNK_CTZ(*(slice + i));
+        }
+    }
+    return ~0ll;
 }
 
