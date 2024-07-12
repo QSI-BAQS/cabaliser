@@ -4,21 +4,25 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "consts.h"
 
 #define MAX_INSTRUCTION_SEQUENCE_LEN (8)
 #define CLIFFORD_OPCODE_WIDTH (1)
 
-#define I_MASK    0b00 
-#define H_MASK    0b01
-#define P_MASK    0b10 
-#define Pd_MASK   0b11
+#define LOCAL_CLIFFORD_MASK 0b00100000  
 
-#define X_MASK    0b100 
-#define Z_MASK    0b101
-#define Y_MASK    0b110
+#define I_MASK    0b00100000 
+#define H_MASK    0b00100001
+#define P_MASK    0b00100010 
+#define Pd_MASK   0b00100011
 
+#define X_MASK    0b00100100 
+#define Z_MASK    0b00100101
+#define Y_MASK    0b00100110
+
+#define NON_LOCAL_CLIFFORD_MASK 0b01000000 
 #define CNOT_MASK 0b1000 
 #define CZ_MASK   0b1001
 
@@ -33,6 +37,9 @@ struct instruction_t
     uint8_t opcode;
 };
 typedef struct instruction_t instruction_t;
+
+
+typedef uint32_t non_clifford_tag_t;
 
 
 /*
@@ -54,7 +61,9 @@ struct rz_instruction
 {
     uint8_t opcode;
     uint32_t arg;
-    float angle;  // TODO: Confirm that floating point precision is sufficient, else tag this
+    uint32_t tag; // Tag for gate type, supports up to 2**32 unique non-Clifford gates per widget 
+    // As each non-Clifford results in a teleportation, we should saturate memory bounds before 
+    // this limit is reached   
 };
 
 /* 
@@ -85,7 +94,7 @@ struct clifford_queue
 {
     size_t n_qubits; // Number of qubits
     instruction_t* table; // Queued instructions for each qubit 
-    instruction_t* non_clifford; // Terminating non-clifford instructions 
+    non_clifford_tag_t* non_clifford; // Terminating non-clifford instructions 
 };
 typedef struct clifford_queue clifford_queue_t;
 

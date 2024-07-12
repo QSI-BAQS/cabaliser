@@ -38,7 +38,7 @@ clifford_queue_t* clifford_queue_create(const size_t n_qubits)
 bool instruction_process(clifford_queue_t* que, instruction_t inst)
 {
   
-
+    return 0;
 }
 
 

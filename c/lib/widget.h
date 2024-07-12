@@ -11,7 +11,7 @@ struct widget_t {
     size_t n_qubits;
     tableau_t* tableau;
     clifford_queue_t* queue;
-    qubit_map_t* q_map; 
+    struct qubit_map_t* q_map; 
 };
 typedef struct widget_t widget_t;
 
