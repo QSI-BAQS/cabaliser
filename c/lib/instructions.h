@@ -10,13 +10,11 @@
 #include "consts.h"
 #include "widget.h"
 
-#define MAX_INSTRUCTION_SEQUENCE_LEN (8)
-#define CLIFFORD_OPCODE_WIDTH (1)
-
+#define OPCODE_WIDTH (1)
 #define LOCAL_CLIFFORD_MASK (1 << 5) 
 #define NON_LOCAL_CLIFFORD_MASK (1 << 6) 
 #define RZ_MASK (1 << 7) 
-
+#define INSTRUCTION_MASK (LOCAL_CLIFFORD_MASK | NON_LOCAL_CLIFFORD_MASK | RZ_MASK) 
 
 struct clifford_queue_t;
 
@@ -134,15 +132,26 @@ void clifford_queue_destroy(clifford_queue_t* que);
 #define _CNOT_ (0x01 | NON_LOCAL_CLIFFORD_MASK) 
 #define _RZ_ (RZ_MASK)
 
-const instruction_t SINGLE_QUBIT_CLIFFORD_MAP[7][24] = {
-    /* I */ {_I_, _X_, _Y_, _Z_, _H_, _S_, _R_, _HX_, _SX_, _RX_, _HY_, _HZ_, _SH_, _RH_, _HS_, _HR_, _HSX_, _HRX_, _SHY_, _RHY_, _HSH_, _HRH_, _RHS_, _SHR_},
-    /* X */ {_X_, _I_, _Z_, _Y_, _HZ_, _RX_, _SX_, _HY_, _R_, _S_, _HX_, _H_, _SHY_, _RHY_, _HR_, _HS_, _HRX_, _HSX_, _SH_, _RH_, _HRH_, _HSH_, _SHR_, _RHS_},
-    /* Y */ {_Y_, _Z_, _I_, _X_, _HY_, _SX_, _RX_, _HZ_, _S_, _R_, _H_, _HX_, _RHY_, _SHY_, _HSX_, _HRX_, _HS_, _HR_, _RH_, _SH_, _RHS_, _SHR_, _HSH_, _HRH_},
-    /* Z */ {_Z_, _Y_, _X_, _I_, _HX_, _R_, _S_, _H_, _RX_, _SX_, _HZ_, _HY_, _RH_, _SH_, _HRX_, _HSX_, _HR_, _HS_, _RHY_, _SHY_, _SHR_, _RHS_, _HRH_, _HSH_},
-    /* H */ {_H_, _HX_, _HY_, _HZ_, _I_, _HS_, _HR_, _X_, _HSX_, _HRX_, _Y_, _Z_, _HSH_, _HRH_, _S_, _R_, _SX_, _RX_, _SHR_, _RHS_, _SH_, _RH_, _RHY_, _SHY_},
-    /* S */ {_S_, _SX_, _RX_, _R_, _SH_, _Z_, _I_, _RH_, _Y_, _X_, _SHY_, _RHY_, _HX_, _H_, _HRH_, _SHR_, _HSH_, _RHS_, _HZ_, _HY_, _HR_, _HRX_, _HS_, _HSX_},
-    /* R */ {_R_, _RX_, _SX_, _S_, _RH_, _I_, _Z_, _SH_, _X_, _Y_, _RHY_, _SHY_, _H_, _HX_, _RHS_, _HSH_, _SHR_, _HRH_, _HY_, _HZ_, _HSX_, _HS_, _HRX_, _HR_}
+const instruction_t SINGLE_QUBIT_CLIFFORD_MAP[168] = {
+    /* I */ _I_, _X_, _Y_, _Z_, _H_, _S_, _R_, _HX_, _SX_, _RX_, _HY_, _HZ_, _SH_, _RH_, _HS_, _HR_, _HSX_, _HRX_, _SHY_, _RHY_, _HSH_, _HRH_, _RHS_, _SHR_,
+    /* X */ _X_, _I_, _Z_, _Y_, _HZ_, _RX_, _SX_, _HY_, _R_, _S_, _HX_, _H_, _SHY_, _RHY_, _HR_, _HS_, _HRX_, _HSX_, _SH_, _RH_, _HRH_, _HSH_, _SHR_, _RHS_,
+    /* Y */ _Y_, _Z_, _I_, _X_, _HY_, _SX_, _RX_, _HZ_, _S_, _R_, _H_, _HX_, _RHY_, _SHY_, _HSX_, _HRX_, _HS_, _HR_, _RH_, _SH_, _RHS_, _SHR_, _HSH_, _HRH_,
+    /* Z */ _Z_, _Y_, _X_, _I_, _HX_, _R_, _S_, _H_, _RX_, _SX_, _HZ_, _HY_, _RH_, _SH_, _HRX_, _HSX_, _HR_, _HS_, _RHY_, _SHY_, _SHR_, _RHS_, _HRH_, _HSH_,
+    /* H */ _H_, _HX_, _HY_, _HZ_, _I_, _HS_, _HR_, _X_, _HSX_, _HRX_, _Y_, _Z_, _HSH_, _HRH_, _S_, _R_, _SX_, _RX_, _SHR_, _RHS_, _SH_, _RH_, _RHY_, _SHY_,
+    /* S */ _S_, _SX_, _RX_, _R_, _SH_, _Z_, _I_, _RH_, _Y_, _X_, _SHY_, _RHY_, _HX_, _H_, _HRH_, _SHR_, _HSH_, _RHS_, _HZ_, _HY_, _HR_, _HRX_, _HS_, _HSX_,
+    /* R */ _R_, _RX_, _SX_, _S_, _RH_, _I_, _Z_, _SH_, _X_, _Y_, _RHY_, _SHY_, _H_, _HX_, _RHS_, _HSH_, _SHR_, _HRH_, _HY_, _HZ_, _HSX_, _HS_, _HRX_, _HR_
 };
+
+
+#else
+/*
+ * local_clifford
+ * Applies a local Clifford to another local Clifford 
+ */
+extern const instruction_t SINGLE_QUBIT_CLIFFORD_MAP[168]; 
 #endif
+
+#define LOCAL_CLIFFORD(left, right) (SINGLE_QUBIT_CLIFFORD_MAP[(left ^ LOCAL_CLIFFORD_MASK) * 24 + (right ^ LOCAL_CLIFFORD_MASK)])
+
 
 #endif

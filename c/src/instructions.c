@@ -11,7 +11,7 @@
 clifford_queue_t* clifford_queue_create(const size_t n_qubits)
 {
     void* instructions = NULL;
-    const size_t instruction_table_size = n_qubits * MAX_INSTRUCTION_SEQUENCE_LEN * CLIFFORD_OPCODE_WIDTH; 
+    const size_t instruction_table_size = n_qubits; 
     posix_memalign(&instructions, CACHE_SIZE, instruction_table_size); 
 
     memset(instructions, 0x00, instruction_table_size); 
@@ -49,22 +49,3 @@ void clifford_queue_destroy(clifford_queue_t* que)
     free(que);
 }
 
-
-/*
- * local_clifford
- * Applies a local Clifford to the queue
- */
-static inline
-void __inline_local_clifford(
-    widget_t* wid,
-    struct single_qubit_instruction* inst)
-{
-    size_t idx = wid->q_map[inst->arg]; 
-    wid->queue->table[idx] = SINGLE_QUBIT_CLIFFORD_MAP[inst->opcode][wid->queue->table[idx]]; 
-} 
-void local_clifford(
-    widget_t* wid,
-    struct single_qubit_instruction* inst)
-{
-    __inline_local_clifford(wid, inst);
-}

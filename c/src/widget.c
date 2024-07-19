@@ -6,10 +6,10 @@
  * :: max_qubits : const size_t :: Maximum number of qubits that may be allocated 
  *
  */
-widget_t* widget_create(const size_t max_qubits)
+widget_t* widget_create(const size_t initial_qubits, const size_t max_qubits)
 {
     widget_t* wid = malloc(sizeof(widget_t));  
-    wid->n_qubits = 0;
+    wid->n_qubits = initial_qubits;
     wid->max_qubits = max_qubits; 
     wid->tableau = tableau_create(max_qubits);
     wid->queue = clifford_queue_create(max_qubits);

@@ -1,6 +1,15 @@
 #include "input_stream.h"
 
 
+static inline
+void __inline_local_clifford_gate(
+    widget_t* wid,
+    struct single_qubit_instruction* inst)
+{
+//    LOCAL_CLIFFORD(inst->opcode, );
+    return;
+} 
+
 
 /*
  * rz_gate 
@@ -54,18 +63,17 @@ void parse_instruction_block(
     for (size_t i = 0; i < n_instructions; i++)
     {
         uint8_t opcode = instructions[i].instruction; 
-        if (LOCAL_CLIFFORD_MASK & opcode)
+        switch (opcode & INSTRUCTION_MASK)  
         {
-            // Local Clifford operation
-        } 
-        else if (NON_LOCAL_CLIFFORD_MASK & instructions[i].instruction)
-        {
-            // Non-local Clifford operation
-        }
-        else if (RZ_MASK & instructions[i].instruction)
-        {
+        case LOCAL_CLIFFORD_MASK:
+            __inline_local_clifford_gate(wid, (struct single_qubit_instruction*) (instructions + i)); 
+            break; 
+        case NON_LOCAL_CLIFFORD_MASK:
+            break;
+        case RZ_MASK:
             // Non-local Clifford operation
             __inline_rz_gate(wid, (struct rz_instruction*) instructions + i);
+            break;
         }
     } 
     return;

@@ -4,10 +4,13 @@
 #include <string.h>
 
 #include "instructions.h"
-#include "widget.h"
 
 #include <assert.h>
 
+extern instruction_t local_clifford(const instruction_t left, const instruction_t right);
+
+// R is being used as a shorthand for S^dag
+// Mostly because RZ is inadmissibile in this case
 #define _I_ (0x00 | LOCAL_CLIFFORD_MASK)
 #define _X_ (0x01 | LOCAL_CLIFFORD_MASK)
 #define _Y_ (0x02 | LOCAL_CLIFFORD_MASK)
@@ -35,8 +38,15 @@
 
 void test_single_qubit_compositions()
 {
-    widget_t* wid = widget_create(1); 
-    //local_clifford(); 
+    // Some basic and self-evident tests
+    assert(LOCAL_CLIFFORD(_I_, _I_) == _I_);
+    assert(LOCAL_CLIFFORD(_X_, _I_) == _X_);
+    assert(LOCAL_CLIFFORD(_X_, _X_) == _I_);
+    assert(LOCAL_CLIFFORD(_H_, _H_) == _I_);
+    assert(LOCAL_CLIFFORD(_X_, _Z_) == _Y_);
+
+    // Demonstrate non-commutivity
+    assert(LOCAL_CLIFFORD(_S_, _HR_) == _SHR_);
     return;
 }
 

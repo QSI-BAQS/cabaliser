@@ -20,10 +20,11 @@ typedef struct widget_t widget_t;
 /*
  * widget_create
  * Constructor for widget object
+ * :: initial_qubits : const size_t :: Initial number of allocated qubits for the widget 
  * :: max_qubits : const size_t :: Maximum number of qubits that may be allocated 
- *
+ * Setting intial qubits is essential to ensuring that incorrect targets are not written to  
  */
-widget_t* widget_create(const size_t max_qubits);
+widget_t* widget_create(const size_t initial_qubits, const size_t max_qubits);
 
 
 /*
