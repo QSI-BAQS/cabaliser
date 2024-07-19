@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include "consts.h"
 #include "debug.h"
 #include "instructions.h"
 
@@ -33,7 +34,7 @@ struct aligned_chunk {
 typedef CHUNK_OBJ* tableau_slice_p;
 
 
-typedef struct {
+struct tableau_t {
     size_t n_qubits;
     size_t slice_len;
     void* chunks; // Pointer to allocated chunks
@@ -41,7 +42,8 @@ typedef struct {
     tableau_slice_p* slices_z; // Slice representation pointers 
     tableau_slice_p phases; // Phase terms
     bool orientation; // Row or column major order
-} tableau_t;
+};
+typedef struct tableau_t tableau_t;
 
 /*
  * tableau_create 

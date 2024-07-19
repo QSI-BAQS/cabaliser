@@ -1,11 +1,5 @@
+#define INSTRUCTIONS_SRC // Loads tables from the header
 #include "instructions.h"
-
-
-// Local Cache tables for fast Clifford lookups  
-instruction_t SINGLE_QUBIT_CLIFFORD_TABLE[256];
-instruction_t CNOT_CTRL_TABLE[256]; 
-instruction_t CNOT_TARG_TABLE[256]; 
-instruction_t CZ_TABLE[256]; 
 
 
 /*
@@ -30,6 +24,7 @@ clifford_queue_t* clifford_queue_create(const size_t n_qubits)
     return que;
 }
 
+
 /*
  * instruction_process
  * Processes an incoming instruction
@@ -52,4 +47,24 @@ void clifford_queue_destroy(clifford_queue_t* que)
 {
     free(que->table);
     free(que);
+}
+
+
+/*
+ * local_clifford
+ * Applies a local Clifford to the queue
+ */
+static inline
+void __inline_local_clifford(
+    widget_t* wid,
+    struct single_qubit_instruction* inst)
+{
+    size_t idx = wid->q_map[inst->arg]; 
+    wid->queue->table[idx] = SINGLE_QUBIT_CLIFFORD_MAP[inst->opcode][wid->queue->table[idx]]; 
+} 
+void local_clifford(
+    widget_t* wid,
+    struct single_qubit_instruction* inst)
+{
+    __inline_local_clifford(wid, inst);
 }

@@ -1,21 +1,5 @@
 #include "input_stream.h"
 
-/*
- * map_qubit
- * Tracks the current mapping from circuit level operations to graph state operations
- * :: q_map : qubit_map_t* :: The current qubit map
- * :: index : size_t :: The index of the qubit to query
- * Returns the index after teleportation
- */
-static inline
-size_t __inline_map_qubit(
-    qubit_map_t* q_map,
-    size_t index)
-{
-    return q_map->map[index];
-}
-
-
 
 
 /*
@@ -36,11 +20,10 @@ void __inline_rz_gate(
     // This could be handled with a better return
     assert(wid->n_qubits < wid->max_qubits);
 
-    size_t idx = wid->q_map->map[inst->arg];
+    size_t idx = WMAP_LOOKUP(wid, inst->arg);
 
     wid->queue->non_clifford[idx] = inst->tag;
-    wid->q_map->map[idx] = wid->n_qubits;
-    wid->q_map->n_qubits = wid->n_qubits;
+    wid->q_map[idx] = wid->n_qubits;
 
     return;
 }
@@ -54,16 +37,6 @@ void __inline_rz_gate(
  * :: inst : single_qubit_instruction_t* :: The local Clifford operation 
  * Acts in place on the widget, should only update one entry in the local Clifford table 
  */
-static inline
-void __inline_local_clifford(
-    widget_t* wid,
-    struct single_qubit_instruction* inst)
-{
-   //size_t idx = wid->q_map->map[inst->arg];
-   // TODO map
-   //__inline_clifford_map(wid->queue->table[idx], inst->opcode);
-}
-
 /*
  * parse_instruction_block
  * Parses a block of instructions 
@@ -80,16 +53,16 @@ void parse_instruction_block(
     #pragma GCC unroll 8
     for (size_t i = 0; i < n_instructions; i++)
     {
-        uint8_t opcode = instructions[i].instruction.opcode; 
+        uint8_t opcode = instructions[i].instruction; 
         if (LOCAL_CLIFFORD_MASK & opcode)
         {
             // Local Clifford operation
         } 
-        else if (NON_LOCAL_CLIFFORD_MASK & instructions[i].instruction.opcode)
+        else if (NON_LOCAL_CLIFFORD_MASK & instructions[i].instruction)
         {
             // Non-local Clifford operation
         }
-        else if (RZ_MASK & instructions[i].instruction.opcode)
+        else if (RZ_MASK & instructions[i].instruction)
         {
             // Non-local Clifford operation
             __inline_rz_gate(wid, (struct rz_instruction*) instructions + i);
