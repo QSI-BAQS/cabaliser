@@ -99,10 +99,7 @@ clifford_queue_t* clifford_queue_create(const size_t n_qubits);
 void clifford_queue_destroy(clifford_queue_t* que);
 
 
-
-// Only applies to the instructions src file
-#ifdef INSTRUCTIONS_SRC
-
+#ifdef INSTRUCTIONS_TABLE
 #define _I_ (0x00 | LOCAL_CLIFFORD_MASK)
 #define _X_ (0x01 | LOCAL_CLIFFORD_MASK)
 #define _Y_ (0x02 | LOCAL_CLIFFORD_MASK)
@@ -131,6 +128,11 @@ void clifford_queue_destroy(clifford_queue_t* que);
 #define _CZ_ (0x00 | NON_LOCAL_CLIFFORD_MASK) 
 #define _CNOT_ (0x01 | NON_LOCAL_CLIFFORD_MASK) 
 #define _RZ_ (RZ_MASK)
+#endif
+
+// Only applies to the instructions src file
+#ifdef INSTRUCTIONS_SRC
+
 
 const instruction_t SINGLE_QUBIT_CLIFFORD_MAP[168] = {
     /* I */ _I_, _X_, _Y_, _Z_, _H_, _S_, _R_, _HX_, _SX_, _RX_, _HY_, _HZ_, _SH_, _RH_, _HS_, _HR_, _HSX_, _HRX_, _SHY_, _RHY_, _HSH_, _HRH_, _RHS_, _SHR_,

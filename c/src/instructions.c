@@ -1,6 +1,7 @@
-#define INSTRUCTIONS_SRC // Loads tables from the header
-#include "instructions.h"
+#define INSTRUCTIONS_TABLE // Loads tables from the header
+#define INSTRUCTIONS_SRC 
 
+#include "instructions.h"
 
 /*
  * clifford_queue_create
