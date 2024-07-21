@@ -1,6 +1,8 @@
 #ifndef ARRAY_LIST_H
-#ifndef ARRAY_LIST_H
+#define ARRAY_LIST_H
 
+#include <stdlib.h>
+#include <string.h>
 
 struct array_list_t
 {

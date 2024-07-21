@@ -2,6 +2,8 @@
 #define LINKED_LIST_H
 
 #include <stdlib.h>
+#include <string.h>
+
 
 #define NODE_TO_OBJ(node) (node + sizeof(list_node_t))
 
@@ -17,6 +19,5 @@ struct list_node_t
     struct list_node_t* next; 
     size_t node_size;
 };
-
 
 #endif

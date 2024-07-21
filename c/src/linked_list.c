@@ -30,7 +30,7 @@ void linked_list_destroy(struct linked_list_t* ll)
  */
 void linked_list_add(struct linked_list_t* ll, void* obj, size_t n_bytes) 
 {
-    list_node_t* node = malloc(sizeof(struct list_node_t) + n_bytes); 
+    struct list_node_t* node = malloc(sizeof(struct list_node_t) + n_bytes); 
  
     if (NULL == ll->head)
     {

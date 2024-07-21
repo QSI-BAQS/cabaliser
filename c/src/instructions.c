@@ -7,7 +7,7 @@
  * clifford_queue_create
  * Constructor for an instruction queue
  * :: n_qubits : const size_t :: Number of qubits supported by the queue
- * Queue is allocated on the heap and requires the us of the destructor function clifford_queue_destroy
+ * Queue is allocated on the heap and requires the use of the destructor function clifford_queue_destroy
  */
 clifford_queue_t* clifford_queue_create(const size_t n_qubits)
 {
@@ -23,18 +23,6 @@ clifford_queue_t* clifford_queue_create(const size_t n_qubits)
     que->n_qubits = n_qubits;
     
     return que;
-}
-
-
-/*
- * instruction_process
- * Processes an incoming instruction
- * 
- */
-bool instruction_process(clifford_queue_t* que, instruction_t inst)
-{
-  
-    return 0;
 }
 
 
