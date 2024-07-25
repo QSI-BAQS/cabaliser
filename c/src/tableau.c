@@ -12,17 +12,6 @@
  * non static inlined method. 
  * The enforced behaviour of static inline is only guaranteed for gcc
  */
-static inline
-void __inline_slice_set_bit(
-    tableau_slice_p slice,
-    const size_t index,
-    const uint8_t value)
-{
-
-    slice[index / CHUNK_SIZE_BITS] |= (1ull & value) << (index % CHUNK_SIZE_BITS); 
-
-    return; 
-}
 void slice_set_bit(
     tableau_slice_p slice,
     const size_t index,
@@ -39,15 +28,6 @@ void slice_set_bit(
  * non static inlined method. 
  * The enforced behaviour of static inline is only guaranteed for gcc 
  */
-static inline
-uint8_t __inline_slice_get_bit(
-    tableau_slice_p slice,
-    const size_t index)
-{
-    CHUNK_OBJ mask = 1ull << (index % CHUNK_SIZE_BITS);
-    return !!(slice[index / CHUNK_SIZE_BITS] & mask); 
-} 
-// Non-inlined wrapper
 uint8_t slice_get_bit(
     tableau_slice_p slice,
     const size_t index)
@@ -165,13 +145,6 @@ void tableau_cnot(tableau_t const* tab, const size_t ctrl, const size_t targ)
  * :: targ : const size_t :: Target of the Hadamard 
  * Provides both a module specific __inline method along with an exposed tableau_hadamard function 
  */
-static inline
-void __inline_tableau_hadamard(tableau_t const* tab, const size_t targ)
-{
-    void* ptr = tab->slices_x[targ];
-    tab->slices_x[targ] = tab->slices_z[targ];
-    tab->slices_z[targ] = ptr;
-}
 void tableau_hadamard(tableau_t const* tab, const size_t targ)
 {
     __inline_tableau_hadamard(tab, targ);
@@ -357,35 +330,17 @@ void tableau_parse_instructions(
  * Fast operation for checking if a slice is empty
  * Exposes functions tableau_slice_empty_x and tableau_slice_empty_z which wrap this function
  * :: slice : const struct tableau_slice* :: The slice
- * :: len : const size_t :: Length of the slice in elements of CHUNK_OBJ
+ * :: n_qubits : const size_t :: n_qubits to check 
  */
 static inline
-bool __inline_slice_empty(tableau_slice_p slice, const size_t len)
+bool __inline_slice_empty(tableau_slice_p slice, const size_t n_qubits)
 {
-    bool empty_slice = 0; 
-    for (CHUNK_OBJ* ptr = slice;
-         ptr < slice + len;
-         ptr++)
-    {
-
-        for (size_t offset = 0;
-             offset < CACHE_CHUNKS;
-             offset++)
-        {
-            empty_slice |= ((((CHUNK_OBJ*)ptr) + offset) > 0);
-        }
-       
-        // Checking if constantly leads to slowdowns, collect and then check  
-        if (empty_slice)
-        {
-            return 1;
-        }
-    }
-    return 0;
+    size_t idx = tableau_ctz(slice, n_qubits);  
+    return (CTZ_SENTINEL == idx); 
 }
-bool slice_empty(tableau_slice_p slice, const size_t len)
+bool slice_empty(tableau_slice_p slice, const size_t n_qubits)
 {
-    return __inline_slice_empty(slice, len);
+    return __inline_slice_empty(slice, n_qubits);
 }
 
 /*
@@ -399,7 +354,7 @@ bool tableau_slice_empty_x(const tableau_t* tab, size_t idx)
     DPRINT(DEBUG_1, "\t\tChecking X slice %lu is empty\n", idx);
 
 
-    return __inline_slice_empty(tab->slices_x[idx], tab->slice_len);
+    return __inline_slice_empty(tab->slices_x[idx], tab->n_qubits);
 } 
 
 
@@ -411,7 +366,7 @@ bool tableau_slice_empty_x(const tableau_t* tab, size_t idx)
  */
 bool tableau_slice_empty_z(const tableau_t* tab, size_t idx)
 {
-    return __inline_slice_empty(tab->slices_z[idx], tab->slice_len);
+    return __inline_slice_empty(tab->slices_z[idx], tab->n_qubits);
 }
 
 
@@ -438,6 +393,8 @@ size_t tableau_ctz(CHUNK_OBJ* slice, const size_t n_qubits)
             return CHUNK_SIZE_BITS * i + __CHUNK_CTZ(*(slice + i));
         }
     }
-    return ~0ll;
+    return CTZ_SENTINEL;
 }
+
+
 

@@ -29,6 +29,5 @@ int main()
     test_tableau_ctz(128);
     test_tableau_ctz(256);
 
-
     return 0;
 };

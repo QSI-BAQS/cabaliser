@@ -156,4 +156,24 @@ extern const instruction_t SINGLE_QUBIT_CLIFFORD_MAP[168];
 #define LOCAL_CLIFFORD(left, right) (SINGLE_QUBIT_CLIFFORD_MAP[(left ^ LOCAL_CLIFFORD_MASK) * 24 + (right ^ LOCAL_CLIFFORD_MASK)])
 
 
+/*
+ * __inline_clifford_queue_local_clifford_right
+ * __inline_clifford_queue_local_clifford_left
+ * Applies a local Clifford from either the left or right of the queue
+ * :: que : clifford_queue_t* :: The queue object
+ * :: cliff : instrucion_t :: The local clifford instruction
+ * :: target : size_t :: The target qubit
+ *
+ */
+static inline
+void __inline_clifford_queue_local_clifford_right(clifford_queue_t* que, instruction_t cliff, size_t target)
+{
+    que->table[target] = LOCAL_CLIFFORD(cliff, que->table[target]);
+}
+static inline
+void __inline_clifford_queue_local_clifford_left(clifford_queue_t* que, instruction_t cliff, size_t target)
+{
+    que->table[target] = LOCAL_CLIFFORD(que->table[target], cliff);
+}
+
 #endif
