@@ -124,33 +124,33 @@ void tableau_destroy(tableau_t* tab)
 }
 
 
-/*
- * tableau_cnot
- * Performs a CNOT between two columns of stabilisers 
- * :: tab : tableau_t const* :: Tableau object
- * :: ctrl : const size_t :: Index of control qubit
- * :: targ : const size_t :: Index of target qubit
- */
-void tableau_cnot(tableau_t const* tab, const size_t ctrl, const size_t targ)
-{
-    CHUNK_OBJ* ctrl_slice_x = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
-    CHUNK_OBJ* targ_slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* ctrl_slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* targ_slice_z = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
-
-    DPRINT(DEBUG_3, "\t\tCNOT on slices %lu\n", tab->slice_len); 
-    #pragma GCC unroll 8
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-    DPRINT(DEBUG_3, "\t\t%lu %lu\n", targ_slice_x[i], ctrl_slice_x[i]); 
-
-        targ_slice_x[i] ^= ctrl_slice_x[i];
-        targ_slice_z[i] ^= ctrl_slice_z[i];
-    DPRINT(DEBUG_3, "\t\t%lu %lu\n", targ_slice_x[i], ctrl_slice_x[i]); 
-
-    }   
-}
-
+///*
+// * tableau_cnot
+// * Performs a CNOT between two columns of stabilisers 
+// * :: tab : tableau_t const* :: Tableau object
+// * :: ctrl : const size_t :: Index of control qubit
+// * :: targ : const size_t :: Index of target qubit
+// */
+//void tableau_cnot(tableau_t const* tab, const size_t ctrl, const size_t targ)
+//{
+//    CHUNK_OBJ* ctrl_slice_x = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
+//    CHUNK_OBJ* targ_slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
+//    CHUNK_OBJ* ctrl_slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
+//    CHUNK_OBJ* targ_slice_z = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
+//
+//    DPRINT(DEBUG_3, "\t\tCNOT on slices %lu\n", tab->slice_len); 
+//    #pragma GCC unroll 8
+//    for (size_t i = 0; i < tab->slice_len; i++)
+//    {
+//    DPRINT(DEBUG_3, "\t\t%lu %lu\n", targ_slice_x[i], ctrl_slice_x[i]); 
+//
+//        targ_slice_x[i] ^= ctrl_slice_x[i];
+//        targ_slice_z[i] ^= ctrl_slice_z[i];
+//    DPRINT(DEBUG_3, "\t\t%lu %lu\n", targ_slice_x[i], ctrl_slice_x[i]); 
+//
+//    }   
+//}
+//
 
 /*
  * tableau_hadamard

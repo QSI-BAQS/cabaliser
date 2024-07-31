@@ -25,9 +25,11 @@ void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que);
 
 
 /*
- *
- *
- *
+ * tableau_<clifford>
+ * Single qubit clifford operations
+ * :: tab : tableau_t* :: The tableau to operate on 
+ * :: targ : const size_t :: The target qubit
+ * Acts in place on the tableau
  */
 void tableau_I(tableau_t* tab, const size_t targ); 
 void tableau_X(tableau_t* tab, const size_t targ); 
@@ -54,4 +56,44 @@ void tableau_HRH(tableau_t* tab, const size_t targ);
 void tableau_RHS(tableau_t* tab, const size_t targ);
 void tableau_SHR(tableau_t* tab, const size_t targ);
 
+
+void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ);
+void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ);
+
+
+
+#ifdef TABLEAU_OPERATIONS_SRC
+
+    void (*SINGLE_QUBIT_OPERATIONS[N_LOCAL_CLIFFORDS])(tableau_t*, const size_t targ) = {
+        tableau_I, 
+        tableau_X, 
+        tableau_Y, 
+        tableau_Z, 
+        tableau_H, 
+        tableau_S, 
+        tableau_R, 
+        tableau_HX,
+        tableau_SX,
+        tableau_RX,
+        tableau_HY,
+        tableau_HZ,
+        tableau_SH,
+        tableau_RH,
+        tableau_HS,
+        tableau_HR,
+        tableau_HSX,
+        tableau_HRX,
+        tableau_SHY,
+        tableau_RHY,
+        tableau_HSH,
+        tableau_HRH,
+        tableau_RHS,
+        tableau_SHR};
+#else
+    extern void (*SINGLE_QUBIT_OPERATIONS[])(tableau_t*, const size_t targ);
 #endif
+
+
+
+#endif
+

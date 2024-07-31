@@ -95,5 +95,3 @@ HRH_ = compose(H_, R_, H_)
 RHS_ = compose(S_, H_, R_)
 SHR_ = compose(R_, H_, S_)
 
-
-

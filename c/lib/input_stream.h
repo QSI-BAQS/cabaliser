@@ -3,6 +3,7 @@
 
 
 #include "instructions.h"
+#include "tableau_operations.h"
 #include "widget.h"
 
 

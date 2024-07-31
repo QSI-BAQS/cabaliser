@@ -29,11 +29,19 @@ void __inline_local_clifford_gate(
 static inline
 void __inline_non_local_clifford_gate(
     widget_t* wid,
-    struct single_qubit_instruction* inst)
+    struct two_qubit_instruction* inst)
 {
+    // First pass dump the tables and implement the instruction
+    size_t ctrl = wid->q_map[inst->ctrl]; 
+    size_t targ = wid->q_map[inst->targ]; 
+
+    // Execute the queued cliffords 
+    SINGLE_QUBIT_OPERATIONS[wid->queue->table[ctrl] ^ LOCAL_CLIFFORD_MASK](wid->tableau, ctrl);
+    SINGLE_QUBIT_OPERATIONS[wid->queue->table[targ] ^ LOCAL_CLIFFORD_MASK](wid->tableau, targ);
 
     return;
 } 
+
 
 
 /*
@@ -87,6 +95,7 @@ void parse_instruction_block(
             __inline_local_clifford_gate(wid, (struct single_qubit_instruction*) (instructions + i)); 
             break; 
         case NON_LOCAL_CLIFFORD_MASK:
+            __inline_non_local_clifford_gate(wid, (struct two_qubit_instruction*) (instructions + i)); 
             break;
         case RZ_MASK:
             // Non-local Clifford operation
