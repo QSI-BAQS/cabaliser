@@ -128,6 +128,9 @@ void clifford_queue_destroy(clifford_queue_t* que);
 #define _CZ_ (0x00 | NON_LOCAL_CLIFFORD_MASK) 
 #define _CNOT_ (0x01 | NON_LOCAL_CLIFFORD_MASK) 
 #define _RZ_ (RZ_MASK)
+
+#define _NOP_ (0xff) 
+
 #endif
 
 // Only applies to the instructions src file
@@ -145,15 +148,43 @@ const instruction_t SINGLE_QUBIT_CLIFFORD_MAP[168] = {
 };
 
 
+const instruction_t CZ_MAP_CTRL[24] = {
+_I_, _X_, _Y_, _Z_, _NOP_, _S_, _R_, _NOP_, _SX_, _RX_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_};
+
+const instruction_t CZ_MAP_TARG[24] = {
+_I_, _Z_, _Z_, _I_, _NOP_, _I_, _I_, _NOP_, _Z_, _Z_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_};
+
+
+
+const instruction_t CNOT_MAP_CTRL_CTRL[24] = {
+_I_, _X_, _Y_, _Z_, _NOP_, _S_, _R_, _NOP_, _SX_, _RX_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_};
+const instruction_t CNOT_MAP_CTRL_TARG[24] = {
+_I_, _X_, _X_, _I_, _NOP_, _I_, _I_, _NOP_, _X_, _X_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_};
+
+
+const instruction_t CNOT_MAP_TARG_TARG[24] = {
+_I_, _X_, _Y_, _Z_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _HSH_, _HRH_, _RHS_, _SHR_};
+const instruction_t CNOT_MAP_TARG_CTRL[24] = {
+_I_, _I_, _Z_, _Z_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _I_, _I_, _Z_, _Z_};
 #else
 /*
  * local_clifford
  * Applies a local Clifford to another local Clifford 
  */
 extern const instruction_t SINGLE_QUBIT_CLIFFORD_MAP[168]; 
+extern const instruction_t CNOT_MAP_TARG_CTRL[24];
 #endif
 
 #define LOCAL_CLIFFORD(left, right) (SINGLE_QUBIT_CLIFFORD_MAP[(left ^ LOCAL_CLIFFORD_MASK) * 24 + (right ^ LOCAL_CLIFFORD_MASK)])
+
+#define NON_LOCAL_CZ_MAP_CTRL(clifford) (CZ_MAP_CTRL[clifford ^ LOCAL_CLIFFORD_MASK]) 
+#define NON_LOCAL_CZ_MAP_TARG(clifford) (CZ_MAP_TARG[clifford ^ LOCAL_CLIFFORD_MASK]) 
+
+#define NON_LOCAL_CNOT_MAP_TARG_TARG(clifford) (CNOT_MAP_TARG_TARG[clifford ^ LOCAL_CLIFFORD_MASK]) 
+#define NON_LOCAL_CNOT_MAP_CTRL_CTRL(clifford) (CNOT_MAP_CTRL_CTRL[clifford ^ LOCAL_CLIFFORD_MASK]) 
+#define NON_LOCAL_CNOT_MAP_CTRL_TARG(clifford) (CNOT_MAP_CTRL_TARG[clifford ^ LOCAL_CLIFFORD_MASK]) 
+#define NON_LOCAL_CNOT_MAP_TARG_CTRL(clifford) (CNOT_MAP_TARG_CTRL[clifford ^ LOCAL_CLIFFORD_MASK]) 
+
 
 
 /*

@@ -90,6 +90,20 @@ tableau_t* tableau_create(const size_t n_qubits)
     return tab;
 }
 
+/*
+ * tableau_set_n_qubits
+ * Truncates the tableau to a set number of qubits
+ * :: tab : tableau_t* :: The tableau
+ * :: n_qubits : const size_t :: The number of qubits
+ * Acts in place on the tableau
+ * There is an implicit assumption that the number of qubits should not be greater than the initially allocated number of qubits
+ */
+void tableau_set_n_qubits(tableau_t* tab, const size_t n_qubits)
+{
+    tab->n_qubits = n_qubits; 
+    tab->slice_len = SLICE_LEN(n_qubits); 
+}
+
 
 /*
  * tableau_destroy 
@@ -149,7 +163,30 @@ void tableau_hadamard(tableau_t const* tab, const size_t targ)
 {
     __inline_tableau_hadamard(tab, targ);
 }
+/*
+ * tableau_transverse_hadamard
+ * Applies a hadamard when transposed 
+ * :: tab : tableau_t*  :: Tableau object
+ * :: c_que :  clifford_queue_t* :: Clifford queue 
+ * :: i : const size_t :: Index to target 
+ *
+ */
+void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ)
+{ 
+    uint8_t bit_x = 0;
+    uint8_t bit_z = 0;
+    // TODO Vectorise this
+    for (size_t i = 0; i < tab->n_qubits; i++)
+    {
+        bit_z = __inline_slice_get_bit(tab->slices_z[i], targ); 
+        bit_x = __inline_slice_get_bit(tab->slices_x[i], targ); 
 
+        __inline_slice_set_bit(tab->slices_z[i], targ, bit_x); 
+        __inline_slice_set_bit(tab->slices_x[i], targ, bit_z); 
+    }
+
+    return;
+}
 
 /*
  * tableau_rowsum
@@ -177,6 +214,52 @@ void tableau_rowsum(tableau_t const* tab, const size_t ctrl, const size_t targ)
     }   
 }
 
+void tableau_col_elim_X(tableau_t const* tab, const size_t idx)
+{
+    #define VECTOR_COLLECT 8 
+    size_t collected = 0;   
+    size_t* rows = {0}; 
+    DEBUG_CHECK(ROW_MAJOR == tab->orientation);
+
+    for (size_t j = 0; j < idx;)
+    {
+        // Collect Rows
+        while ((j < idx) && (VECTOR_COLLECT > collected))
+        {
+            if (__inline_slice_get_bit(tab->slices_x[j], idx))
+            {
+                rows[collected] = j;  
+                collected++;
+            }
+            j++;
+        }
+        // Rowsum 
+        // TODO Multithread this 
+        if (collected > 0)
+        {
+            // Assume elements left of the targeted chunk are already zeroed by previous elim operations 
+            // Apply to X and Z chunks separately to double cache lifetime 
+            // Z elements
+            for (size_t jdx = idx / CHUNK_SIZE_BITS; jdx < SLICE_LEN(tab->n_qubits); jdx++)
+            {
+                // TODO Vectorise  and distribute this loop
+                for  (size_t col_idx = 0; col_idx < collected; col_idx += 1)
+                {
+                    tab->slices_z[rows[col_idx]][jdx] ^= tab->slices_z[idx][jdx];   
+                } 
+            }        
+             
+            // X elements 
+            for (size_t jdx = idx / CHUNK_SIZE_BITS; jdx < SLICE_LEN(tab->n_qubits); jdx++)
+            {
+                for  (size_t col_idx = 0; col_idx < collected; col_idx += 1)
+                {
+                    tab->slices_x[rows[col_idx]][jdx] ^= tab->slices_z[idx][jdx];   
+                } 
+            }         
+        }  
+    }   
+}
 
 /*
  * tableau_transpose
@@ -278,7 +361,6 @@ void gs_tableau_transpose(tableau_t* tab, const size_t input_qubits)
 }
 
 
-
 /*
  * tableau_print 
  * Inefficient method for printing a tableau 
@@ -308,24 +390,6 @@ void tableau_print(const tableau_t* tab)
 
 
 /*
- * tableau_parse_instructions
- * Ingests an array of instructions and implements them  
- * Recommended for use with a threadpool and limiting instructions to acting on a single qubit   
- */
-void tableau_parse_instructions(
-    tableau_t const* tab,
-    const instruction_t* inst,
-    const size_t n_instructions) 
-{
-    //#pragma GCC unroll 8
-    for (size_t i = 0; i < n_instructions; i++)
-    {
-        return;
-    } 
-    return;
-}
-
-/*
  * slice_empty
  * Fast operation for checking if a slice is empty
  * Exposes functions tableau_slice_empty_x and tableau_slice_empty_z which wrap this function
@@ -353,7 +417,6 @@ bool tableau_slice_empty_x(const tableau_t* tab, size_t idx)
 {
     DPRINT(DEBUG_1, "\t\tChecking X slice %lu is empty\n", idx);
 
-
     return __inline_slice_empty(tab->slices_x[idx], tab->n_qubits);
 } 
 
@@ -374,7 +437,6 @@ bool tableau_slice_empty_z(const tableau_t* tab, size_t idx)
  * tableau_ctz
  * Gets the index of the first non-zero bit in the slice
  * :: tableau_slice_p ::
- *
  */
 size_t tableau_ctz(CHUNK_OBJ* slice, const size_t n_qubits)
 {
@@ -397,4 +459,23 @@ size_t tableau_ctz(CHUNK_OBJ* slice, const size_t n_qubits)
 }
 
 
+/*
+ * tableau_idx_swap 
+ * Swaps indicies over both the X and Z slices  
+ * :: tab : tableau_t* :: Tableau object to swap over 
+ * :: i :: const size_t :: Index to swap 
+ * :: j :: const size_t :: Index to swap
+ * Acts in place on the tableau 
+ */
+void tableau_idx_swap(tableau_t* tab, const size_t i, const size_t j)
+{
+    void* tmp = tab->slices_x[i];
+    tab->slices_x[i] = tab->slices_x[j];  
+    tab->slices_x[j] = tmp;  
 
+    tmp = tab->slices_z[i];
+    tab->slices_z[i] = tab->slices_z[j];  
+    tab->slices_z[j] = tmp;  
+
+    return;
+}

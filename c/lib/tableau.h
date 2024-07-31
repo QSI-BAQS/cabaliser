@@ -25,7 +25,6 @@
 #define CHUNK_SIZE_BYTES (sizeof(CHUNK_OBJ))
 #define CHUNK_SIZE_BITS (CHUNK_SIZE_BYTES * BITS_TO_BYTE)
 #define CACHE_CHUNKS (CACHE_SIZE / CHUNK_SIZE_BYTES) 
-
 #define __CHUNK_CTZ __builtin_ctzll 
 
 
@@ -140,6 +139,7 @@ void tableau_rowsum(tableau_t const* tab, const size_t ctrl, const size_t targ);
  * Provides both a module specific __inline method along with an exposed tableau_hadamard function 
  */
 void tableau_hadamard(tableau_t const* tab, const size_t targ);
+void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ);
 static inline
 void __inline_tableau_hadamard(tableau_t const* tab, const size_t targ)
 {

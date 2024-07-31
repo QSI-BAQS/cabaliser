@@ -56,7 +56,44 @@ void test_inline_hadamard(const size_t n_qubits)
 }
 
 
+void test_transverse_hadamard()
+{
+    tableau_t* tab = tableau_create(8);
+    for (int i = 0; i < (1 << 8); i++)
+    {
+        *(tab->slices_z[i]) = i;
+    }
 
+    for (int i = 0; i < (1 << 8); i++)
+    {
+        tableau_hadamard(tab, i); 
+    }
+
+    for (int i = 0; i < (1 << 8); i++)
+    {
+        assert(*tab->slices_z[i] == 0);
+        assert(*tab->slices_x[i] == i);
+    }
+
+
+    tableau_transpose(tab);
+    
+    for (int i = 0; i < (1 << 8); i++)
+    {
+        tableau_transverse_hadamard(tab, i); 
+    }
+
+    tableau_transpose(tab);
+
+    for (int i = 0; i < (1 << 8); i++)
+    {
+        assert(*tab->slices_z[i] == i);
+        assert(*tab->slices_x[i] == 0);
+    }
+
+
+    return;
+}
 
 
 int main()

@@ -31,7 +31,7 @@ void __inline_non_local_clifford_gate(
     widget_t* wid,
     struct single_qubit_instruction* inst)
 {
-//    LOCAL_CLIFFORD(inst->opcode, );
+
     return;
 } 
 
