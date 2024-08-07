@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <assert.h>
+
 
 #include "tableau.h"
 #include "consts.h"

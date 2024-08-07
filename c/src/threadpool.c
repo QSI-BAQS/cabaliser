@@ -52,8 +52,7 @@ void* barrier_fn(void* args)
     // As a result even if an interrupt occurs at this point only one thread will trigger the free call
     
     // Last thread has exited barrier
-    // TODO : EAGAIN
-    if (0 == err)
+    if (EAGAIN == err)
     {
        free(args); 
     }

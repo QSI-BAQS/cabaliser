@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <semaphore.h>
 #include <unistd.h>
+#include <errno.h>
+
 
 
 #include "linked_list.h"
