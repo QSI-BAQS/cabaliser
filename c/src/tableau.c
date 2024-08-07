@@ -52,7 +52,8 @@ tableau_t* tableau_create(const size_t n_qubits)
     // Construct memaligned bitmap
     void* tableau_bitmap = NULL;
     const size_t tableau_bytes = slice_len * n_qubits * 2;
-    posix_memalign(&tableau_bitmap, CACHE_SIZE, tableau_bytes); 
+    int err_code = posix_memalign(&tableau_bitmap, CACHE_SIZE, tableau_bytes); 
+    assert(0 == err_code);
 
     // Set map to all zeros
     memset(tableau_bitmap, 0x00, tableau_bytes);

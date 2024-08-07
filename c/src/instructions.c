@@ -19,7 +19,7 @@ clifford_queue_t* clifford_queue_create(const size_t n_qubits)
     memset(instructions, _I_, instruction_table_size); 
 
     clifford_queue_t* que = NULL; 
-    posix_memalign((void**)&que, CACHE_SIZE,  sizeof(clifford_queue_t));
+    err_code = posix_memalign((void**)&que, CACHE_SIZE,  sizeof(clifford_queue_t));
     assert(0 == err_code);
 
     que->table = (instruction_t*)instructions;
