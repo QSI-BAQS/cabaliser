@@ -1,8 +1,14 @@
 #ifndef TABLEAU_OPERATIONS_H
 #define TABLEAU_OPERATIONS_H
 
+#include "omp.h"
 #include "tableau.h"
 #include "instructions.h"
+
+#pragma GCC optimize("Ofast,unroll-loops")
+#pragma GCC target("avx2,tune=native")
+
+
 
 /*
  * tableau_remove_zero_X_columns
@@ -64,7 +70,7 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ);
 
 #ifdef TABLEAU_OPERATIONS_SRC
 
-    void (*SINGLE_QUBIT_OPERATIONS[N_LOCAL_CLIFFORDS])(tableau_t*, const size_t targ) = {
+  const void (*SINGLE_QUBIT_OPERATIONS[N_LOCAL_CLIFFORDS])(tableau_t*, const size_t targ) = {
         tableau_I, 
         tableau_X, 
         tableau_Y, 
@@ -89,8 +95,15 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ);
         tableau_HRH,
         tableau_RHS,
         tableau_SHR};
+
+    const void (*TWO_QUBIT_OPERATIONS[N_LOCAL_CLIFFORDS])(tableau_t*, const size_t ctrl, const size_t targ) = {
+        tableau_CNOT,
+        tableau_CZ
+};
+
 #else
-    extern void (*SINGLE_QUBIT_OPERATIONS[])(tableau_t*, const size_t targ);
+    extern const void (*SINGLE_QUBIT_OPERATIONS[])(tableau_t*, const size_t targ);
+    extern const void (*TWO_QUBIT_OPERATIONS[])(tableau_t*, const size_t ctrl, const size_t targ);
 #endif
 
 

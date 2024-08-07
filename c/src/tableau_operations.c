@@ -11,12 +11,12 @@
  */
 void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
 {
-    #pragma GCC unroll 8 
+    // Can't parallelise as the H operation is already parallel
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
        if (CTZ_SENTINEL == tableau_ctz(tab->slices_x[i], tab->n_qubits)) 
        {
-         __inline_tableau_hadamard(tab, i);
+        tableau_H(tab, i);
          __inline_clifford_queue_local_clifford_right(c_que, i, _H_);   
        } 
     } 
@@ -32,9 +32,11 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
  */
 void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que)
 {
-    #pragma GCC unroll 8
-    for (size_t i = 0; i < tab->n_qubits; i++)
+    size_t i;
+    #pragma omp parallel for private(i)
+    for (i = 0; i < tab->n_qubits; i++)
     { 
+        // TODO check this
         uint8_t z = __inline_slice_get_bit(tab->slices_z[i], i);  
         instruction_t operator = (z && (_I_)) | (!z && (_S_)); 
         __inline_clifford_queue_local_clifford_right(c_que, i, operator);   
@@ -50,33 +52,56 @@ void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que)
  */
 void tableau_X_diagonal(tableau_t* tab, clifford_queue_t* c_que)
 {
+    tableau_transpose(tab);
+
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
         // X(i, i) != 1 
-        if (1 != __inline_slice_get_bit(tab->slices_x[i], i))
+        uint8_t diag = 0;
+        if (!(diag = __inline_slice_get_bit(tab->slices_x[i], i)))
         {  
-             
+            for (size_t j = i + 1; j < tab->n_qubits; j++)
+            {
+                // Swap stabilisers
+                if (1 == __inline_slice_get_bit(tab->slices_x[j], i))
+                {
+                    tableau_idx_swap_transverse(tab, i, j); 
+                } 
+            } 
+
+            if ((!diag) && (1 == __inline_slice_get_bit(tab->slices_x[i], i)))
+            {
+                // TODO place hadamards
+                tableau_transverse_hadamard(tab, i);
+                return;
+            }
+
+
         }
 
-        // TODO VECTORISE
-        for (size_t j = i + 1; j < tab->n_qubits; j++) 
+
+        size_t  j;
+        #pragma omp parallel 
         {
-            if (__inline_slice_get_bit(tab->slices_x[j], i))
+            #pragma omp for nowait 
+            for (j = i + 1; j < tab->n_qubits; j++) 
             {
-                tableau_rowsum(tab, i, j);
+                if (__inline_slice_get_bit(tab->slices_x[j], i))
+                {
+                    tableau_rowsum(tab, i, j);
+                }
+            }
+
+            #pragma omp for nowait 
+            for (j = i - 1; j > 0; j--) 
+            {
+                if (__inline_slice_get_bit(tab->slices_x[j], i))
+                {
+                    tableau_rowsum(tab, i, j);
+                }
             }
         }
-
-        for (size_t j = i - 1; j > 0; j--) 
-        {
-            if (__inline_slice_get_bit(tab->slices_x[j], i))
-            {
-                tableau_rowsum(tab, i, j);
-            }
-        }
-
     }
-
     return;
 }
 
@@ -87,13 +112,15 @@ void tableau_H(tableau_t* tab, const size_t targ)
     CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
+    size_t i;
+    #pragma omp parallel private(i)
     {
-        slice_r[i] ^= slice_x[i] & slice_z[i];      
-    }  
-
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_x[i] & slice_z[i];      
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -106,13 +133,16 @@ void tableau_S(tableau_t* tab, const size_t targ)
     CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
+    size_t i;
+    #pragma omp parallel private(i)
     {
-        slice_r[i] ^= slice_x[i] & slice_z[i];      
-        slice_z[i] ^= slice_x[i]; 
-    }  
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_x[i] & slice_z[i];      
+            slice_z[i] ^= slice_x[i]; 
+        }  
+    }
 }
 
 void tableau_Z(tableau_t* tab, const size_t targ)
@@ -128,12 +158,15 @@ void tableau_Z(tableau_t* tab, const size_t targ)
  * r2 = r0 ^ x; z2 = z0 
  */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
+    size_t i;
+    #pragma omp parallel private(i) 
     {
-        slice_r[i] ^= slice_x[i];      
-    }  
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_x[i];      
+        }  
+    }
 }
 
 
@@ -158,13 +191,16 @@ void tableau_R(tableau_t* tab, const size_t targ)
      * R : (r ^= x.~z; z ^= x)
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
+    size_t i;
+    #pragma omp parallel private(i) 
     {
-        slice_r[i] ^= slice_x[i] & ~slice_z[i];
-        slice_z[i] ^= slice_x[i]; 
-    }  
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_x[i] & ~slice_z[i];
+            slice_z[i] ^= slice_x[i]; 
+        }  
+    }
 }
 
 
@@ -172,6 +208,7 @@ void tableau_I(tableau_t* tab, const size_t targ)
 {
     return;
 }
+
 void tableau_X(tableau_t* tab, const size_t targ)
 {
     CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
@@ -195,11 +232,14 @@ void tableau_X(tableau_t* tab, const size_t targ)
  * r_3 = r_0 ^ z0;
  *
  */
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
+    size_t i;
+    #pragma omp parallel private(i) 
     {
-        slice_r[i] ^= slice_z[i];      
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_z[i];      
+        }
     }
 }
 
@@ -220,12 +260,15 @@ void tableau_Y(tableau_t* tab, const size_t targ)
      *
      * Y : r ^= x ^ z
      */
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_z[i] ^ slice_x[i];      
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_z[i] ^ slice_x[i];      
+        }  
+    }
 }
 
 void tableau_HX(tableau_t* tab, const size_t targ)
@@ -244,12 +287,15 @@ void tableau_HX(tableau_t* tab, const size_t targ)
      * r_2 = r_0 ^ (~x & z) 
      * Swap x and z
      */
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= ~slice_x[i] & slice_z[i];      
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= ~slice_x[i] & slice_z[i];      
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -271,13 +317,16 @@ void tableau_SX(tableau_t* tab, const size_t targ)
      * z_2 = z_0 ^ x
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= ~slice_x[i] & slice_z[i];      
-        slice_z[i] ^= slice_x[i]; 
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= ~slice_x[i] & slice_z[i];      
+            slice_z[i] ^= slice_x[i]; 
+        }  
+    }
 }
 
 
@@ -298,13 +347,16 @@ void tableau_RX(tableau_t* tab, const size_t targ)
      * z_2 = z_0 ^ x
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_x[i] | slice_z[i];      
-        slice_z[i] ^= slice_x[i]; 
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_x[i] | slice_z[i];      
+            slice_z[i] ^= slice_x[i]; 
+        }  
+    }
 }
 
 void tableau_HZ(tableau_t* tab, const size_t targ)
@@ -324,12 +376,15 @@ void tableau_HZ(tableau_t* tab, const size_t targ)
      * x_2 = z_0
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= ~slice_z[i] & slice_x[i];      
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= ~slice_z[i] & slice_x[i];      
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -354,12 +409,15 @@ void tableau_HY(tableau_t* tab, const size_t targ)
      * x_2 = z_0
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_z[i] ^ slice_x[i];      
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_z[i] ^ slice_x[i];      
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -385,12 +443,15 @@ void tableau_SH(tableau_t* tab, const size_t targ)
      * 
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_x[i] ^= slice_z[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_x[i] ^= slice_z[i];
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -418,13 +479,16 @@ void tableau_RH(tableau_t* tab, const size_t targ)
      *
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_z[i];
-        slice_x[i] ^= slice_z[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_z[i];
+            slice_x[i] ^= slice_z[i];
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -449,12 +513,15 @@ void tableau_HS(tableau_t* tab, const size_t targ)
      *
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_x[i] ^= slice_z[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_x[i] ^= slice_z[i];
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -479,12 +546,15 @@ void tableau_HR(tableau_t* tab, const size_t targ)
      *
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_z[i] ^= slice_x[i];
-    }  
+    size_t i; 
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_z[i] ^= slice_x[i];
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -515,13 +585,16 @@ void tableau_HSX(tableau_t* tab, const size_t targ)
      * z_3 = x_2 = x_0
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_x[i] ^ slice_z[i];
-        slice_z[i] ^= slice_x[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_x[i] ^ slice_z[i];
+            slice_z[i] ^= slice_x[i];
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -552,13 +625,16 @@ void tableau_HRX(tableau_t* tab, const size_t targ)
      * z_3 = x_2 = x_0
      */
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_z[i];
-        slice_z[i] ^= slice_x[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_z[i];
+            slice_z[i] ^= slice_x[i];
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -570,13 +646,16 @@ void tableau_SHY(tableau_t* tab, const size_t targ)
     CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_z[i] ^ slice_x[i];
-        slice_x[i] ^= slice_z[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_z[i] ^ slice_x[i];
+            slice_x[i] ^= slice_z[i];
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -588,13 +667,16 @@ void tableau_RHY(tableau_t* tab, const size_t targ)
     CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_x[i];
-        slice_x[i] ^= slice_z[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_x[i];
+            slice_x[i] ^= slice_z[i];
+        }  
+    }
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;
@@ -606,13 +688,16 @@ void tableau_HSH(tableau_t* tab, const size_t targ)
     CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= ~slice_x[i] & slice_z[i];
-        slice_x[i] ^= slice_z[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= ~slice_x[i] & slice_z[i];
+            slice_x[i] ^= slice_z[i];
+        }  
+    }
 }
 
 void tableau_HRH(tableau_t* tab, const size_t targ)
@@ -621,13 +706,16 @@ void tableau_HRH(tableau_t* tab, const size_t targ)
     CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_x[i] & slice_z[i];
-        slice_x[i] ^= slice_z[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_x[i] & slice_z[i];
+            slice_x[i] ^= slice_z[i];
+        }  
+    }
 }
 
 
@@ -637,13 +725,16 @@ void tableau_RHS(tableau_t* tab, const size_t targ)
     CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_x[i] | slice_z[i];
-        slice_x[i] ^= slice_z[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_x[i] | slice_z[i];
+            slice_x[i] ^= slice_z[i];
+        }  
+    }
 }
 
 
@@ -653,13 +744,16 @@ void tableau_SHR(tableau_t* tab, const size_t targ)
     CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= slice_x[i] & ~slice_z[i];
-        slice_x[i] ^= slice_z[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= slice_x[i] & ~slice_z[i];
+            slice_x[i] ^= slice_z[i];
+        }  
+    }
 }
 
 void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ)
@@ -678,14 +772,17 @@ void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ)
     CHUNK_OBJ* targ_slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= ctrl_slice_x[i] & targ_slice_z[i] & ~(targ_slice_x[i] ^ ctrl_slice_z[i]);
-        targ_slice_x[i] ^= ctrl_slice_x[i];
-        ctrl_slice_z[i] ^= targ_slice_z[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= ctrl_slice_x[i] & targ_slice_z[i] & ~(targ_slice_x[i] ^ ctrl_slice_z[i]);
+            targ_slice_x[i] ^= ctrl_slice_x[i];
+            ctrl_slice_z[i] ^= targ_slice_z[i];
+        }  
+    }
 }
 
 void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
@@ -732,16 +829,19 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
     CHUNK_OBJ* targ_slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    // TODO Dispatch
-    #pragma GCC unroll 8 
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        slice_r[i] ^= (
-              (targ_slice_x[i] & targ_slice_z[i]) 
-            ^ (ctrl_slice_x[i] & targ_slice_x[i] & ~(targ_slice_z[i] ^ ctrl_slice_z[i]))
-            ^ ((targ_slice_z[i] ^ ctrl_slice_x[i]) & targ_slice_x[i])
-            );
-        targ_slice_z[i] ^= ctrl_slice_x[i];
-        ctrl_slice_z[i] ^= targ_slice_x[i];
-    }  
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_r[i] ^= (
+                  (targ_slice_x[i] & targ_slice_z[i]) 
+                ^ (ctrl_slice_x[i] & targ_slice_x[i] & ~(targ_slice_z[i] ^ ctrl_slice_z[i]))
+                ^ ((targ_slice_z[i] ^ ctrl_slice_x[i]) & targ_slice_x[i])
+                );
+            targ_slice_z[i] ^= ctrl_slice_x[i];
+            ctrl_slice_z[i] ^= targ_slice_x[i];
+        }  
+    }
 }

@@ -38,7 +38,7 @@ tableau_t* tableau_random_create()
        tab->slices_x[i][0] = rand(); 
        tab->slices_z[i][0] = rand(); 
     }     
-   tab->phases[0] = rand(); 
+    tab->phases[0] = rand(); 
 
     return tab;
 } 

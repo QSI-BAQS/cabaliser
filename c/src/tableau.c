@@ -124,45 +124,6 @@ void tableau_destroy(tableau_t* tab)
 }
 
 
-///*
-// * tableau_cnot
-// * Performs a CNOT between two columns of stabilisers 
-// * :: tab : tableau_t const* :: Tableau object
-// * :: ctrl : const size_t :: Index of control qubit
-// * :: targ : const size_t :: Index of target qubit
-// */
-//void tableau_cnot(tableau_t const* tab, const size_t ctrl, const size_t targ)
-//{
-//    CHUNK_OBJ* ctrl_slice_x = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
-//    CHUNK_OBJ* targ_slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-//    CHUNK_OBJ* ctrl_slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-//    CHUNK_OBJ* targ_slice_z = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
-//
-//    DPRINT(DEBUG_3, "\t\tCNOT on slices %lu\n", tab->slice_len); 
-//    #pragma GCC unroll 8
-//    for (size_t i = 0; i < tab->slice_len; i++)
-//    {
-//    DPRINT(DEBUG_3, "\t\t%lu %lu\n", targ_slice_x[i], ctrl_slice_x[i]); 
-//
-//        targ_slice_x[i] ^= ctrl_slice_x[i];
-//        targ_slice_z[i] ^= ctrl_slice_z[i];
-//    DPRINT(DEBUG_3, "\t\t%lu %lu\n", targ_slice_x[i], ctrl_slice_x[i]); 
-//
-//    }   
-//}
-//
-
-/*
- * tableau_hadamard
- * Performs a Hadamard between two columns of stabilisers 
- * :: tab : tableau_t const* :: Tableau object
- * :: targ : const size_t :: Target of the Hadamard 
- * Provides both a module specific __inline method along with an exposed tableau_hadamard function 
- */
-void tableau_hadamard(tableau_t const* tab, const size_t targ)
-{
-    __inline_tableau_hadamard(tab, targ);
-}
 /*
  * tableau_transverse_hadamard
  * Applies a hadamard when transposed 
@@ -176,6 +137,7 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ)
     uint8_t bit_x = 0;
     uint8_t bit_z = 0;
     // TODO Vectorise this
+    #pragma GCC ivdep  
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
         bit_z = __inline_slice_get_bit(tab->slices_z[i], targ); 
@@ -469,13 +431,41 @@ size_t tableau_ctz(CHUNK_OBJ* slice, const size_t n_qubits)
  */
 void tableau_idx_swap(tableau_t* tab, const size_t i, const size_t j)
 {
-    void* tmp = tab->slices_x[i];
+    tableau_slice_p tmp = tab->slices_x[i];
     tab->slices_x[i] = tab->slices_x[j];  
     tab->slices_x[j] = tmp;  
 
     tmp = tab->slices_z[i];
     tab->slices_z[i] = tab->slices_z[j];  
     tab->slices_z[j] = tmp;  
+
+    return;
+}
+
+
+/*
+ * tableau_idx_swap_transverse 
+ * Swaps indicies over both the X and Z slices  
+ * Also swaps associated phases
+ * :: tab : tableau_t* :: Tableau object to swap over 
+ * :: i :: const size_t :: Index to swap 
+ * :: j :: const size_t :: Index to swap
+ * Acts in place on the tableau 
+ */
+void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
+{
+    tableau_slice_p tmp = tab->slices_x[i];
+    tab->slices_x[i] = tab->slices_x[j];  
+    tab->slices_x[j] = tmp;  
+
+    tmp = tab->slices_z[i];
+    tab->slices_z[i] = tab->slices_z[j];  
+    tab->slices_z[j] = tmp;  
+    
+    uint8_t phase_i = slice_get_bit(tab->phases, i); 
+    uint8_t phase_j = slice_get_bit(tab->phases, j); 
+    slice_set_bit(tab->phases, i, phase_j); 
+    slice_set_bit(tab->phases, j, phase_i); 
 
     return;
 }

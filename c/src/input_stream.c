@@ -1,3 +1,5 @@
+#define INSTRUCTIONS_TABLE
+
 #include "input_stream.h"
 
 /*
@@ -18,6 +20,23 @@ void __inline_local_clifford_gate(
     return;
 } 
 
+
+/*
+ * apply_local_cliffords
+ * Empties the local clifford table and applies the local cliffords
+ * :: wid : widget_t* :: The widget
+ * Acts in place over the tableau and the clifford table
+ */
+void apply_local_cliffords(widget_t* wid)
+{
+    for (size_t i = 0; i < wid->n_qubits; i++)
+    {
+        SINGLE_QUBIT_OPERATIONS[wid->queue->table[i] & INSTRUCTION_OPERATOR_MASK](wid->tableau, i);
+        wid->queue->table[i] = _I_; 
+    }
+}
+
+
 /*
  * non_local_clifford_gate
  * Applies a non-local Clifford operation to the widget
@@ -36,8 +55,13 @@ void __inline_non_local_clifford_gate(
     size_t targ = wid->q_map[inst->targ]; 
 
     // Execute the queued cliffords 
-    SINGLE_QUBIT_OPERATIONS[wid->queue->table[ctrl] ^ LOCAL_CLIFFORD_MASK](wid->tableau, ctrl);
-    SINGLE_QUBIT_OPERATIONS[wid->queue->table[targ] ^ LOCAL_CLIFFORD_MASK](wid->tableau, targ);
+    // TODO : Merge these operations with CX/CZ gates to cut runtime to one third 
+    SINGLE_QUBIT_OPERATIONS[wid->queue->table[ctrl] & INSTRUCTION_OPERATOR_MASK](wid->tableau, ctrl);
+    wid->queue->table[ctrl] = _I_;
+
+    SINGLE_QUBIT_OPERATIONS[wid->queue->table[targ] & INSTRUCTION_OPERATOR_MASK](wid->tableau, targ);
+    wid->queue->table[targ] = _I_;
+    TWO_QUBIT_OPERATIONS[inst->opcode & INSTRUCTION_OPERATOR_MASK](wid->tableau, ctrl, targ);
 
     return;
 } 
@@ -89,13 +113,13 @@ void parse_instruction_block(
     for (size_t i = 0; i < n_instructions; i++)
     {
         // The switch is the masked opcode, picking the three highest bits
-        switch ((instructions + i)->instruction & INSTRUCTION_MASK)  
+        switch ((instructions + i)->instruction & INSTRUCTION_TYPE_MASK)  
         {
         case LOCAL_CLIFFORD_MASK:
-            __inline_local_clifford_gate(wid, (struct single_qubit_instruction*) (instructions + i)); 
+            __inline_local_clifford_gate(wid, (struct single_qubit_instruction*)(instructions + i)); 
             break; 
         case NON_LOCAL_CLIFFORD_MASK:
-            __inline_non_local_clifford_gate(wid, (struct two_qubit_instruction*) (instructions + i)); 
+            __inline_non_local_clifford_gate(wid, (struct two_qubit_instruction*)(instructions + i)); 
             break;
         case RZ_MASK:
             // Non-local Clifford operation

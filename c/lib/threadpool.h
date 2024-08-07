@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include <semaphore.h>
 
 #include "linked_list.h"
 
@@ -15,6 +16,7 @@ struct threadpool_t {
     struct linked_list_t* job_queue; 
     pthread_mutex_t queue_lock;  
     bool alive; // Set to false to kill workers 
+    __uint128_t active_qubits; // Tracks qubits under operation
 };
 typedef struct threadpool_t threadpool_t;
 
@@ -25,15 +27,22 @@ typedef struct threadpool_t threadpool_t;
 #endif 
 
 
+struct threadpool_job
+{
+    void (*fn)(void*);
+    void* args;
+};
+
 struct threadpool_arg
 {
     size_t thread_id;
-    void* args;
+    void* job;
 }; 
 
 struct threadpool_barrier_t
 {
-    pthread_barrier_t* barrier;         
+    pthread_barrier_t barrier;         
+    sem_t sem;
 };
 
 /*

@@ -132,32 +132,6 @@ void tableau_transpose(tableau_t* tab);
 void tableau_rowsum(tableau_t const* tab, const size_t ctrl, const size_t targ);
 
 /*
- * tableau_hadamard
- * Performs a Hadamard between two columns of stabilisers 
- * :: tab : tableau_t const* :: Tableau object
- * :: targ : const size_t :: Target of the Hadamard 
- * Provides both a module specific __inline method along with an exposed tableau_hadamard function 
- */
-void tableau_hadamard(tableau_t const* tab, const size_t targ);
-void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ);
-static inline
-void __inline_tableau_hadamard(tableau_t const* tab, const size_t targ)
-{
-    void* ptr = tab->slices_x[targ];
-    tab->slices_x[targ] = tab->slices_z[targ];
-    tab->slices_z[targ] = ptr;
-}
-
-/*
- * tableau_cnot
- * Performs a CNOT between two columns of stabilisers 
- * :: tab : tableau_t const* :: Tableau object
- * :: ctrl : const size_t :: Index of control qubit
- * :: targ : const size_t :: Index of target qubit
- */
-void tableau_cnot(tableau_t const* tab, const size_t ctrl, const size_t targ);
-
-/*
  * tableau_slice_empty_x
  * Fast operation for checking if an x slice is empty
  *  :: tab : const tableau_t* :: The tableau object
@@ -180,4 +154,27 @@ bool tableau_slice_empty_z(const tableau_t* tab, size_t idx);
  *  :: len : const size_t :: Index of the slice
  */
 size_t tableau_ctz(CHUNK_OBJ* slice, const size_t len);
+
+/*
+ * tableau_transverse_hadamard
+ * Applies a hadamard when transposed 
+ * :: tab : tableau_t*  :: Tableau object
+ * :: c_que :  clifford_queue_t* :: Clifford queue 
+ * :: i : const size_t :: Index to target 
+ *
+ */
+void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ);
+
+/*
+ * tableau_idx_swap_transverse 
+ * Swaps indicies over both the X and Z slices  
+ * Also swaps associated phases
+ * :: tab : tableau_t* :: Tableau object to swap over 
+ * :: i :: const size_t :: Index to swap 
+ * :: j :: const size_t :: Index to swap
+ * Acts in place on the tableau 
+ */
+void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j);
+
+
 #endif 

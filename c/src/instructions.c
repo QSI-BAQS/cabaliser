@@ -15,11 +15,11 @@ clifford_queue_t* clifford_queue_create(const size_t n_qubits)
     const size_t instruction_table_size = n_qubits; 
     posix_memalign(&instructions, CACHE_SIZE, instruction_table_size); 
 
-    memset(instructions, 0x00, instruction_table_size); 
+    memset(instructions, _I_, instruction_table_size); 
 
     clifford_queue_t* que = NULL; 
     posix_memalign((void**)&que, CACHE_SIZE,  sizeof(clifford_queue_t));
-    que->table = instructions;
+    que->table = (instruction_t*)instructions;
     que->n_qubits = n_qubits;
     
     return que;

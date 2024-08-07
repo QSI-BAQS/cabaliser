@@ -13,7 +13,7 @@ typedef size_t qubit_map_t;
  * :: n_qubits : size_t :: Maximum number of qubits in the map 
  *
  */
-qubit_map_t* qubit_map_create(size_t n_qubits);
+qubit_map_t* qubit_map_create(const size_t initial_qubits, const size_t max_qubits);
 
 /*
  * qubit_map_destroy
