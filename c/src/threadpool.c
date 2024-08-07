@@ -46,13 +46,14 @@ void* barrier_fn(void* args)
     pthread_barrier_wait(((pthread_barrier_t*)args));
      
     // Semaphore set to n_threads - 1, such that the final thread will throw EAGAIN
-    int err = sem_trywait(&(((threadpool_barrier_t*)args)->sem));
+    int err = sem_trywait(&(((struct threadpool_barrier_t*)args)->sem));
 
     // Operation is threadsafe as all threads must have passed the previous line
     // As a result even if an interrupt occurs at this point only one thread will trigger the free call
     
     // Last thread has exited barrier
-    if (EAGAIN == err)
+    // TODO : EAGAIN
+    if (0 == err)
     {
        free(args); 
     }
@@ -70,10 +71,10 @@ void barrier_threadpool()
 {
     struct threadpool_barrier_t* bar = malloc(sizeof(struct threadpool_barrier_t)); 
      
-    pthread_barrier_init(&(bar->barrier), NULL, THREADPOOL_g.nthreads); 
-    sem_init(&(bar->sem), 0, THREADPOOL_g.nthreads - 1);  // Last thread to exit will trigger EAGAIN
+    pthread_barrier_init(&(bar->barrier), NULL, THREADPOOL_g.n_workers); 
+    sem_init(&(bar->sem), 0, THREADPOOL_g.n_workers - 1);  // Last thread to exit will trigger EAGAIN
 
-    for (size_t i = 0; i < THREADPOOL_g.n_threads; i++)
+    for (size_t i = 0; i < THREADPOOL_g.n_workers; i++)
     {
         add_task(barrier_fn, bar, sizeof(pthread_barrier_t));
     }
@@ -87,10 +88,10 @@ void barrier_threadpool()
 /*
  * Adds a job to the threadpool
  */
-void add_task(void (*fn)(void*), void* args, const size_t n_bytes_args)
+void add_task(void* (*fn)(void*), void* args, const size_t n_bytes_args)
 {
     struct threadpool_job job;
-    job.fn = fn;
+    job.fn = (void*)fn;
     job.args = args; 
     const size_t n_bytes = sizeof(fn) + n_bytes_args;
 

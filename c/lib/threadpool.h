@@ -4,6 +4,8 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <semaphore.h>
+#include <unistd.h>
+
 
 #include "linked_list.h"
 
@@ -56,6 +58,10 @@ struct threadpool_barrier_t
  */
 void* threadpool_worker(void* args);
 
+/*
+ * Adds a job to the threadpool
+ */
+void add_task(void* (*fn)(void*), void* args, const size_t n_bytes_args);
 
 
 #endif
