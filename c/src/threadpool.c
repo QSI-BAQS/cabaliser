@@ -1,6 +1,10 @@
 #define THREADPOOL_SRC 
 #include "threadpool.h"
 
+/*
+ * threadpool_create
+ * Constructor for the threadpool object
+ */
 struct threadpool_t threadpool_create()
 {
     threadpool_t tpool;
@@ -15,10 +19,13 @@ struct threadpool_t threadpool_create()
     {
         pthread_create(tpool.workers + i, NULL, threadpool_worker, NULL);
     }
-
     return tpool;
 }
 
+/*
+ * threadpool_destroy
+ * Destructor for the threadpool object
+ */
 void threadpool_destroy()
 {
     pthread_mutex_lock(&(THREADPOOL_g.queue_lock)); 
@@ -33,20 +40,51 @@ void threadpool_destroy()
 
 
 /*
- * barrier_fn
+ * __dependency_check
+ * Performs a dependency check on the current arg
+ * :: arg : const size_t :: Argument to check for dependencies 
+ * Checks if the arg is a factor of the current dependency
+ * If so, then triggeres a barrier, otherwise
+ */
+static inline
+void __dependency_check(const size_t arg)
+{
+    // Non-target qubit
+    if (NULL_TARG == arg)
+    {
+        return;
+    } 
+    // Either shares a common factor or triggers an overflow
+    // Either way, barrier than reset
+    if (
+        (0 == (THREADPOOL_g.dependent_qubits % (arg + 2)))
+        || ((THREADPOOL_g.dependent_qubits * arg) < THREADPOOL_g.dependent_qubits))
+    { 
+        threadpool_barrier();   
+        THREADPOOL_g.dependent_qubits = (arg + 2);
+    }
+    else
+    {
+        THREADPOOL_g.dependent_qubits *= (arg + 2);
+    }
+    return;
+}
+
+/*
+ * __barrier_fn
  * Function to barrier workers 
  * :: args : struct threadpool_barrier_t* :: Barrier object, declared as void* 
  * Barriers all threads, on release uses the final thread to free the barrier object created in  
  * threadpool_barrier
  * This requires a semaphore library and may not function on MacOS machines
  */
-void* barrier_fn(void* args)
+void __barrier_fn(struct threadpool_barrier_t* args)
 {
     // Barrier on threads
-    pthread_barrier_wait(((pthread_barrier_t*)args));
+    pthread_barrier_wait(&(args->barrier));
      
     // Semaphore set to n_threads - 1, such that the final thread will throw EAGAIN
-    int err = sem_trywait(&(((struct threadpool_barrier_t*)args)->sem));
+    int err = sem_trywait(&(args->sem));
 
     // Operation is threadsafe as all threads must have passed the previous line
     // As a result even if an interrupt occurs at this point only one thread will trigger the free call
@@ -56,47 +94,96 @@ void* barrier_fn(void* args)
     {
        free(args); 
     }
-
-    return NULL;
 }
 
 /*
- * barrier_threadpool
+ * threadpool_barrier 
  * Adds a task to the threadpool that is just a barrier
  * This forces threads to complete before the next task may resume 
  * :: 
  */
-void barrier_threadpool()
+void threadpool_barrier()
 {
     struct threadpool_barrier_t* bar = malloc(sizeof(struct threadpool_barrier_t)); 
-     
     pthread_barrier_init(&(bar->barrier), NULL, THREADPOOL_g.n_workers); 
     sem_init(&(bar->sem), 0, THREADPOOL_g.n_workers - 1);  // Last thread to exit will trigger EAGAIN
 
     for (size_t i = 0; i < THREADPOOL_g.n_workers; i++)
     {
-        add_task(barrier_fn, bar, sizeof(pthread_barrier_t));
+        threadpool_add_task((void (*)(void*))__barrier_fn, bar);
     }
     return;
 }
 
 
-
-
-
 /*
+ * threadpool_add_task
  * Adds a job to the threadpool
+ * :: fn : void (*)(void*) :: Worker function
+ * :: args : void* :: Args for the worker
  */
-void add_task(void* (*fn)(void*), void* args, const size_t n_bytes_args)
+void threadpool_add_task(void (*fn)(void*), void* args)
 {
     struct threadpool_job job;
     job.fn = (void*)fn;
     job.args = args; 
-    const size_t n_bytes = sizeof(fn) + n_bytes_args;
+    const size_t n_bytes = sizeof(struct threadpool_job);
 
     pthread_mutex_lock(&THREADPOOL_g.queue_lock); 
-    linked_list_push(THREADPOOL_g.job_queue, &job, n_bytes);
+    linked_list_push(THREADPOOL_g.job_queue, &job);
     pthread_mutex_unlock(&THREADPOOL_g.queue_lock); 
+    return;
+}
+
+
+/*
+ * threadpool_distribute_tableau_operation_single
+ * Distributes a tableau operation over the workers 
+ * :: tab : tableau_t* :: Tableau to operate over
+ * :: fn : void* (*)(void*) :: Function to distriute
+ * :: ctrl : const size_t :: First qubit 
+ * :: targ : const size_t :: Second qubit, set to NULL_TARG to null
+ */
+void threadpool_distribute_tableau_operation(
+    tableau_t* tab,
+    void (*fn)(void*),
+    const size_t ctrl,
+    const size_t targ)
+{
+
+    __dependency_check(ctrl);
+    __dependency_check(targ);
+
+    // Workers is either n_workers if the stride matches exactly
+    // or n_workers - 1 if it does not
+    const size_t stride_workers = THREADPOOL_g.n_workers - !!(tab->slice_len % THREADPOOL_g.n_workers); 
+    const size_t stride = tab->slice_len / stride_workers;
+    
+    for (size_t i = 0; i < stride_workers; i++)
+    {  
+        struct distributed_tableau_op* op = (struct distributed_tableau_op*)malloc(sizeof(struct distributed_tableau_op));
+        op->tab = tab;
+        op->ctrl = ctrl;
+        op->targ = targ;
+        op->start = i * stride; 
+        op->stop = (i + 1) * stride; 
+
+        threadpool_add_task(fn, op); 
+    }
+
+    // Remainder
+    if (stride_workers < THREADPOOL_g.n_workers)
+    {
+        struct distributed_tableau_op* op = (struct distributed_tableau_op*)malloc(sizeof(struct distributed_tableau_op));
+        op->tab = tab;
+        op->ctrl = ctrl;
+        op->targ = targ;
+        op->start = tab->slice_len - (stride_workers * stride); 
+        op->stop = tab->slice_len;  
+
+        threadpool_add_task(fn, op); 
+    }
+
     return;
 }
 
@@ -104,7 +191,7 @@ void add_task(void* (*fn)(void*), void* args, const size_t n_bytes_args)
 /*
  * threadpool_worker
  * Threadpool worker function
- * :: args : void* ::
+ * :: args : void* :: Args for the worker function
  * Polls the queue and pops items from it
  * Queue items should be function pointers and associated arguments  
  * Args are NULL
@@ -112,10 +199,8 @@ void add_task(void* (*fn)(void*), void* args, const size_t n_bytes_args)
  */
 void* threadpool_worker(void* args)
 {
-//    const size_t thread_id = *((size_t*)args); 
     while (THREADPOOL_g.alive)
     {
-
         pthread_mutex_lock(&(THREADPOOL_g.queue_lock));
         struct threadpool_job* job = linked_list_pop(THREADPOOL_g.job_queue); 
         pthread_mutex_unlock(&(THREADPOOL_g.queue_lock));
@@ -129,3 +214,4 @@ void* threadpool_worker(void* args)
     }    
     return NULL;
 } 
+

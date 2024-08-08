@@ -5,9 +5,11 @@
 #include "tableau.h"
 #include "instructions.h"
 
-#pragma GCC optimize("Ofast,unroll-loops")
-#pragma GCC target("avx2,tune=native")
-
+#ifndef OPT_PRAGMA
+#define OPT_PRAGMA
+    #pragma GCC optimize("Ofast,unroll-loops")
+    #pragma GCC target("avx2,tune=native")
+#endif
 
 
 /*

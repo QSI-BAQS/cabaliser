@@ -7,11 +7,11 @@
 #include <unistd.h>
 #include <errno.h>
 
-
-
+#include "tableau.h" 
 #include "linked_list.h"
 
-#define N_WORKERS 8
+#define N_WORKERS (8)
+#define NULL_TARG (~(0ull))  // Null target
 
 struct threadpool_t {
     size_t n_workers;
@@ -20,7 +20,7 @@ struct threadpool_t {
     struct linked_list_t* job_queue; 
     pthread_mutex_t queue_lock;  
     bool alive; // Set to false to kill workers 
-    __uint128_t active_qubits; // Tracks qubits under operation
+    __uint128_t dependent_qubits; // Tracks qubits under operation
 };
 typedef struct threadpool_t threadpool_t;
 
@@ -49,6 +49,15 @@ struct threadpool_barrier_t
     sem_t sem;
 };
 
+struct distributed_tableau_op
+{
+    tableau_t* tab;
+    size_t ctrl;
+    size_t targ; 
+    size_t start;
+    size_t stop;
+};
+
 /*
  * threadpool_worker
  * Threadpool worker function
@@ -63,7 +72,29 @@ void* threadpool_worker(void* args);
 /*
  * Adds a job to the threadpool
  */
-void add_task(void* (*fn)(void*), void* args, const size_t n_bytes_args);
+void threadpool_add_task(void (*fn)(void*), void* args);
+
+/*
+ * threadpool_distribute_tableau_operation_single
+ * Distributes a tableau operation over the workers 
+ * :: tab : tableau_t* :: Tableau to operate over
+ * :: fn : void* (*)(void*) :: Function to distriute
+ * :: ctrl : const size_t :: First qubit 
+ * :: targ : const size_t :: Second qubit, set to NULL_TARG to null
+ */
+void threadpool_distribute_tableau_operation(
+    tableau_t* tab,
+    void (*fn)(void*),
+    const size_t ctrl,
+    const size_t targ);
+
+/*
+ * threadpool_barrier 
+ * Adds a task to the threadpool that is just a barrier
+ * This forces threads to complete before the next task may resume 
+ * :: 
+ */
+void threadpool_barrier();
 
 
 #endif

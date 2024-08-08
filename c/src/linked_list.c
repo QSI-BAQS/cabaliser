@@ -81,10 +81,9 @@ void linked_list_destroy(struct linked_list_t* ll)
  * Adds an element to the linked list
  * :: ll : struct linked_list* :: Linked list to add element to
  * :: obj : void* :: Pointer to object to copy to list
- * :: n_bytes : size_t :: Number of bytes to copy
  * Acts in place on the linked list, appends to the tail
  */
-void linked_list_push(struct linked_list_t* ll, void* obj, const size_t n_bytes) 
+void linked_list_push(struct linked_list_t* ll, void* obj) 
 {
     struct list_node_t* node = __pop_reusable_node(ll); 
  
@@ -100,8 +99,7 @@ void linked_list_push(struct linked_list_t* ll, void* obj, const size_t n_bytes)
     node->prev = NULL;
     ll->head = node;
  
-    // Copy the object over
-    memcpy(node->obj, obj, n_bytes); 
+    node->obj = obj;
     return;
 }
 
@@ -113,7 +111,10 @@ void* linked_list_pop(struct linked_list_t* ll)
         return NULL;
     }
     struct list_node_t* node = ll->tail;
+
     void* obj = node->obj; 
+    node->obj = NULL;
+
     ll->tail = node->prev; 
 
     __add_reusable_node(ll, node);
