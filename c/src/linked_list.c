@@ -85,6 +85,7 @@ void linked_list_destroy(struct linked_list_t* ll)
  */
 void linked_list_push(struct linked_list_t* ll, void* obj) 
 {
+    printf("Adding node to list\n");
     struct list_node_t* node = __pop_reusable_node(ll); 
  
     if (NULL == ll->head)
@@ -100,13 +101,14 @@ void linked_list_push(struct linked_list_t* ll, void* obj)
     ll->head = node;
  
     node->obj = obj;
+    ll->n_elements += 1;
     return;
 }
 
 
 void* linked_list_pop(struct linked_list_t* ll)
 {
-    if (ll->n_elements == 0)
+    if (NULL == ll->head)
     {
         return NULL;
     }

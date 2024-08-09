@@ -10,7 +10,7 @@
 #include "tableau.h" 
 #include "linked_list.h"
 
-#define N_WORKERS (8)
+#define N_WORKERS (2)
 #define NULL_TARG (~(0ull))  // Null target
 
 struct threadpool_t {
@@ -26,6 +26,7 @@ typedef struct threadpool_t threadpool_t;
 
 #ifdef THREADPOOL_SRC
     threadpool_t THREADPOOL_g;
+    bool THREADPOOL_INITIALISED = 0;
 #else
     extern threadpool_t THREADPOOL_g;
 #endif 
@@ -95,6 +96,21 @@ void threadpool_distribute_tableau_operation(
  * :: 
  */
 void threadpool_barrier();
+
+/*
+ * threadpool_join
+ */
+void threadpool_join();
+
+/*
+ * threadpool_join
+ */
+void threadpool_destroy();
+
+/*
+ * threadpool_init
+ */
+void threadpool_init();
 
 
 #endif

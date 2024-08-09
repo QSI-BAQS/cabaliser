@@ -9,6 +9,8 @@ assert(val_z == tab->slices_z[i][0]); \
 assert(val_r == tab->phases[0]);  \
 }
 
+#define WIDGET_SIZE (40000)
+
 // Check that the X segment has full rank 
 void test_full_rank_X(const size_t n_qubits)
 {

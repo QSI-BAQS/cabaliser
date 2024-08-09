@@ -5,21 +5,26 @@
  * threadpool_create
  * Constructor for the threadpool object
  */
-struct threadpool_t threadpool_create()
+void threadpool_init()
 {
-    threadpool_t tpool;
-    tpool.alive = true;
-    tpool.active_workers = 0;
-    tpool.n_workers = N_WORKERS;
+    if (!THREADPOOL_INITIALISED)
+    { 
+        THREADPOOL_g.alive = true;
+        THREADPOOL_g.active_workers = 0;
+        THREADPOOL_g.n_workers = N_WORKERS;
 
-    tpool.job_queue = linked_list_create(); 
+        THREADPOOL_g.job_queue = linked_list_create(); 
 
-    pthread_mutex_init(&(tpool.queue_lock), NULL);
-    for (size_t i = 0; i < N_WORKERS; i++)
-    {
-        pthread_create(tpool.workers + i, NULL, threadpool_worker, NULL);
-    }
-    return tpool;
+        pthread_mutex_init(&(THREADPOOL_g.queue_lock), NULL);
+        for (size_t i = 0; i < N_WORKERS; i++)
+        {
+            pthread_create(THREADPOOL_g.workers + i, NULL, threadpool_worker, NULL);
+        }
+        THREADPOOL_INITIALISED = 1;
+
+        printf("Threadpool created!\n");
+    } 
+    return;
 }
 
 /*
@@ -28,6 +33,7 @@ struct threadpool_t threadpool_create()
  */
 void threadpool_destroy()
 {
+    threadpool_join();
     pthread_mutex_lock(&(THREADPOOL_g.queue_lock)); 
     THREADPOOL_g.alive = false;
     for (size_t i = 0; i < N_WORKERS; i++)
@@ -35,6 +41,8 @@ void threadpool_destroy()
         pthread_join(THREADPOOL_g.workers[i], NULL); 
     } 
     linked_list_destroy(THREADPOOL_g.job_queue); 
+    pthread_mutex_unlock(&(THREADPOOL_g.queue_lock)); 
+
     return;
 }
 
@@ -60,8 +68,8 @@ void __dependency_check(const size_t arg)
         (0 == (THREADPOOL_g.dependent_qubits % (arg + 2)))
         || ((THREADPOOL_g.dependent_qubits * arg) < THREADPOOL_g.dependent_qubits))
     { 
-        threadpool_barrier();   
-        THREADPOOL_g.dependent_qubits = (arg + 2);
+      threadpool_barrier();   
+      THREADPOOL_g.dependent_qubits = (arg + 2);
     }
     else
     {
@@ -78,13 +86,15 @@ void __dependency_check(const size_t arg)
  * threadpool_barrier
  * This requires a semaphore library and may not function on MacOS machines
  */
-void __barrier_fn(struct threadpool_barrier_t* args)
+void __barrier_fn(struct threadpool_barrier_t** args)
 {
+    printf("Waiting on barrier\n");
+    struct threadpool_barrier_t* bar = *args;
     // Barrier on threads
-    pthread_barrier_wait(&(args->barrier));
+    pthread_barrier_wait(&(bar->barrier));
      
     // Semaphore set to n_threads - 1, such that the final thread will throw EAGAIN
-    int err = sem_trywait(&(args->sem));
+    int err = sem_trywait(&(bar->sem));
 
     // Operation is threadsafe as all threads must have passed the previous line
     // As a result even if an interrupt occurs at this point only one thread will trigger the free call
@@ -92,7 +102,7 @@ void __barrier_fn(struct threadpool_barrier_t* args)
     // Last thread has exited barrier
     if (EAGAIN == err)
     {
-       free(args); 
+       free(bar); 
     }
 }
 
@@ -104,17 +114,41 @@ void __barrier_fn(struct threadpool_barrier_t* args)
  */
 void threadpool_barrier()
 {
+    printf("Creating Barrier\n");
+
+    // Something for the job free-er to free
     struct threadpool_barrier_t* bar = malloc(sizeof(struct threadpool_barrier_t)); 
+
     pthread_barrier_init(&(bar->barrier), NULL, THREADPOOL_g.n_workers); 
     sem_init(&(bar->sem), 0, THREADPOOL_g.n_workers - 1);  // Last thread to exit will trigger EAGAIN
 
     for (size_t i = 0; i < THREADPOOL_g.n_workers; i++)
     {
-        threadpool_add_task((void (*)(void*))__barrier_fn, bar);
+        struct threadpool_barrier_t** bar_ptr = malloc(sizeof(struct threadpool_barrier_t*)); 
+        bar_ptr = &bar; 
+        threadpool_add_task((void (*)(void*))__barrier_fn, bar_ptr);
     }
     return;
 }
 
+
+/*
+ * threadpool_join 
+ * Block execution of main thread until all workers in threadpool have passed this point
+ */
+void threadpool_join()
+{
+    struct threadpool_barrier_t* bar = malloc(sizeof(struct threadpool_barrier_t)); 
+    pthread_barrier_init(&(bar->barrier), NULL, THREADPOOL_g.n_workers + 1); 
+    sem_init(&(bar->sem), 0, THREADPOOL_g.n_workers + 1);  // Last thread to exit will trigger EAGAIN
+
+    for (size_t i = 0; i < THREADPOOL_g.n_workers; i++)
+    {
+        threadpool_add_task((void (*)(void*))__barrier_fn, bar);
+    }
+    __barrier_fn(&bar);
+    return;
+}
 
 /*
  * threadpool_add_task
@@ -129,9 +163,11 @@ void threadpool_add_task(void (*fn)(void*), void* args)
     job.args = args; 
     const size_t n_bytes = sizeof(struct threadpool_job);
 
+    printf("Acqiring List Mutex\n");
     pthread_mutex_lock(&THREADPOOL_g.queue_lock); 
     linked_list_push(THREADPOOL_g.job_queue, &job);
     pthread_mutex_unlock(&THREADPOOL_g.queue_lock); 
+     
     return;
 }
 
@@ -150,16 +186,18 @@ void threadpool_distribute_tableau_operation(
     const size_t ctrl,
     const size_t targ)
 {
-
+    threadpool_init();
     __dependency_check(ctrl);
     __dependency_check(targ);
 
     // Workers is either n_workers if the stride matches exactly
     // or n_workers - 1 if it does not
-    const size_t stride_workers = THREADPOOL_g.n_workers - !!(tab->slice_len % THREADPOOL_g.n_workers); 
-    const size_t stride = tab->slice_len / stride_workers;
-    
-    for (size_t i = 0; i < stride_workers; i++)
+
+    const size_t stride = tab->slice_len / THREADPOOL_g.n_workers;
+   
+    printf("Distributing operation over workers with stride %lu\n", stride);
+ 
+    for (size_t i = 0; i < THREADPOOL_g.n_workers - 1; i++)
     {  
         struct distributed_tableau_op* op = (struct distributed_tableau_op*)malloc(sizeof(struct distributed_tableau_op));
         op->tab = tab;
@@ -172,17 +210,14 @@ void threadpool_distribute_tableau_operation(
     }
 
     // Remainder
-    if (stride_workers < THREADPOOL_g.n_workers)
-    {
-        struct distributed_tableau_op* op = (struct distributed_tableau_op*)malloc(sizeof(struct distributed_tableau_op));
-        op->tab = tab;
-        op->ctrl = ctrl;
-        op->targ = targ;
-        op->start = tab->slice_len - (stride_workers * stride); 
-        op->stop = tab->slice_len;  
+    struct distributed_tableau_op* op = (struct distributed_tableau_op*)malloc(sizeof(struct distributed_tableau_op));
+    op->tab = tab;
+    op->ctrl = ctrl;
+    op->targ = targ;
+    op->start = (THREADPOOL_g.n_workers - 1) * stride ; 
+    op->stop = tab->slice_len;  
 
-        threadpool_add_task(fn, op); 
-    }
+    threadpool_add_task(fn, op); 
 
     return;
 }
@@ -199,18 +234,23 @@ void threadpool_distribute_tableau_operation(
  */
 void* threadpool_worker(void* args)
 {
+    printf("Worker created!\n");
     while (THREADPOOL_g.alive)
     {
-        pthread_mutex_lock(&(THREADPOOL_g.queue_lock));
-        struct threadpool_job* job = linked_list_pop(THREADPOOL_g.job_queue); 
-        pthread_mutex_unlock(&(THREADPOOL_g.queue_lock));
+        //printf("Acquiring queue lock for %p\n", THREADPOOL_g.job_queue);
+       pthread_mutex_lock(&(THREADPOOL_g.queue_lock));
+       struct threadpool_job* job = linked_list_pop(THREADPOOL_g.job_queue); 
+       pthread_mutex_unlock(&(THREADPOOL_g.queue_lock));
 
-        if (NULL != job)
-        {
-            job->fn(job->args);   
-            free(job->args); 
-            free(job);
-        }
+       if (NULL != job)
+       {
+           printf("Acquired Job!\n"); 
+
+           job->fn(job->args);   
+           free(job->args);
+           free(job);
+           printf("Finished Job!\n"); 
+       }
     }    
     return NULL;
 } 

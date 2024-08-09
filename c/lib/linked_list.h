@@ -2,6 +2,8 @@
 #define LINKED_LIST_H
 
 #include <stdlib.h>
+#include <stdio.h>
+
 #include <string.h>
 
 #define NODE_TO_OBJ(node) (node + sizeof(list_node_t))

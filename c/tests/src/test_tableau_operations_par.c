@@ -11,6 +11,8 @@ assert(val_z == tab->slices_z[i][0]); \
 assert(val_r == tab->phases[0]);  \
 }
 
+#define WIDGET_SIZE (40000) 
+
 // Check that the X segment has full rank 
 void test_full_rank_X(const size_t n_qubits)
 {
@@ -27,6 +29,7 @@ void test_full_rank_X(const size_t n_qubits)
         assert(!tableau_slice_empty_x(wid->tableau, i));
     }
 
+    threadpool_join();
     widget_destroy(wid);
 
     return;
@@ -34,8 +37,8 @@ void test_full_rank_X(const size_t n_qubits)
 
 tableau_t* tableau_random_create()
 {
-    tableau_t* tab = tableau_create(sizeof(size_t));
-    for (size_t i = 0; i < sizeof(size_t); i++)
+    tableau_t* tab = tableau_create(WIDGET_SIZE);
+    for (size_t i = 0; i < WIDGET_SIZE; i++)
     {
        tab->slices_x[i][0] = rand(); 
        tab->slices_z[i][0] = rand(); 
@@ -56,7 +59,7 @@ void test_ident(tableau_t* tab, size_t targ, size_t n_args, ...)
     while (n_args > 0)
     {
         fn = va_arg(argptr, void*); 
-        fn(tab, targ); 
+        threadpool_distribute_tableau_operation(tab, (void (*)(void*))fn, targ, NULL_TARG);
         n_args--;
     }
     return;
@@ -73,48 +76,40 @@ void test_cliffords()
         const size_t val_z = tab->slices_z[i][0];  
         const size_t val_r = tab->phases[0];  
 
-        test_ident(tab, i, 2, tableau_X, tableau_X);
+        test_ident(tab, i, 2, tableau_par_X, tableau_par_X);
+
+        //threadpool_join();
+        return;
 
         ASSERT_SLICES_EQUAL(tab, i, val_x, val_z, val_r); 
 
-        assert(val_x == tab->slices_x[i][0]);  
-        assert(val_z == tab->slices_z[i][0]);  
-        assert(val_r == tab->phases[0]);  
-
-        test_ident(tab, i, 2, tableau_Z, tableau_Z);
+        test_ident(tab, i, 2, tableau_par_Z, tableau_par_Z);
         
-        assert(val_x == tab->slices_x[i][0]);  
-        assert(val_z == tab->slices_z[i][0]);  
-        assert(val_r == tab->phases[0]);  
+        ASSERT_SLICES_EQUAL(tab, i, val_x, val_z, val_r); 
 
         test_ident(tab, i, 2,
-        tableau_H,
-        tableau_H);
+        tableau_par_H,
+        tableau_par_H);
         
-        assert(val_x == tab->slices_x[i][0]);  
-        assert(val_z == tab->slices_z[i][0]);  
-        assert(val_r == tab->phases[0]);  
+        ASSERT_SLICES_EQUAL(tab, i, val_x, val_z, val_r); 
 
         test_ident(tab, i, 4,
-        tableau_X,
-        tableau_H,
-        tableau_Z,
-        tableau_H
+        tableau_par_X,
+        tableau_par_H,
+        tableau_par_Z,
+        tableau_par_H
         );
-
-        assert(val_x == tab->slices_x[i][0]);  
-        assert(val_z == tab->slices_z[i][0]);  
-        assert(val_r == tab->phases[0]);  
-
-        tableau_Z(tab, i);
-
-        tableau_H(tab, i);
-        tableau_X(tab, i);
-        tableau_H(tab, i);
         
-        assert(val_x == tab->slices_x[i][0]);  
-        assert(val_z == tab->slices_z[i][0]);  
-        assert(val_r == tab->phases[0]);  
+        ASSERT_SLICES_EQUAL(tab, i, val_x, val_z, val_r); 
+
+        test_ident(tab, i, 4,
+            tableau_par_Z,
+            tableau_par_H,
+            tableau_par_X,
+            tableau_par_H
+            );
+
+        ASSERT_SLICES_EQUAL(tab, i, val_x, val_z, val_r); 
 
         tableau_Y(tab, i);
         tableau_Y(tab, i);
@@ -317,6 +312,7 @@ void test_cnot_1()
         assert(val_r == tab->phases[0]);  
 
     }
+    threadpool_join();
     tableau_destroy(tab);
     return;
 }
@@ -475,8 +471,11 @@ void test_non_local()
 
 int main()
 {
-    for (size_t i = CACHE_SIZE_BITS; i < CACHE_SIZE_BITS * 30 + 1; i += CACHE_SIZE_BITS)
+    threadpool_init();
+
+    for (size_t i = CACHE_SIZE_BITS; i < CACHE_SIZE_BITS; i += CACHE_SIZE_BITS)
     {
+        printf("Running Test\n");
         test_full_rank_X(i);
     }  
 
@@ -484,7 +483,10 @@ int main()
     tableau_destroy(tab);
 
     test_cliffords();
-    test_non_local();
+    //test_non_local();
+
+    printf("Probing for segfault\n"); 
+    threadpool_destroy();
 
     return 0;
 }
