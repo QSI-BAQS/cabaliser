@@ -17,7 +17,7 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
        if (CTZ_SENTINEL == tableau_ctz(tab->slices_x[i], tab->slice_len)) 
        {
         tableau_H(tab, i);
-         __inline_clifford_queue_local_clifford_right(c_que, i, _H_);   
+         clifford_queue_local_clifford_right(c_que, i, _H_);   
        } 
     } 
     return;
@@ -39,7 +39,7 @@ void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que)
         // TODO check this
         uint8_t z = __inline_slice_get_bit(tab->slices_z[i], i);  
         instruction_t operator = (z && (_I_)) | (!z && (_S_)); 
-        __inline_clifford_queue_local_clifford_right(c_que, i, operator);   
+        clifford_queue_local_clifford_right(c_que, i, operator);   
     }
     return;
 }

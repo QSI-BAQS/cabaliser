@@ -4,6 +4,8 @@ CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable ${OMPFLAG}
 
 LIBPQ := /lib/libpq.so
 
+LIB_BENCHQ := ../lib
+
 # Optimisation Flags
 CFLAGS += -Os -Ofast # We aren't doing floating point arithmetic, so this is fine
 CFLAGS += -mavx -mavx2 -mlzcnt 
@@ -18,7 +20,7 @@ SRCDIR := src
 LIBDIR := lib
 BUILDDIR := ../build/pandora
 
-LIBS := -I${LIBDIR} -L${LIBPQ} -lpq 
+LIBS := -I${LIBDIR} -L${LIBPQ} -lpq ${LIB_BENCHQ}   
 
 TESTDIR := tests
 TEST_SRCDIR := ${TESTDIR}/src

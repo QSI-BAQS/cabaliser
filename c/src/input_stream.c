@@ -1,5 +1,3 @@
-#define INSTRUCTIONS_TABLE
-
 #include "input_stream.h"
 
 /*

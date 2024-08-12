@@ -1,5 +1,5 @@
-#define INSTRUCTIONS_TABLE // Loads tables from the header
 #define INSTRUCTIONS_SRC 
+
 
 #include "instructions.h"
 
@@ -41,3 +41,8 @@ void clifford_queue_destroy(clifford_queue_t* que)
     free(que);
 }
 
+
+void clifford_queue_local_clifford_right(clifford_queue_t* que, instruction_t cliff, size_t target)
+{
+    __inline_clifford_queue_local_clifford_right(que, cliff, target);
+}
