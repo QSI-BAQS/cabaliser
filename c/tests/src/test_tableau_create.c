@@ -10,6 +10,9 @@ void test_tableau_create(const size_t n_qubits)
     {   
         assert(tableau_slice_empty_x(tab, i));
 
+        assert(tab->slice_len >= (tab->n_qubits / (8 * sizeof(size_t))));
+        assert(tab->slice_len <= 1 + (tab->n_qubits / (8 * sizeof(size_t))));
+
         void* slice_z = tab->slices_z[i]; 
         for (size_t j = 0; j < n_qubits; j++)
         {   

@@ -14,7 +14,7 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
     // Can't parallelise as the H operation is already parallel
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
-       if (CTZ_SENTINEL == tableau_ctz(tab->slices_x[i], tab->n_qubits)) 
+       if (CTZ_SENTINEL == tableau_ctz(tab->slices_x[i], tab->slice_len)) 
        {
         tableau_H(tab, i);
          __inline_clifford_queue_local_clifford_right(c_que, i, _H_);   
@@ -118,7 +118,7 @@ void tableau_H(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_x[i] & slice_z[i];      
+            __atomic_fetch_xor(slice_r + i, slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
         }  
     }
     void* ptr = tab->slices_x[targ];
@@ -139,7 +139,7 @@ void tableau_S(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_x[i] & slice_z[i];      
+            __atomic_fetch_xor(slice_r + i, slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
             slice_z[i] ^= slice_x[i]; 
         }  
     }
@@ -164,7 +164,7 @@ void tableau_Z(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_x[i];      
+            __atomic_fetch_xor(slice_r + i, slice_x[i], __ATOMIC_RELAXED);      
         }  
     }
 }
@@ -197,7 +197,7 @@ void tableau_R(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_x[i] & ~slice_z[i];
+            __atomic_fetch_xor(slice_r + i, slice_x[i] & ~slice_z[i], __ATOMIC_RELAXED);
             slice_z[i] ^= slice_x[i]; 
         }  
     }
@@ -238,7 +238,7 @@ void tableau_X(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_z[i];      
+            __atomic_fetch_xor(slice_r + i, slice_z[i], __ATOMIC_RELAXED);      
         }
     }
 }
@@ -266,7 +266,7 @@ void tableau_Y(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_z[i] ^ slice_x[i];      
+            __atomic_fetch_xor(slice_r + i, slice_z[i] ^ slice_x[i], __ATOMIC_RELAXED);      
         }  
     }
 }
@@ -293,7 +293,7 @@ void tableau_HX(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= ~slice_x[i] & slice_z[i];      
+            __atomic_fetch_xor(slice_r + i, ~slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
         }  
     }
     void* ptr = tab->slices_x[targ];
@@ -323,7 +323,7 @@ void tableau_SX(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= ~slice_x[i] & slice_z[i];      
+            __atomic_fetch_xor(slice_r + i, ~slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
             slice_z[i] ^= slice_x[i]; 
         }  
     }
@@ -353,7 +353,7 @@ void tableau_RX(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_x[i] | slice_z[i];      
+            __atomic_fetch_xor(slice_r + i, slice_x[i] | slice_z[i], __ATOMIC_RELAXED);      
             slice_z[i] ^= slice_x[i]; 
         }  
     }
@@ -382,7 +382,7 @@ void tableau_HZ(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= ~slice_z[i] & slice_x[i];      
+            __atomic_fetch_xor(slice_r + i, ~slice_z[i] & slice_x[i], __ATOMIC_RELAXED);      
         }  
     }
     void* ptr = tab->slices_x[targ];
@@ -415,7 +415,7 @@ void tableau_HY(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_z[i] ^ slice_x[i];      
+            __atomic_fetch_xor(slice_r + i, slice_z[i] ^ slice_x[i], __ATOMIC_RELAXED);      
         }  
     }
     void* ptr = tab->slices_x[targ];
@@ -485,7 +485,7 @@ void tableau_RH(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_z[i];
+            __atomic_fetch_xor(slice_r + i, slice_z[i], __ATOMIC_RELAXED);
             slice_x[i] ^= slice_z[i];
         }  
     }
@@ -591,7 +591,7 @@ void tableau_HSX(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_x[i] ^ slice_z[i];
+            __atomic_fetch_xor(slice_r + i, slice_x[i] ^ slice_z[i], __ATOMIC_RELAXED);
             slice_z[i] ^= slice_x[i];
         }  
     }
@@ -631,7 +631,7 @@ void tableau_HRX(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_z[i];
+            __atomic_fetch_xor(slice_r + i, slice_z[i], __ATOMIC_RELAXED);
             slice_z[i] ^= slice_x[i];
         }  
     }
@@ -652,7 +652,7 @@ void tableau_SHY(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_z[i] ^ slice_x[i];
+            __atomic_fetch_xor(slice_r + i, slice_z[i] ^ slice_x[i], __ATOMIC_RELAXED);
             slice_x[i] ^= slice_z[i];
         }  
     }
@@ -673,7 +673,7 @@ void tableau_RHY(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_x[i];
+            __atomic_fetch_xor(slice_r + i, slice_x[i], __ATOMIC_RELAXED);
             slice_x[i] ^= slice_z[i];
         }  
     }
@@ -694,7 +694,7 @@ void tableau_HSH(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= ~slice_x[i] & slice_z[i];
+            __atomic_fetch_xor(slice_r + i, ~slice_x[i] & slice_z[i], __ATOMIC_RELAXED);
             slice_x[i] ^= slice_z[i];
         }  
     }
@@ -712,7 +712,7 @@ void tableau_HRH(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_x[i] & slice_z[i];
+            __atomic_fetch_xor(slice_r + i, slice_x[i] & slice_z[i], __ATOMIC_RELAXED);
             slice_x[i] ^= slice_z[i];
         }  
     }
@@ -731,7 +731,7 @@ void tableau_RHS(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_x[i] | slice_z[i];
+            __atomic_fetch_xor(slice_r + i, slice_x[i] | slice_z[i], __ATOMIC_RELAXED);
             slice_x[i] ^= slice_z[i];
         }  
     }
@@ -750,7 +750,7 @@ void tableau_SHR(tableau_t* tab, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= slice_x[i] & ~slice_z[i];
+            __atomic_fetch_xor(slice_r + i, slice_x[i] & ~slice_z[i], __ATOMIC_RELAXED);
             slice_x[i] ^= slice_z[i];
         }  
     }
@@ -778,7 +778,7 @@ void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= ctrl_slice_x[i] & targ_slice_z[i] & ~(targ_slice_x[i] ^ ctrl_slice_z[i]);
+            __atomic_fetch_xor(slice_r + i, ctrl_slice_x[i] & targ_slice_z[i] & ~(targ_slice_x[i] ^ ctrl_slice_z[i]), __ATOMIC_RELAXED);
             targ_slice_x[i] ^= ctrl_slice_x[i];
             ctrl_slice_z[i] ^= targ_slice_z[i];
         }  
@@ -835,11 +835,11 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            slice_r[i] ^= (
+            __atomic_fetch_xor(slice_r + i, (
                   (targ_slice_x[i] & targ_slice_z[i]) 
                 ^ (ctrl_slice_x[i] & targ_slice_x[i] & ~(targ_slice_z[i] ^ ctrl_slice_z[i]))
                 ^ ((targ_slice_z[i] ^ ctrl_slice_x[i]) & targ_slice_x[i])
-                );
+                ), __ATOMIC_RELAXED);
             targ_slice_z[i] ^= ctrl_slice_x[i];
             ctrl_slice_z[i] ^= targ_slice_x[i];
         }  

@@ -1,6 +1,8 @@
 #ifndef TABLEAU_OPERATIONS_H
 #define TABLEAU_OPERATIONS_H
 
+#include <stdatomic.h>
+
 #include "omp.h"
 #include "tableau.h"
 #include "instructions.h"

@@ -18,7 +18,10 @@
 #define CTZ_SENTINEL (~0ll)
 
 // Always add one so that we can do offset alignment if the manual alignment fails
-#define SLICE_LEN(n_qubits) ((n_qubits / CACHE_SIZE) + (!((n_qubits % CACHE_SIZE) == 0))) 
+#define SLICE_LEN_CACHE(n_qubits) ((n_qubits / CACHE_SIZE_BITS) + !!(n_qubits % CACHE_SIZE_BITS)) 
+
+#define SLICE_LEN_SIZE_T(n_qubits) ((n_qubits / (8 * sizeof(size_t))) + !!(n_qubits % sizeof(size_t)))
+
 
 #define CHUNK_OBJ uint64_t
 

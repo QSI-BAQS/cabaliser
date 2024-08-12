@@ -52,21 +52,19 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 all : ${TARGET} ${BUILDDIR}    
 
 debug_L3: CFLAGS += -DDEBUG -DDEBUG_LEVEL=3
-debug3: test 
+debug_L3: test 
 
 debug_L2: CFLAGS += -DDEBUG -DDEBUG_LEVEL=2
-debug2: test 
+debug_L2: test 
 
 debug_L1: CFLAGS += -DDEBUG -DDEBUG_LEVEL=1
-debug1: test 
+debug_L1: test 
 
-debug: CFLAGS += -DDEBUG -DDEBUG_LEVEL=0
 debug: CFLAGS += -fopt-info -fopt-info-loop -fopt-info-loop-missed -fopt-info-vec -fopt-info-vec-missed
 debug: test 
 
 
 tests : test
-test: CFLAGS += -DDEBUG -DDEBUG_LEVEL=0
 test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} 
 
 
