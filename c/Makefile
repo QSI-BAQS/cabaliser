@@ -13,7 +13,6 @@ CFLAGS += -mavx -mavx2 -mlzcnt
 CFLAGS += -fkeep-inline-functions -fkeep-static-functions 
 
 TARGET := cab
-
  
 SRCDIR := src
 LIBDIR := lib
@@ -41,12 +40,13 @@ TEST_RUNNERS := $(patsubst ${TEST_SRCDIR}/%.c, ${TESTDIR}/%.out, ${TEST_SRCFILES
 BENCHMARK_SRCFILES := $(wildcard ${BENCHMARK_SRCDIR}/*.c)
 BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out, ${BENCHMARK_SRCFILES})
 
-
 .PHONY: all
 .PHONY: clean
 .PHONY: test tests
 .PHONY: benchmark benchmarks
+.PHONY: pandora_api
 
+include pandora_api/Makefile 
 
 # Build Rules
 all : ${TARGET} ${BUILDDIR}    
@@ -64,8 +64,8 @@ debug: CFLAGS += -fopt-info -fopt-info-loop -fopt-info-loop-missed -fopt-info-ve
 debug: test 
 
 
-tests : test
-test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} 
+tests : test pandora_test
+test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} ${PANDORA_TEST_RUNNERS} 
 
 
 benchmark: benchmarks 
@@ -76,7 +76,7 @@ benchmarks: ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS}
 ${BUILDDIR} :    
 	mkdir -p ${BUILDDIR}
 
-${TARGET} : ${BUILDDIR} ${OBJFILES} 
+${TARGET} : ${BUILDDIR} ${OBJFILES} ${PANDORA_OBJFILES} 
 	${CC} ${CFLAGS} -o $@ ${OBJFILES} ${LIBS} 
 
 ${BUILDDIR}/%.o : ${SRCDIR}/%.c
