@@ -168,32 +168,6 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ)
     return;
 }
 
-/*
- * tableau_rowsum
- * Performs a rowsum between two rows of stabilisers 
- * :: tab : tableau_t const* :: Tableau object
- * :: ctrl : const size_t :: Control of the rowsum
- * :: targ : const size_t :: Target of the rowsum
- */
-void tableau_rowsum(tableau_t const* tab, const size_t ctrl, const size_t targ)
-{
-    DEBUG_CHECK(ROW_MAJOR == tab->orientation);
-    CHUNK_OBJ* ctrl_slice_x = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
-    CHUNK_OBJ* targ_slice_x = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* ctrl_slice_z = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
-    CHUNK_OBJ* targ_slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-
-    #ifdef UNROLL
-    #pragma GCC unroll 8 
-    #endif
-    #pragma GCC ivdep
-    for (size_t i = 0; i < tab->slice_len; i++)
-    {
-        targ_slice_x[i] ^= ctrl_slice_x[i];
-        targ_slice_z[i] ^= ctrl_slice_z[i];
-    }   
-}
-
 void tableau_col_elim_X(tableau_t const* tab, const size_t idx)
 {
     #define VECTOR_COLLECT 8 
@@ -260,14 +234,13 @@ void tableau_transpose(tableau_t* tab)
         // Inner loop should run along the current orientation, and hence along the cache lines 
         tableau_slice_p ptr_x = tab->slices_x[i]; 
         tableau_slice_p ptr_z = tab->slices_z[i];
-        #pragma GCC unroll 8
         for (size_t j = i + 1; j < tab->n_qubits; j++)
         {
             uint8_t val_a = __inline_slice_get_bit(ptr_x, j); 
             uint8_t val_b = __inline_slice_get_bit(tab->slices_x[j], i); 
-         
-            __inline_slice_set_bit(ptr_x, j, val_b); 
-            __inline_slice_set_bit(tab->slices_x[j], j, val_a); 
+
+            __inline_slice_set_bit(ptr_x, j, val_b);
+            __inline_slice_set_bit(tab->slices_x[j], i, val_a);
 
             val_a = __inline_slice_get_bit(ptr_z, j); 
             val_b = __inline_slice_get_bit(tab->slices_z[j], i); 
@@ -277,6 +250,7 @@ void tableau_transpose(tableau_t* tab)
         }    
     }
 }
+
 /*
  * gs_tableau_transpose
  * Transposes a tableau for a known graph state
@@ -352,19 +326,19 @@ void tableau_print(const tableau_t* tab)
     
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
-       printf("|");
+
+        printf("|");
+        for (size_t j = 0; j < tab->n_qubits; j++)
+        {
+            printf("%d", slice_get_bit(tab->slices_x[j], i));
+        }
+        printf("|");
 
         for (size_t j = 0; j < tab->n_qubits; j++)
-{
-    printf("%d", slice_get_bit(tab->slices_x[j], i));
-}
-     printf("|");
-
-        for (size_t j = 0; j < tab->n_qubits; j++)
-{
-    printf("%d", slice_get_bit(tab->slices_z[j], i));
-}
-    printf("|\n");
+        {
+            printf("%d", slice_get_bit(tab->slices_z[j], i));
+        }
+        printf("|\n");
     }
 }
 
@@ -486,4 +460,34 @@ void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
     slice_set_bit(tab->phases, j, phase_i); 
 
     return;
+}
+
+void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ)
+{
+    CHUNK_OBJ* slice_ctrl = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
+    CHUNK_OBJ* slice_targ = (CHUNK_OBJ*)(tab->slices_x[targ]); 
+
+    size_t i;
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_targ[i] ^= slice_ctrl[i];
+        }  
+    }
+
+//    slice_ctrl = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
+//    slice_targ = (CHUNK_OBJ*)(tab->slices_z[targ]); 
+//
+//    #pragma omp parallel private(i)
+//    { 
+//        #pragma omp for simd
+//        for (i = 0; i < tab->slice_len; i++)
+//        {
+//            slice_targ[i] ^= slice_ctrl[i];
+//        }  
+//    }
+
+
 }

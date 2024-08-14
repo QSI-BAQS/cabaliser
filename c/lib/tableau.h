@@ -86,6 +86,7 @@ void __inline_slice_set_bit(
     const uint8_t value)
 {
 
+    slice[index / CHUNK_SIZE_BITS] &= ~(1ull << (index % CHUNK_SIZE_BITS)); 
     slice[index / CHUNK_SIZE_BITS] |= (1ull & value) << (index % CHUNK_SIZE_BITS); 
 
     return; 
@@ -126,13 +127,14 @@ void tableau_print(const tableau_t* tab);
 void tableau_transpose(tableau_t* tab);
 
 /*
- * tableau_rowsum
+ * tableau_slice_xor
  * Performs a rowsum between two rows of stabilisers 
  * :: tab : tableau_t const* :: Tableau object
  * :: ctrl : const size_t :: Control of the rowsum
  * :: targ : const size_t :: Target of the rowsum
+ * TODO Check if phases should also be XORed
  */
-void tableau_rowsum(tableau_t const* tab, const size_t ctrl, const size_t targ);
+void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ);
 
 /*
  * tableau_slice_empty_x

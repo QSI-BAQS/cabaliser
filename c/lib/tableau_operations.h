@@ -33,6 +33,28 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que);
  */
 void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que);
 
+/*
+ * tableau_remove_zero_X_columns
+ * Uses hadamards to clear any zeroed X columns
+ * :: tab : tableau_t* :: The tableau to act on
+ * :: c_que : clifford_queue_t* :: The clifford queue
+ * Acts in place over the tableau
+ */
+void tableau_X_diagonal(tableau_t* tab, clifford_queue_t* c_que);
+
+
+/*
+ * tableau_remove_zero_X_columns
+ * Uses hadamards to clear any zeroed X columns
+ * :: tab : tableau_t* :: The tableau to act on
+ * :: c_que : clifford_queue_t* :: The clifford queue
+ * Acts in place over the tableau
+ */
+void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* c_que, const size_t idx);
+void tableau_X_diag_col(tableau_t* tab, const size_t idx);
+
+
+
 
 /*
  * tableau_<clifford>

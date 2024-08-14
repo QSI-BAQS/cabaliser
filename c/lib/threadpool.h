@@ -3,7 +3,6 @@
 
 #include <pthread.h>
 #include <stdbool.h>
-#include <semaphore.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -47,7 +46,7 @@ struct threadpool_arg
 struct threadpool_barrier_t
 {
     pthread_barrier_t barrier;         
-    sem_t sem;
+    uint32_t thread_count;
 };
 
 struct distributed_tableau_op

@@ -85,23 +85,16 @@ void linked_list_destroy(struct linked_list_t* ll)
  */
 void linked_list_push(struct linked_list_t* ll, void* obj) 
 {
-    printf("Adding node to list\n");
     struct list_node_t* node = __pop_reusable_node(ll); 
- 
-    if (NULL == ll->head)
-    {
-        ll->head = node;
-        ll->tail = node;
-    }
-    else
-    {
-        ll->head->prev = node;
-    }
-    node->prev = NULL;
-    ll->head = node;
- 
+
     node->obj = obj;
-    ll->n_elements += 1;
+    node->prev = NULL;
+
+    //__atomic_exchange(ll->head, node);
+    //__atomic_exchange(ll->head->prev, node);
+
+    // Not really used except for debugging
+    __atomic_fetch_add(&(ll->n_elements), 1, __ATOMIC_RELAXED);
     return;
 }
 
@@ -112,6 +105,11 @@ void* linked_list_pop(struct linked_list_t* ll)
     {
         return NULL;
     }
+
+    // TODO Memory barrier here
+    //__atomic_exchange(ll->head->prev, ll->head);
+
+
     struct list_node_t* node = ll->tail;
 
     void* obj = node->obj; 

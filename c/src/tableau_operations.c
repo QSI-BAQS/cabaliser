@@ -16,8 +16,9 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
     {
        if (CTZ_SENTINEL == tableau_ctz(tab->slices_x[i], tab->slice_len)) 
        {
-        tableau_H(tab, i);
-         clifford_queue_local_clifford_right(c_que, i, _H_);   
+         tableau_H(tab, i);
+         // TODO queue
+         //clifford_queue_local_clifford_right(c_que, i, _H_);   
        } 
     } 
     return;
@@ -39,11 +40,76 @@ void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que)
         // TODO check this
         uint8_t z = __inline_slice_get_bit(tab->slices_z[i], i);  
         instruction_t operator = (z && (_I_)) | (!z && (_S_)); 
-        clifford_queue_local_clifford_right(c_que, i, operator);   
+        
+        // TODO right queueing
+        //clifford_queue_local_clifford_right(c_que, i, operator);   
     }
     return;
 }
 
+
+void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_t idx)
+{
+    for (size_t j = idx + 1; j < tab->n_qubits; j++)
+    {
+        // Swap stabilisers
+        if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
+        {
+            tableau_idx_swap_transverse(tab, idx, j);
+            return; 
+        } 
+    } 
+
+    if (1 == __inline_slice_get_bit(tab->slices_z[idx], idx))
+    {
+        // TODO place hadamards
+        tableau_transverse_hadamard(tab, idx);
+        return;
+    }
+
+    for (size_t j = 0; j < tab->n_qubits; j++)
+    {
+        // Swap stabilisers
+        if (1 == __inline_slice_get_bit(tab->slices_z[j], idx))
+        {
+            // Backup Strategy
+            // TODO place hadamards
+            tableau_transverse_hadamard(tab, j);
+            tableau_idx_swap_transverse(tab, idx, j);
+            return; 
+        } 
+    }
+    //assert(0); // Could not place a 1 in the X diagonal
+    
+    return;
+}
+
+void tableau_X_diag_col(tableau_t* tab, const size_t idx)
+{
+    size_t  j;
+    #pragma omp parallel
+    {
+        #pragma omp for 
+        for (j = idx + 1; j < tab->n_qubits; j++) 
+        {
+            if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
+            {
+                tableau_slice_xor(tab, idx, j);
+            }
+        }
+
+        #pragma omp for
+        for (j = 0; j < idx; j++) 
+        {
+            if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
+            {
+                tableau_slice_xor(tab, idx, j);
+            }
+        }
+    }
+
+    return;
+}
 
 /*
  * tableau_X_upper_right_triangular
@@ -57,49 +123,9 @@ void tableau_X_diagonal(tableau_t* tab, clifford_queue_t* c_que)
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
         // X(i, i) != 1 
-        uint8_t diag = 0;
-        if (!(diag = __inline_slice_get_bit(tab->slices_x[i], i)))
+        if (0 == __inline_slice_get_bit(tab->slices_x[i], i))
         {  
-            for (size_t j = i + 1; j < tab->n_qubits; j++)
-            {
-                // Swap stabilisers
-                if (1 == __inline_slice_get_bit(tab->slices_x[j], i))
-                {
-                    tableau_idx_swap_transverse(tab, i, j); 
-                } 
-            } 
-
-            if ((!diag) && (1 == __inline_slice_get_bit(tab->slices_x[i], i)))
-            {
-                // TODO place hadamards
-                tableau_transverse_hadamard(tab, i);
-                return;
-            }
-
-
-        }
-
-
-        size_t  j;
-        #pragma omp parallel 
-        {
-            #pragma omp for nowait 
-            for (j = i + 1; j < tab->n_qubits; j++) 
-            {
-                if (__inline_slice_get_bit(tab->slices_x[j], i))
-                {
-                    tableau_rowsum(tab, i, j);
-                }
-            }
-
-            #pragma omp for nowait 
-            for (j = i - 1; j > 0; j--) 
-            {
-                if (__inline_slice_get_bit(tab->slices_x[j], i))
-                {
-                    tableau_rowsum(tab, i, j);
-                }
-            }
+            tableau_X_diag_element(tab, c_que, i);
         }
     }
     return;
@@ -845,3 +871,6 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
         }  
     }
 }
+
+
+
