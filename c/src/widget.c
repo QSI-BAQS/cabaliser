@@ -33,4 +33,68 @@ void widget_destroy(widget_t* wid)
 }
 
 
+/*
+ * widget_decompose
+ * Decomposes the stabiliser tableau into a graph state plus local Cliffords 
+ * :: wid : widget_t* :: Widget to decompose 
+ * Acts in place on the tableau 
+ */
+void widget_decompose(widget_t* wid)
+{
+    tableau_remove_zero_X_columns(wid->tableau, wid->queue);
 
+    tableau_transpose(wid->tableau);
+
+    for (size_t i = 0; i < wid->n_qubits; i++)
+    {
+        if (0 == __inline_slice_get_bit(wid->tableau->slices_x[i], i))
+        {
+            tableau_X_diag_element(wid->tableau, wid->queue, i);
+        }
+
+        tableau_X_diag_col_upper(wid->tableau, i);
+
+    }
+
+
+    for (size_t i = 0; i < wid->n_qubits; i++)
+    {
+        if (0 == __inline_slice_get_bit(wid->tableau->slices_x[i], i))
+        {
+            tableau_X_diag_element(wid->tableau, wid->queue, i);
+        }
+        tableau_X_diag_col_lower(wid->tableau, i);
+    }
+
+
+    // Phase operation to set Z diagonal to zero 
+    for (size_t i = 0; i < wid->n_qubits; i++)
+    {
+        if (__inline_slice_get_bit(wid->tableau->slices_z[i], i))
+        {
+            // TODO transverse phase
+            __inline_slice_set_bit(wid->tableau->slices_z[i], i, 0);
+        }
+    }
+
+    // Z to set phases to 0
+    for (size_t i = 0; i < wid->n_qubits; i++)
+    {
+        if (__inline_slice_get_bit(wid->tableau->phases, i))
+        {
+            // TODO transverse Z 
+            __inline_slice_set_bit(wid->tableau->phases, i, 0);
+        }
+    }
+
+    for (size_t i = 0; i < wid->n_qubits; i++)
+    {
+        if (__inline_slice_get_bit(wid->tableau->slices_z[i], i))
+        {
+            // TODO transverse phase
+            __inline_slice_set_bit(wid->tableau->slices_z[i], i, 0);
+        }
+    }
+
+    return;
+}

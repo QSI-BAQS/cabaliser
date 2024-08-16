@@ -246,7 +246,7 @@ void tableau_transpose(tableau_t* tab)
             val_b = __inline_slice_get_bit(tab->slices_z[j], i); 
          
             __inline_slice_set_bit(ptr_z, j, val_b); 
-            __inline_slice_set_bit(tab->slices_z[j], j, val_a); 
+            __inline_slice_set_bit(tab->slices_z[j], i, val_a); 
         }    
     }
 }
@@ -477,17 +477,17 @@ void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ)
         }  
     }
 
-//    slice_ctrl = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
-//    slice_targ = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-//
-//    #pragma omp parallel private(i)
-//    { 
-//        #pragma omp for simd
-//        for (i = 0; i < tab->slice_len; i++)
-//        {
-//            slice_targ[i] ^= slice_ctrl[i];
-//        }  
-//    }
+    slice_ctrl = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
+    slice_targ = (CHUNK_OBJ*)(tab->slices_z[targ]); 
+
+    #pragma omp parallel private(i)
+    { 
+        #pragma omp for simd
+        for (i = 0; i < tab->slice_len; i++)
+        {
+            slice_targ[i] ^= slice_ctrl[i];
+        }  
+    }
 
 
 }

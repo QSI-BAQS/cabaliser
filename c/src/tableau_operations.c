@@ -63,19 +63,20 @@ void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_
     if (1 == __inline_slice_get_bit(tab->slices_z[idx], idx))
     {
         // TODO place hadamards
+
         tableau_transverse_hadamard(tab, idx);
         return;
     }
 
-    for (size_t j = 0; j < tab->n_qubits; j++)
+    for (size_t j = idx + 1; j < tab->n_qubits; j++)
     {
         // Swap stabilisers
         if (1 == __inline_slice_get_bit(tab->slices_z[j], idx))
         {
             // Backup Strategy
-            // TODO place hadamards
-            tableau_transverse_hadamard(tab, j);
             tableau_idx_swap_transverse(tab, idx, j);
+
+            tableau_transverse_hadamard(tab, idx);
             return; 
         } 
     }
@@ -84,7 +85,7 @@ void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_
     return;
 }
 
-void tableau_X_diag_col(tableau_t* tab, const size_t idx)
+void tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
 {
     size_t  j;
     #pragma omp parallel
@@ -97,7 +98,16 @@ void tableau_X_diag_col(tableau_t* tab, const size_t idx)
                 tableau_slice_xor(tab, idx, j);
             }
         }
+    }
+    return;
+}
 
+
+void tableau_X_diag_col_lower(tableau_t* tab, const size_t idx)
+{
+    size_t j;
+    #pragma omp parallel
+    {
         #pragma omp for
         for (j = 0; j < idx; j++) 
         {
@@ -107,7 +117,6 @@ void tableau_X_diag_col(tableau_t* tab, const size_t idx)
             }
         }
     }
-
     return;
 }
 

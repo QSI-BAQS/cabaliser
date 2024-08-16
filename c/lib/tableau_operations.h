@@ -7,6 +7,7 @@
 #include "tableau.h"
 #include "instructions.h"
 
+
 #ifndef OPT_PRAGMA
 #define OPT_PRAGMA
     #pragma GCC optimize("Ofast,unroll-loops")
@@ -51,7 +52,9 @@ void tableau_X_diagonal(tableau_t* tab, clifford_queue_t* c_que);
  * Acts in place over the tableau
  */
 void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* c_que, const size_t idx);
-void tableau_X_diag_col(tableau_t* tab, const size_t idx);
+void tableau_X_diag_col_upper(tableau_t* tab, const size_t idx);
+void tableau_X_diag_col_lower(tableau_t* tab, const size_t idx);
+
 
 
 

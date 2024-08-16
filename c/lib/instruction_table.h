@@ -23,6 +23,7 @@
 #define _H_ (0x04 | LOCAL_CLIFFORD_MASK)
 #define _S_ (0x05 | LOCAL_CLIFFORD_MASK)
 #define _R_ (0x06 | LOCAL_CLIFFORD_MASK)
+
 #define _HX_ (0x07 | LOCAL_CLIFFORD_MASK)
 #define _SX_ (0x08 | LOCAL_CLIFFORD_MASK)
 #define _RX_ (0x09 | LOCAL_CLIFFORD_MASK)
@@ -64,18 +65,18 @@ typedef uint32_t non_clifford_tag_t;
  */
 struct single_qubit_instruction
 {
-    uint8_t opcode;
+    instruction_t opcode;
     uint32_t arg;
 };
 struct two_qubit_instruction
 {
-    uint8_t opcode;
+    instruction_t opcode;
     uint32_t ctrl;
     uint32_t targ;
 };
 struct rz_instruction
 {
-    uint8_t opcode;
+    instruction_t opcode;
     uint32_t arg;
     uint32_t tag; // Tag for gate type, supports up to 2**32 unique non-Clifford gates per widget 
     // As each non-Clifford results in a teleportation, we should saturate memory bounds before 

@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
+typedef struct clifford_queue_t clifford_queue_t;
 
 #include "instruction_table.h"
 #include "tableau.h"
@@ -25,7 +26,6 @@
 
 
 
-struct clifford_queue_t;
 
 /*
  * clifford_queue
@@ -41,7 +41,6 @@ struct clifford_queue_t
     instruction_t* table; // Queued instructions for each qubit 
     non_clifford_tag_t* non_clifford; // Terminating non-clifford instructions 
 };
-typedef struct clifford_queue_t clifford_queue_t;
 
 /*
  * clifford_queue_create

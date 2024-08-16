@@ -2,6 +2,8 @@
 #define WIDGET_H
 
 #include "tableau.h"
+#include "tableau_operations.h"
+
 #include "instructions.h"
 #include "qubit_map.h"
 
@@ -34,5 +36,13 @@ widget_t* widget_create(const size_t initial_qubits, const size_t max_qubits);
  */
 void widget_destroy(widget_t* wid);
 
+
+/*
+ * widget_decompose
+ * Decomposes the stabiliser tableau into a graph state plus local Cliffords 
+ * :: wid : widget_t* :: Widget to decompose 
+ * Acts in place on the tableau 
+ */
+void widget_decompose(widget_t* wid);
 
 #endif

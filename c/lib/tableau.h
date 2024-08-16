@@ -7,6 +7,8 @@
 #include <string.h>
 #include <assert.h>
 
+typedef struct tableau_t tableau_t;
+
 #include "consts.h"
 #include "debug.h"
 #include "instructions.h"
@@ -46,7 +48,6 @@ struct tableau_t {
     tableau_slice_p phases; // Phase terms
     bool orientation; // Row or column major order
 };
-typedef struct tableau_t tableau_t;
 
 /*
  * tableau_create 
