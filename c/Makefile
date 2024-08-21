@@ -63,13 +63,13 @@ debug_L1: test
 debug: CFLAGS += -fopt-info -fopt-info-loop -fopt-info-loop-missed -fopt-info-vec -fopt-info-vec-missed
 debug: test 
 
-
+test : CFLAGS += -g
 tests : test pandora_test
 test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} ${PANDORA_TEST_RUNNERS} 
 
 
 benchmark: benchmarks 
-benchmarks: CFLAGS += ${OMPFLAG} 
+benchmarks: CFLAGS += ${OMPFLAG} -pg 
 benchmarks: ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS} 
 
 

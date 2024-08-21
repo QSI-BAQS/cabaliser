@@ -94,16 +94,13 @@ void __barrier_fn(struct threadpool_barrier_t** args)
     pthread_barrier_wait(&(bar->barrier));
      
     // Semaphore set to n_threads - 1, such that the final thread will throw EAGAIN
-    int err = sem_trywait(&(bar->sem));
+    //  REPLACE with atomic int 
+    //  int err = sem_trywait(&(bar->sem));
 
     // Operation is threadsafe as all threads must have passed the previous line
     // As a result even if an interrupt occurs at this point only one thread will trigger the free call
     
     // Last thread has exited barrier
-    if (EAGAIN == err)
-    {
-       free(bar); 
-    }
 }
 
 /*
@@ -120,7 +117,7 @@ void threadpool_barrier()
     struct threadpool_barrier_t* bar = malloc(sizeof(struct threadpool_barrier_t)); 
 
     pthread_barrier_init(&(bar->barrier), NULL, THREADPOOL_g.n_workers); 
-    sem_init(&(bar->sem), 0, THREADPOOL_g.n_workers - 1);  // Last thread to exit will trigger EAGAIN
+    //sem_init(&(bar->sem), 0, THREADPOOL_g.n_workers - 1);  // Last thread to exit will trigger EAGAIN
 
     for (size_t i = 0; i < THREADPOOL_g.n_workers; i++)
     {
@@ -140,7 +137,7 @@ void threadpool_join()
 {
     struct threadpool_barrier_t* bar = malloc(sizeof(struct threadpool_barrier_t)); 
     pthread_barrier_init(&(bar->barrier), NULL, THREADPOOL_g.n_workers + 1); 
-    sem_init(&(bar->sem), 0, THREADPOOL_g.n_workers + 1);  // Last thread to exit will trigger EAGAIN
+    //sem_init(&(bar->sem), 0, THREADPOOL_g.n_workers + 1);  // Last thread to exit will trigger EAGAIN
 
     for (size_t i = 0; i < THREADPOOL_g.n_workers; i++)
     {

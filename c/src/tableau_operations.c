@@ -106,8 +106,32 @@ void tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
 void tableau_X_diag_col_lower(tableau_t* tab, const size_t idx)
 {
     size_t j;
+    const size_t chunk_max = idx / sizeof(CHUNK_OBJ);
+    const size_t chunk_offset = idx % sizeof(CHUNK_OBJ);
+
+
+    CHUNK_OBJ* slice = tab->slices_x[idx];
+
     #pragma omp parallel
     {
+//        #pragma omp for
+        //for (j = 0; j < chunk_max; j++)
+        //{
+        //    while (0 != slice[j]) 
+        //    {
+        //        size_t targ = CHUNK_SIZE_BITS * j +  __CHUNK_CTZ(slice[j]);
+        //        tableau_slice_xor(tab, idx, targ);
+        //    }
+        //}
+        //
+        //for (j = 0; j < chunk_offset; j++) 
+        //{
+        //     if (1 == __inline_slice_get_bit(tab->slices_x[idx], j))
+        //     {
+        //         size_t targ = CHUNK_SIZE_BITS * chunk_max + j; 
+        //         tableau_slice_xor(tab, idx, j);
+        //     }
+        //}
         #pragma omp for
         for (j = 0; j < idx; j++) 
         {

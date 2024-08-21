@@ -72,7 +72,7 @@ void instruction_stream_benchmark(
 
 int main(int argc, char** argv)
 {
-    if (argc < 3)
+    if (argc < 4)
     {
         printf("Insufficient parameters, requires <n_qubits> <n_gates> <seed>\n");
     return 0;

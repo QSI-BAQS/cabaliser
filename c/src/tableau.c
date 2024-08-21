@@ -228,12 +228,43 @@ void tableau_transpose(tableau_t* tab)
     // Flip orientation
     tab->orientation ^= 1;
 
-    // Outer loop should jump between cache lines 
+    // Transpose into chunks
+    // Each should fit into 32k of cache
+
+    for (size_t row = 0; row < tab->n_qubits; row += CHUNK_SIZE_BYTES) 
+    {
+        for (size_t col = row + 1; col < tab->n_qubits; col += CHUNK_SIZE_BITS) 
+        {
+            // Now that we have a matching row and column region 
+            for (size_t i = 0; i < CHUNK_SIZE_BITS; i++) 
+            {
+                CHUNK_OBJ dispersed_elements = 0; 
+                CHUNK_OBJ* target_chunk = tab->slices_x[row + i]; 
+
+                for (size_t j = 0; j < CHUNK_SIZE_BITS; j++)
+                {
+                    CHUNK_OBJ bit = !!(*(tab->slices_x[row + j] + col) & (1ull << i)); 
+                    dispersed_elements |= (1ull & bit) << j; 
+                    *target_chunk & (1ull << j);   
+                }
+
+                *target_chunk = dispersed_elements;
+            }
+        }
+    }
+    
+}
+
+
+void tableau_transpose_naive(tableu_t* tab)
+{
+
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
         // Inner loop should run along the current orientation, and hence along the cache lines 
         tableau_slice_p ptr_x = tab->slices_x[i]; 
         tableau_slice_p ptr_z = tab->slices_z[i];
+    
         for (size_t j = i + 1; j < tab->n_qubits; j++)
         {
             uint8_t val_a = __inline_slice_get_bit(ptr_x, j); 
@@ -249,6 +280,7 @@ void tableau_transpose(tableau_t* tab)
             __inline_slice_set_bit(tab->slices_z[j], i, val_a); 
         }    
     }
+    return;
 }
 
 /*
