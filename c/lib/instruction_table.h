@@ -50,7 +50,6 @@
 #define _NOP_ (0xff) 
 
 
-
 /*
  * instruction_struct
  * Simple struct that allows for easy instruction parsing  
