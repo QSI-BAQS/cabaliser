@@ -18,5 +18,11 @@
 typedef uint8_t uint8_tv __attribute__((aligned(16))); 
 
 
+void simd_transpose_2x16(uint8_tv** src, uint8_tv** targ);
+
+void chunk_transpose_2x16(uint8_tv** src, uint8_tv** targ);
+
+
+
 
 #endif

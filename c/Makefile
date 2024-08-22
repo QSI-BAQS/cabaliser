@@ -6,7 +6,7 @@ CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable ${OMPFLAG}
 
 # Optimisation Flags
 CFLAGS += -Os -Ofast # We aren't doing floating point arithmetic, so this is fine
-CFLAGS += -mavx -mavx2 -mlzcnt 
+CFLAGS += -mavx -mavx2 -mlzcnt -march=native 
 
 # Library Flags
 # These are here to make sure that optimisations don't ruin the library

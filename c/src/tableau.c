@@ -245,7 +245,7 @@ void tableau_transpose(tableau_t* tab)
                 {
                     CHUNK_OBJ bit = !!(*(tab->slices_x[row + j] + col) & (1ull << i)); 
                     dispersed_elements |= (1ull & bit) << j; 
-                    *target_chunk & (1ull << j);   
+                    //*target_chunk & (1ull << j);   
                 }
 
                 *target_chunk = dispersed_elements;
@@ -256,7 +256,7 @@ void tableau_transpose(tableau_t* tab)
 }
 
 
-void tableau_transpose_naive(tableu_t* tab)
+void tableau_transpose_naive(tableau_t* tab)
 {
 
     for (size_t i = 0; i < tab->n_qubits; i++)
