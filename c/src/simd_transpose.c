@@ -46,7 +46,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_bl = _pext_u64(a_bl, 0x0101010101010101ull);
             col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[0][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[0][0] |= (uint64_t)col_l;
     }
 
     {
@@ -56,7 +56,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_bl = _pext_u64(a_bl, 0x0202020202020202ull);
             col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[1][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[1][0] |= (uint64_t)col_l;
     }
 
     {
@@ -66,7 +66,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_bl = _pext_u64(a_bl, 0x0404040404040404ull);
             col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[2][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[2][0] |= (uint64_t)col_l;
     }
 
     {
@@ -76,7 +76,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_bl = _pext_u64(a_bl, 0x0808080808080808ull);
             col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[3][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[3][0] |= (uint64_t)col_l;
     }
 
     {
@@ -86,7 +86,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_bl = _pext_u64(a_bl, 0x1010101010101010ull);
             col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[4][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[4][0] |= (uint64_t)col_l;
     }
 
     {
@@ -96,7 +96,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_bl = _pext_u64(a_bl, 0x2020202020202020ull);
             col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[5][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[5][0] |= (uint64_t)col_l;
     }
 
     {
@@ -106,7 +106,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_bl = _pext_u64(a_bl, 0x4040404040404040ull);
             col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[6][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[6][0] |= (uint64_t)col_l;
     }
 
     {
@@ -116,7 +116,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_bl = _pext_u64(a_bl, 0x8080808080808080ull);
             col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[7][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[7][0] |= (uint64_t)col_l;
     }
 
 
@@ -129,7 +129,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_br = _pext_u64(a_br, 0x0101010101010101ull);
             col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[8][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[8][0] |= (uint64_t)col_l;
     }
 
     {
@@ -139,7 +139,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_br = _pext_u64(a_br, 0x0202020202020202ull);
             col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[9][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[9][0] |= (uint64_t)col_l;
     }
 
     {
@@ -149,7 +149,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_br = _pext_u64(a_br, 0x0404040404040404ull);
             col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[10][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[10][0] |= (uint64_t)col_l;
     }
 
     {
@@ -159,7 +159,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_br = _pext_u64(a_br, 0x0808080808080808ull);
             col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[11][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[11][0] |= (uint64_t)col_l;
     }
 
     {
@@ -169,7 +169,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_br = _pext_u64(a_br, 0x1010101010101010ull);
             col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[12][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[12][0] |= (uint64_t)col_l;
     }
 
     {
@@ -179,7 +179,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_br = _pext_u64(a_br, 0x2020202020202020ull);
             col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[13][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[13][0] |= (uint64_t)col_l;
     }
 
     {
@@ -189,7 +189,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_br = _pext_u64(a_br, 0x4040404040404040ull);
             col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[14][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[14][0] |= (uint64_t)col_l;
     }
 
     {
@@ -199,12 +199,12 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
             register uint64_t col_br = _pext_u64(a_br, 0x8080808080808080ull);
             col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
         }
-        ((uint64_t**)targ)[15][0] = (uint64_t)col_l;
+        ((uint64_t**)targ)[15][0] |= (uint64_t)col_l;
     }
 
     return;
 }
-void simd_transpose_2x16(uint8_ta16** src, uint8_ta16** targ)
+void simd_transpose_2x16(uint8_t** src, uint8_t** targ)
 {
     __inline_simd_transpose_2x16(src, targ); 
 }
@@ -240,8 +240,8 @@ chunk_transpose_2x16(uint8_t** src, uint8_t** targ)
 void __attribute__((noinline))
 chunk_transpose_64x64(uint64_t* src[64], uint64_t* targ[64])
 {
- //   uint64_ta64 src_block[64] = {0};
-      uint64_t targ_block[64] = {0};
+     uint64_t src_block[64] = {0};
+     uint64_t targ_block[64] = {0};
     
      uint64_t* src_ptr[16];
      uint64_t* targ_ptr[16] = {NULL};
@@ -260,7 +260,6 @@ chunk_transpose_64x64(uint64_t* src[64], uint64_t* targ[64])
             chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
         }
     }
-
    
     for (size_t i = 0; i < 64; i++)
     {
@@ -273,8 +272,8 @@ chunk_transpose_64x64(uint64_t* src[64], uint64_t* targ[64])
 
 void simd_transpose_64x64(uint64_t* src[64], uint64_t* targ[64])
 {
- //   uint64_ta64 src_block[64] = {0};
-      uint64_t targ_block[64] = {0};
+     uint64_t src_block[64] = {0};
+     uint64_t targ_block[64] = {0};
     
      uint64_t* src_ptr[16];
      uint64_t* targ_ptr[16] = {NULL};
