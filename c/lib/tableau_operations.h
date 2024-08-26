@@ -7,7 +7,7 @@
 #include "tableau.h"
 #include "instructions.h"
 
-
+#define OPT_PRAGMA
 #ifndef OPT_PRAGMA
 #define OPT_PRAGMA
     #pragma GCC optimize("Ofast,unroll-loops")
@@ -99,7 +99,7 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ);
 
 #ifdef TABLEAU_OPERATIONS_SRC
 
-  const void (*SINGLE_QUBIT_OPERATIONS[N_LOCAL_CLIFFORDS])(tableau_t*, const size_t targ) = {
+  void (*SINGLE_QUBIT_OPERATIONS[N_LOCAL_CLIFFORDS])(tableau_t*, const size_t targ) = {
         tableau_I, 
         tableau_X, 
         tableau_Y, 
@@ -125,14 +125,14 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ);
         tableau_RHS,
         tableau_SHR};
 
-    const void (*TWO_QUBIT_OPERATIONS[N_LOCAL_CLIFFORDS])(tableau_t*, const size_t ctrl, const size_t targ) = {
+    void (*TWO_QUBIT_OPERATIONS[N_LOCAL_CLIFFORDS])(tableau_t*, const size_t ctrl, const size_t targ) = {
         tableau_CNOT,
         tableau_CZ
 };
 
 #else
-    extern const void (*SINGLE_QUBIT_OPERATIONS[])(tableau_t*, const size_t targ);
-    extern const void (*TWO_QUBIT_OPERATIONS[])(tableau_t*, const size_t ctrl, const size_t targ);
+    extern void (*SINGLE_QUBIT_OPERATIONS[])(tableau_t*, const size_t targ);
+    extern void (*TWO_QUBIT_OPERATIONS[])(tableau_t*, const size_t ctrl, const size_t targ);
 #endif
 
 

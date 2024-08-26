@@ -1,16 +1,13 @@
 SHELL := /bin/bash
-CC := gcc
+CC := gcc 
 OMPFLAG := -fopenmp
 CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable ${OMPFLAG}
 
 
 # Optimisation Flags
-CFLAGS += -Os -Ofast # We aren't doing floating point arithmetic, so this is fine
+CFLAGS += -Ofast
 CFLAGS += -mavx -mavx2 -mlzcnt -march=native 
 
-# Library Flags
-# These are here to make sure that optimisations don't ruin the library
-CFLAGS += -fkeep-inline-functions -fkeep-static-functions 
 
 TARGET := cab
  
@@ -18,7 +15,7 @@ SRCDIR := src
 LIBDIR := lib
 BUILDDIR := build
 
-LIBS := -I${LIBDIR} -lm
+LIBS := -I${LIBDIR}
 
 TESTDIR := tests
 TEST_SRCDIR := ${TESTDIR}/src
@@ -30,6 +27,13 @@ BENCHMARK_SRCDIR := ${BENCHMARK_DIR}/src
 # Source Files
 SRCFILES := $(wildcard ${SRCDIR}/*.c)
 OBJFILES := $(patsubst ${SRCDIR}/%.c, ${BUILDDIR}/%.o, ${SRCFILES})
+
+# Transpose requires disabling some loop mangling
+# The loop vectorisation flags don't mesh well with the casts between pointer types
+TRANSPOSE := simd_transpose
+TRANSPOSE_CFLAGS += -O0 #-O2 -fno-tree-loop-vectorize -fno-peel-loops
+#TRANSPOSE_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
+
 
 
 # Test Files
@@ -47,9 +51,10 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 .PHONY: pandora_api
 
 include pandora_api/Makefile 
+#include src/transpose/Makefile 
 
 # Build Rules
-all : ${TARGET} ${BUILDDIR}    
+all : ${TARGET} ${BUILDDIR} 
 
 debug_L3: CFLAGS += -DDEBUG -DDEBUG_LEVEL=3
 debug_L3: test 
@@ -79,6 +84,10 @@ ${BUILDDIR} :
 ${TARGET} : ${BUILDDIR} ${OBJFILES} ${PANDORA_OBJFILES} 
 	${CC} ${CFLAGS} -o $@ ${OBJFILES} ${LIBS} 
 
+
+${BUILDDIR}/${TRANSPOSE}.o : ${SRCDIR}/${TRANSPOSE}.c
+	${CC} ${CFLAGS} ${TRANSPOSE_CFLAGS} ${LIBS} -c -o $@ $^
+
 ${BUILDDIR}/%.o : ${SRCDIR}/%.c
 	${CC} ${CFLAGS} ${LIBS} -c -o $@ $^
 
@@ -89,6 +98,9 @@ ${TESTDIR}/%.out : ${OBJFILES} ${TEST_SRCDIR}/%.c
 ${BENCHMARK_DIR}/%.out : ${OBJFILES} ${BENCHMARK_SRCDIR}/%.c 
 	${CC} ${CFLAGS} ${LIBS} -o $@ $^
 
+
+obj:
+	@echo ${OBJFILES}
 
 # Clean build directory
 clean: 

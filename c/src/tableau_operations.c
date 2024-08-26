@@ -39,7 +39,7 @@ void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que)
     { 
         // TODO check this
         uint8_t z = __inline_slice_get_bit(tab->slices_z[i], i);  
-        instruction_t operator = (z && (_I_)) | (!z && (_S_)); 
+        instruction_t operator = (z * (_I_)) | (!z * (_S_)); 
         
         // TODO right queueing
         //clifford_queue_local_clifford_right(c_que, i, operator);   

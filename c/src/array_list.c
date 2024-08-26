@@ -9,7 +9,7 @@ struct array_list_t* array_list_create(const size_t max_elements, const size_t e
     al->element_size = element_size;
     al->elements = malloc(element_size * max_elements);   
     return al;
-};
+}
 
 
 void array_list_append(struct array_list_t* al, void* item)

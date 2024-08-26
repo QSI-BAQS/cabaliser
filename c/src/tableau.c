@@ -71,7 +71,7 @@ tableau_t* tableau_create(const size_t n_qubits)
 
     // Construct start of X and Z segments 
     void* z_start = tableau_bitmap;
-    void* x_start = tableau_bitmap + slice_len_bytes * n_qubits; 
+    void* x_start = (uint8_t*)tableau_bitmap + slice_len_bytes * n_qubits; 
     
     // Slice tracking pointers 
     void* slice_ptrs_z = malloc(sizeof(void*) * n_qubits); 
@@ -155,6 +155,7 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ)
     uint8_t bit_x = 0;
     uint8_t bit_z = 0;
     // TODO Vectorise this
+
     #pragma GCC ivdep  
     for (size_t i = 0; i < tab->n_qubits; i++)
     {

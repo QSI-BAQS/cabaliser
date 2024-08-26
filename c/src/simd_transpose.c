@@ -1,7 +1,8 @@
 #include "simd_transpose.h"
 
 // Transposes two blocks
-void simd_transpose_2x16(uint8_tv** src, uint8_tv** targ)
+static inline
+void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
 {
 
     __m256i msrc = _mm256_set_epi16(
@@ -203,15 +204,18 @@ void simd_transpose_2x16(uint8_tv** src, uint8_tv** targ)
 
     return;
 }
-
-
+void simd_transpose_2x16(uint8_ta16** src, uint8_ta16** targ)
+{
+    __inline_simd_transpose_2x16(src, targ); 
+}
 
 
 /*
  * Scalar implementation of the simd transpose
  * Used for regression testing
  */
-void chunk_transpose_2x16(uint8_tv** src, uint8_tv** targ)
+static inline
+void __inline_chunk_transpose_2x16(uint8_t** src, uint8_t** targ)
 {
     for (size_t row = 0; row < 16; row++)  
     {
@@ -220,8 +224,81 @@ void chunk_transpose_2x16(uint8_tv** src, uint8_tv** targ)
         {
             dispersed_vals |= (!!(((uint16_t**)src)[i][0] & (1 << row))) << i; 
         }
-        ((uint16_t**)targ)[row][0] = dispersed_vals;
+        *((uint16_t*)(targ[row])) = dispersed_vals;
     } 
+}
+void __attribute__((noinline))
+chunk_transpose_2x16(uint8_t** src, uint8_t** targ)
+{
+    __inline_chunk_transpose_2x16(src, targ); 
 }
 
 
+
+
+
+void __attribute__((noinline))
+chunk_transpose_64x64(uint64_t* src[64], uint64_t* targ[64])
+{
+ //   uint64_ta64 src_block[64] = {0};
+      uint64_t targ_block[64] = {0};
+    
+     uint64_t* src_ptr[16];
+     uint64_t* targ_ptr[16] = {NULL};
+
+
+    for (size_t col = 0; col < 4; col++) 
+    {
+        for (size_t row = 0; row < 4; row++)  
+        {
+            for (size_t i = 0; i < 16; i++)
+            {
+                targ_ptr[i] = (uint64_t*)((uint16_t*)(targ_block + i + 16 * row) + col);
+                src_ptr[i] = (uint64_t*)((uint16_t*)(src[i + 16 * row]) + col); 
+            }
+
+            chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
+        }
+    }
+
+   
+    for (size_t i = 0; i < 64; i++)
+    {
+        memcpy(targ[i], targ_block + i, 8); 
+    } 
+ 
+    return;
+}
+
+
+void simd_transpose_64x64(uint64_t* src[64], uint64_t* targ[64])
+{
+ //   uint64_ta64 src_block[64] = {0};
+      uint64_t targ_block[64] = {0};
+    
+     uint64_t* src_ptr[16];
+     uint64_t* targ_ptr[16] = {NULL};
+
+
+    for (size_t col = 0; col < 4; col++) 
+    {
+        for (size_t row = 0; row < 4; row++)  
+        {
+            for (size_t i = 0; i < 16; i++)
+            {
+                targ_ptr[i] = (uint64_t*)((uint16_t*)(targ_block + i + 16 * row) + col);
+                src_ptr[i] = (uint64_t*)((uint16_t*)(src[i + 16 * row]) + col); 
+            }
+
+            simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
+        }
+    }
+
+   
+    for (size_t i = 0; i < 64; i++)
+    {
+        memcpy(targ[i], targ_block + i, 8); 
+    } 
+ 
+    return;
+}

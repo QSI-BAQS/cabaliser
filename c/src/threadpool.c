@@ -156,7 +156,7 @@ void threadpool_join()
 void threadpool_add_task(void (*fn)(void*), void* args)
 {
     struct threadpool_job job;
-    job.fn = (void*)fn;
+    job.fn = (void (*)(void*))fn;
     job.args = args; 
     const size_t n_bytes = sizeof(struct threadpool_job);
 

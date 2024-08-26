@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <string.h>
+
 #include <assert.h>
 
 #include <emmintrin.h>
@@ -14,15 +16,17 @@
 #include <x86gprintrin.h>
 
 
-// Tableau elements are guaranteed to be aligned in this fashion
-typedef uint8_t uint8_tv __attribute__((aligned(16))); 
+// 16 Byte cache line aligned elements
+typedef uint8_t uint8_ta16 __attribute__((aligned(16))); 
+
+// 64 Byte cache line aligned elements
+typedef uint64_t uint64_ta64 ;//__attribute__((aligned(32))); 
 
 
-void simd_transpose_2x16(uint8_tv** src, uint8_tv** targ);
+void simd_transpose_2x16(uint8_t** src, uint8_t** targ);
+void simd_transpose_64x64(uint64_t* src[64], uint64_t* targ[64]);
 
-void chunk_transpose_2x16(uint8_tv** src, uint8_tv** targ);
-
-
-
+void chunk_transpose_2x16(uint8_t** src, uint8_t** targ);
+void chunk_transpose_64x64(uint64_t* src[64], uint64_t* targ[64]);
 
 #endif
