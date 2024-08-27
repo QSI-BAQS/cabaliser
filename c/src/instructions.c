@@ -42,7 +42,15 @@ void clifford_queue_destroy(clifford_queue_t* que)
 }
 
 
-void clifford_queue_local_clifford_right(clifford_queue_t* que, instruction_t cliff, size_t target)
+/*
+ * clifford_queue_local_clifford_right 
+ * Applies clifford operator from the right of the expression  
+ * This is used when extracting Clifford terms from the graph state preparaion
+ * :: que : clifford_queue_t* :: The clifford queue
+ * :: cliff : instruction_t :: The instruction 
+ * :: target : size_t :: The target qubit 
+ */
+void clifford_queue_local_clifford_right(clifford_queue_t* que, const instruction_t cliff, const size_t target)
 {
-    __inline_clifford_queue_local_clifford_right(que, cliff, target);
+    que->table[target] = LOCAL_CLIFFORD_RIGHT(cliff, que->table[target]);
 }

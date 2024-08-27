@@ -14,7 +14,10 @@ typedef struct clifford_queue_t clifford_queue_t;
 #include "consts.h"
 #include "widget.h"
 
-#define LOCAL_CLIFFORD(left, right) (SINGLE_QUBIT_CLIFFORD_MAP[(left & INSTRUCTION_OPERATOR_MASK) * N_LOCAL_CLIFFORDS + (right & INSTRUCTION_OPERATOR_MASK)])
+#define LOCAL_CLIFFORD_LEFT(left, right) (SINGLE_QUBIT_CLIFFORD_MAP[(left & INSTRUCTION_OPERATOR_MASK) * N_LOCAL_CLIFFORDS + (right & INSTRUCTION_OPERATOR_MASK)])
+
+#define LOCAL_CLIFFORD_RIGHT(left, right) (SINGLE_QUBIT_CLIFFORD_MAP_RIGHT[(left & INSTRUCTION_OPERATOR_MASK) * N_LOCAL_CLIFFORDS + (right & INSTRUCTION_OPERATOR_MASK)])
+
 
 #define NON_LOCAL_CZ_MAP_CTRL(clifford) (CZ_MAP_CTRL[clifford & INSTRUCTION_OPERATOR_MASK]) 
 #define NON_LOCAL_CZ_MAP_TARG(clifford) (CZ_MAP_TARG[clifford & INSTRUCTION_OPERATOR_MASK]) 
@@ -77,13 +80,21 @@ const instruction_t SINGLE_QUBIT_CLIFFORD_MAP[168] = {
 };
 
 
+const instruction_t SINGLE_QUBIT_CLIFFORD_MAP_RIGHT[168] = {
+/* I */ _I_, _X_, _Y_, _Z_, _H_, _S_, _R_, _HX_, _SX_, _RX_, _HY_, _HZ_, _SH_, _RH_, _HS_, _HR_, _HSX_, _HRX_, _SHY_, _RHY_, _HSH_, _HRH_, _RHS_, _SHR_,
+/* X */ _X_, _I_, _Z_, _Y_, _HX_, _SX_, _RX_, _H_, _S_, _R_, _HZ_, _HY_, _RH_, _SH_, _HSX_, _HRX_, _HS_, _HR_, _RHY_, _SHY_, _HRH_, _HSH_, _SHR_, _RHS_,
+/* Y */ _Y_, _Z_, _I_, _X_, _HY_, _RX_, _SX_, _HZ_, _R_, _S_, _H_, _HX_, _SHY_, _RHY_, _HRX_, _HSX_, _HR_, _HS_, _SH_, _RH_, _SHR_, _RHS_, _HRH_, _HSH_,
+/* Z */ _Z_, _Y_, _X_, _I_, _HZ_, _R_, _S_, _HY_, _RX_, _SX_, _HX_, _H_, _RHY_, _SHY_, _HR_, _HS_, _HRX_, _HSX_, _RH_, _SH_, _RHS_, _SHR_, _HSH_, _HRH_,
+/* H */ _H_, _HZ_, _HY_, _HX_, _I_, _SH_, _RH_, _Z_, _RHY_, _SHY_, _Y_, _X_, _S_, _R_, _HSH_, _HRH_, _RHS_, _SHR_, _RX_, _SX_, _HS_, _HR_, _HSX_, _HRX_,
+/* S */ _S_, _RX_, _SX_, _R_, _HS_, _Z_, _I_, _HRX_, _X_, _Y_, _HSX_, _HR_, _HRH_, _RHS_, _HZ_, _H_, _HX_, _HY_, _HSH_, _SHR_, _RH_, _RHY_, _SHY_, _SH_,
+/* R */ _R_, _SX_, _RX_, _S_, _HR_, _I_, _Z_, _HSX_, _Y_, _X_, _HRX_, _HS_, _SHR_, _HSH_, _H_, _HZ_, _HY_, _HX_, _RHS_, _HRH_, _SHY_, _SH_, _RH_, _RHY_
+};
+
 const instruction_t CZ_MAP_CTRL[N_LOCAL_CLIFFORDS] = {
 _I_, _X_, _Y_, _Z_, _NOP_, _S_, _R_, _NOP_, _SX_, _RX_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_};
 
 const instruction_t CZ_MAP_TARG[N_LOCAL_CLIFFORDS] = {
 _I_, _Z_, _Z_, _I_, _NOP_, _I_, _I_, _NOP_, _Z_, _Z_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_};
-
-
 
 const instruction_t CNOT_MAP_CTRL_CTRL[N_LOCAL_CLIFFORDS] = {
 _I_, _X_, _Y_, _Z_, _NOP_, _S_, _R_, _NOP_, _SX_, _RX_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_};
@@ -95,6 +106,7 @@ const instruction_t CNOT_MAP_TARG_TARG[N_LOCAL_CLIFFORDS] = {
 _I_, _X_, _Y_, _Z_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _HSH_, _HRH_, _RHS_, _SHR_};
 const instruction_t CNOT_MAP_TARG_CTRL[N_LOCAL_CLIFFORDS] = {
 _I_, _I_, _Z_, _Z_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _I_, _I_, _Z_, _Z_};
+
 
 
 
@@ -110,24 +122,31 @@ _I_, _I_, _Z_, _Z_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP_, _NOP
 static inline
 void __inline_clifford_queue_local_clifford_right(clifford_queue_t* que, instruction_t cliff, size_t target)
 {
-    que->table[target] = LOCAL_CLIFFORD(cliff, que->table[target]);
+    que->table[target] = LOCAL_CLIFFORD_RIGHT(cliff, que->table[target]);
 }
 static inline
 void __inline_clifford_queue_local_clifford_left(clifford_queue_t* que, instruction_t cliff, size_t target)
 {
-    que->table[target] = LOCAL_CLIFFORD(que->table[target], cliff);
+    que->table[target] = LOCAL_CLIFFORD_LEFT(que->table[target], cliff);
 }
 
 #else
 
 extern const instruction_t SINGLE_QUBIT_CLIFFORD_MAP[168]; 
+extern const instruction_t SINGLE_QUBIT_CLIFFORD_MAP_RIGHT[168]; 
 extern const instruction_t CNOT_MAP_TARG_CTRL[N_LOCAL_CLIFFORDS];
 
 #endif
 
-void clifford_queue_local_clifford_right(clifford_queue_t* que, instruction_t cliff, size_t target);
-
-
+/*
+ * clifford_queue_local_clifford_right 
+ * Applies clifford operator from the right of the expression  
+ * This is used when extracting Clifford terms from the graph state preparaion
+ * :: que : clifford_queue_t* :: The clifford queue
+ * :: cliff : instruction_t :: The instruction 
+ * :: target : size_t :: The target qubit 
+ */
+void clifford_queue_local_clifford_right(clifford_queue_t* que, const instruction_t cliff, const size_t target);
 
 
 #endif

@@ -238,7 +238,7 @@ chunk_transpose_2x16(uint8_t** src, uint8_t** targ)
 
 
 void __attribute__((noinline))
-chunk_transpose_64x64(uint64_t* src[64], uint64_t* targ[64])
+chunk_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
 {
      uint64_t src_block[64] = {0};
      uint64_t targ_block[64] = {0};
@@ -254,23 +254,40 @@ chunk_transpose_64x64(uint64_t* src[64], uint64_t* targ[64])
             for (size_t i = 0; i < 16; i++)
             {
                 targ_ptr[i] = (uint64_t*)((uint16_t*)(targ_block + i + 16 * row) + col);
-                src_ptr[i] = (uint64_t*)((uint16_t*)(src[i + 16 * row]) + col); 
+                src_ptr[i] = (uint64_t*)((uint16_t*)(block_a[i + 16 * row]) + col); 
             }
 
             chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
         }
     }
+
+
+    for (size_t col = 0; col < 4; col++) 
+    {
+        for (size_t row = 0; row < 4; row++)  
+        {
+            for (size_t i = 0; i < 16; i++)
+            {
+                targ_ptr[i] = (uint64_t*)((uint16_t*)(src_block + i + 16 * row) + col);
+                src_ptr[i] = (uint64_t*)((uint16_t*)(block_b[i + 16 * row]) + col); 
+            }
+
+            chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
+        }
+    }
+
    
     for (size_t i = 0; i < 64; i++)
     {
-        memcpy(targ[i], targ_block + i, 8); 
+        memcpy(block_a[i], src_block + i, 8); 
+        memcpy(block_b[i], targ_block + i, 8); 
     } 
  
     return;
 }
 
 
-void simd_transpose_64x64(uint64_t* src[64], uint64_t* targ[64])
+void simd_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
 {
      uint64_t src_block[64] = {0};
      uint64_t targ_block[64] = {0};
@@ -286,17 +303,32 @@ void simd_transpose_64x64(uint64_t* src[64], uint64_t* targ[64])
             for (size_t i = 0; i < 16; i++)
             {
                 targ_ptr[i] = (uint64_t*)((uint16_t*)(targ_block + i + 16 * row) + col);
-                src_ptr[i] = (uint64_t*)((uint16_t*)(src[i + 16 * row]) + col); 
+                src_ptr[i] = (uint64_t*)((uint16_t*)(block_a[i + 16 * row]) + col); 
             }
 
             simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
         }
     }
 
-   
+
+    for (size_t col = 0; col < 4; col++) 
+    {
+        for (size_t row = 0; row < 4; row++)  
+        {
+            for (size_t i = 0; i < 16; i++)
+            {
+                targ_ptr[i] = (uint64_t*)((uint16_t*)(src_block + i + 16 * row) + col);
+                src_ptr[i] = (uint64_t*)((uint16_t*)(block_b[i + 16 * row]) + col); 
+            }
+
+            simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
+        }
+    }
+
     for (size_t i = 0; i < 64; i++)
     {
-        memcpy(targ[i], targ_block + i, 8); 
+        memcpy(block_a[i], src_block + i, 8); 
+        memcpy(block_b[i], targ_block + i, 8); 
     } 
  
     return;

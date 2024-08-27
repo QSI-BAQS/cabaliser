@@ -14,7 +14,7 @@ void __inline_local_clifford_gate(
     struct single_qubit_instruction* inst)
 {
     size_t target = wid->q_map[inst->arg]; 
-    wid->queue->table[target] = LOCAL_CLIFFORD(inst->opcode, wid->queue->table[target]);
+    wid->queue->table[target] = LOCAL_CLIFFORD_LEFT(inst->opcode, wid->queue->table[target]);
     return;
 } 
 

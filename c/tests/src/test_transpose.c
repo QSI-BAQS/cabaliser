@@ -85,10 +85,8 @@ void test_2x16()
         ptrs_a[i][0] |= (1 << (i - 1));
     }
 
-    //    print(ptrs_a, ptrs_b_chunk, 16);
     simd_transpose_2x16((uint8_t**)ptrs_a, (uint8_t**)ptrs_b_simd);
     chunk_transpose_2x16((uint8_t**)ptrs_a, (uint8_t**)ptrs_b_chunk);
-    print(ptrs_b_chunk, ptrs_b_simd, 16);
 
     for (size_t i = 0; i < 16; i++)
     {
@@ -102,76 +100,14 @@ void test_2x16()
     return;
 }
 
-
-
-void test_single_chunks_64x64()
-{
-    const size_t n_channels = 64;
-    const size_t stride = 1; 
-
-    uint64_t* arr_a = NULL;
-    uint64_t* arr_b_chunk = NULL;
-    uint64_t* arr_b_simd = NULL;
-
-    // Creating a single 64x64 block
-    const size_t n_bytes = sizeof(uint64_t) * n_channels;
-    const size_t col_size = sizeof(uint64_t);
-
-    // Set up aligned memory
-    posix_memalign((void**)&arr_a, 64, n_bytes);  
-    posix_memalign((void**)&arr_b_chunk, 64, n_bytes);  
-    posix_memalign((void**)&arr_b_simd, 64, n_bytes);  
-
-
-    // Flush the memory 
-    memset(arr_a, 0, n_bytes); 
-    memset(arr_b_chunk, 0, n_bytes); 
-    memset(arr_b_simd, 0, n_bytes); 
-
-    // Initial state equal    
-    assert(n_bytes == 8 * 64);
-    for (size_t i = 0; i < n_bytes; i++)
-    {
-        assert(((uint8_t*)arr_b_chunk)[i] == ((uint8_t*)arr_b_simd)[i]);
-    }
-
-    uint64_t* ptrs_a[64] = {NULL};     
-    uint64_t* ptrs_b_chunk[64] = {NULL};     
-    uint64_t* ptrs_b_simd[64] = {NULL};     
-
-    
-    for (size_t i = 0; i < n_channels; i++)
-    {
-        ptrs_a[i] = arr_a + i;
-        ptrs_b_chunk[i] = arr_b_chunk + i;
-        ptrs_b_simd[i] = arr_b_simd + i;
-    }
-
-    for (size_t i = 0; i < n_bytes; i+=1)
-    {
-        ((uint8_t*)arr_a)[i] = (i | (i % 3)) | (i << (i % 7));
-    }
-
-    chunk_transpose_64x64(ptrs_a, ptrs_b_chunk);
-    simd_transpose_64x64(ptrs_a, ptrs_b_simd);
-
-    for (size_t i = 0; i < 16; i++)
-    {
-        print(ptrs_b_simd, ptrs_b_chunk, 16);
-    }
-
-    for (size_t i = 0; i < n_bytes; i++)
-    {
-        assert(((uint8_t*)arr_b_chunk)[i] == ((uint8_t*)arr_b_simd)[i]);
-    }
-}
-
 void test_64x64()
 {
     const size_t n_channels = 64;
     const size_t stride = 1; 
 
-    uint64_t* arr_a = NULL;
+    uint64_t* arr_a_chunk = NULL;
+    uint64_t* arr_a_simd = NULL;
+
     uint64_t* arr_b_chunk = NULL;
     uint64_t* arr_b_simd = NULL;
 
@@ -180,45 +116,76 @@ void test_64x64()
     const size_t col_size = sizeof(uint64_t);
 
     // Set up aligned memory
-    posix_memalign((void**)&arr_a, 64, n_bytes);  
+    posix_memalign((void**)&arr_a_chunk, 64, n_bytes);  
+    posix_memalign((void**)&arr_a_simd, 64, n_bytes);  
+
     posix_memalign((void**)&arr_b_chunk, 64, n_bytes);  
     posix_memalign((void**)&arr_b_simd, 64, n_bytes);  
 
     // Flush the memory 
-    memset(arr_a, 0, n_bytes); 
+    memset(arr_a_chunk, 0, n_bytes); 
+    memset(arr_a_simd, 0, n_bytes); 
+
     memset(arr_b_chunk, 0, n_bytes); 
     memset(arr_b_simd, 0, n_bytes); 
+
+
+    uint64_t* ptrs_a_chunk[64] = {NULL};     
+    uint64_t* ptrs_a_simd[64] = {NULL};     
+
+    uint64_t* ptrs_b_chunk[64] = {NULL};     
+    uint64_t* ptrs_b_simd[64] = {NULL};     
+    
+    for (size_t i = 0; i < n_channels; i++)
+    {
+        ptrs_a_chunk[i] = arr_a_chunk + i;
+        ptrs_a_simd[i] = arr_a_simd + i;
+
+        ptrs_b_chunk[i] = arr_b_chunk + i;
+        ptrs_b_simd[i] = arr_b_simd + i;
+    }
+
+    for (size_t i = 0; i < n_bytes; i++)
+    {
+        ((uint8_t*)arr_a_chunk)[i] = (i | (i % 3)) | (i << (i % 7));
+        ((uint8_t*)arr_a_simd)[i] = (i | (i % 3)) | (i << (i % 7));
+
+    }
 
     // Initial state equal    
     assert(n_bytes == 8 * 64);
     for (size_t i = 0; i < n_bytes; i++)
     {
         assert(((uint8_t*)arr_b_chunk)[i] == ((uint8_t*)arr_b_simd)[i]);
+        assert(((uint8_t*)arr_a_chunk)[i] == ((uint8_t*)arr_a_simd)[i]);
     }
 
-    uint64_t* ptrs_a[64] = {NULL};     
-    uint64_t* ptrs_b_chunk[64] = {NULL};     
-    uint64_t* ptrs_b_simd[64] = {NULL};     
-    
-    for (size_t i = 0; i < n_channels; i++)
-    {
-        ptrs_a[i] = arr_a + i;
-        ptrs_b_chunk[i] = arr_b_chunk + i;
-        ptrs_b_simd[i] = arr_b_simd + i;
-    }
 
-    for (size_t i = 0; i < n_bytes; i+=1)
-    {
-        ((uint8_t*)arr_a)[i] = (i | (i % 3)) | (i << (i % 7));
-    }
+    simd_transpose_64x64(ptrs_a_simd, ptrs_b_simd);
+    chunk_transpose_64x64(ptrs_a_chunk, ptrs_b_chunk);
 
-    simd_transpose_64x64(ptrs_a, ptrs_b_simd);
-    chunk_transpose_64x64(ptrs_a, ptrs_b_chunk);
-    
     for (size_t i = 0; i < n_bytes; i++)
     {
         assert(((uint8_t*)arr_b_chunk)[i] == ((uint8_t*)arr_b_simd)[i]);
+        assert(((uint8_t*)arr_a_chunk)[i] == ((uint8_t*)arr_a_simd)[i]);
     }
+
+    simd_transpose_64x64(ptrs_a_simd, ptrs_b_simd);
+    chunk_transpose_64x64(ptrs_a_chunk, ptrs_b_chunk);
+
+    for (size_t i = 0; i < n_bytes; i++)
+    {
+        assert(((uint8_t*)arr_b_chunk)[i] == ((uint8_t*)arr_b_simd)[i]);
+        assert(((uint8_t*)arr_a_chunk)[i] == ((uint8_t*)arr_a_simd)[i]);
+    }
+
+    
+    free(arr_a_chunk);
+    free(arr_a_simd);
+    free(arr_b_chunk);
+    free(arr_b_simd);
+
+
 }
 
 int main()

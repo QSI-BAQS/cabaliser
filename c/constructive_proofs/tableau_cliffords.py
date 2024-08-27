@@ -34,7 +34,6 @@ def reduction(expr):
     x_reduction = lambda x: x[0] 
     z_reduction = lambda x: x[1] 
 
-
     vals = (map(
                 lambda x: int(fn(expr(x[0], x[1]))),
                 table_inputs) 
