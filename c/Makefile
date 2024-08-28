@@ -5,11 +5,14 @@ CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable ${OMPFLAG}
 
 
 # Optimisation Flags
-CFLAGS += -Ofast
-CFLAGS += -mavx -mavx2 -mlzcnt -march=native 
+CFLAGS += -Ofast -fPIC
+CFLAGS += -mavx -mavx2 -mlzcnt -mbmi2 
 
 
-TARGET := cab
+TARGET := cjab.so
+TARGET_FLAGS := -shared -Wl,-soname,${TARGET}  
+
+
  
 SRCDIR := src
 LIBDIR := lib
@@ -31,7 +34,7 @@ OBJFILES := $(patsubst ${SRCDIR}/%.c, ${BUILDDIR}/%.o, ${SRCFILES})
 # Transpose requires disabling some loop mangling
 # The loop vectorisation flags don't mesh well with the casts between pointer types
 TRANSPOSE := simd_transpose
-TRANSPOSE_CFLAGS += -O2 -fno-tree-loop-vectorize -fno-peel-loops
+TRANSPOSE_CFLAGS += -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
 TRANSPOSE_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
 
 
@@ -74,15 +77,15 @@ test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} ${PANDORA_TEST_RUNNERS}
 
 
 benchmark: benchmarks 
-benchmarks: CFLAGS += ${OMPFLAG} -pg 
+benchmarks: CFLAGS += ${OMPFLAG} -pg -g 
 benchmarks: ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS} 
 
 
 ${BUILDDIR} :    
 	mkdir -p ${BUILDDIR}
 
-${TARGET} : ${BUILDDIR} ${OBJFILES} ${PANDORA_OBJFILES} 
-	${CC} ${CFLAGS} -o $@ ${OBJFILES} ${LIBS} 
+${TARGET} : ${BUILDDIR} ${OBJFILES} #${PANDORA_OBJFILES} 
+	${CC} ${CFLAGS} ${TARGET_FLAGS} -o $@ ${OBJFILES}
 
 
 ${BUILDDIR}/${TRANSPOSE}.o : ${SRCDIR}/${TRANSPOSE}.c
