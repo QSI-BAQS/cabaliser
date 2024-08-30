@@ -13,6 +13,9 @@ typedef struct tableau_t tableau_t;
 #include "debug.h"
 #include "instructions.h"
 
+#include "simd_transpose.h"
+
+
 
 #define ROW_MAJOR (1)
 #define COL_MAJOR (0)
@@ -126,6 +129,7 @@ void tableau_print(const tableau_t* tab);
  * TODO simd port swap based nlogn bitvector transpose 
  */
 void tableau_transpose(tableau_t* tab);
+void tableau_transpose_naive(tableau_t* tab);
 
 /*
  * tableau_slice_xor
@@ -181,6 +185,5 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ);
  * Acts in place on the tableau 
  */
 void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j);
-
 
 #endif 

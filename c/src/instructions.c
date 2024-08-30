@@ -45,7 +45,7 @@ void clifford_queue_destroy(clifford_queue_t* que)
 /*
  * clifford_queue_local_clifford_right 
  * Applies clifford operator from the right of the expression  
- * This is used when extracting Clifford terms from the graph state preparaion
+ * This is used when extracting Clifford terms from the graph state preparation
  * :: que : clifford_queue_t* :: The clifford queue
  * :: cliff : instruction_t :: The instruction 
  * :: target : size_t :: The target qubit 

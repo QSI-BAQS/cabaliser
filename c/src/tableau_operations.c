@@ -17,8 +17,7 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
        if (CTZ_SENTINEL == tableau_ctz(tab->slices_x[i], tab->slice_len)) 
        {
          tableau_H(tab, i);
-         // TODO queue
-         //clifford_queue_local_clifford_right(c_que, i, _H_);   
+         clifford_queue_local_clifford_right(c_que, _H_, i);   
        } 
     } 
     return;
@@ -37,12 +36,10 @@ void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que)
     #pragma omp parallel for private(i)
     for (i = 0; i < tab->n_qubits; i++)
     { 
-        // TODO check this
         uint8_t z = __inline_slice_get_bit(tab->slices_z[i], i);  
         instruction_t operator = (z * (_I_)) | (!z * (_S_)); 
         
-        // TODO right queueing
-        //clifford_queue_local_clifford_right(c_que, i, operator);   
+        clifford_queue_local_clifford_right(c_que, i, operator);   
     }
     return;
 }
@@ -50,6 +47,7 @@ void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que)
 
 void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_t idx)
 {
+
     for (size_t j = idx + 1; j < tab->n_qubits; j++)
     {
         // Swap stabilisers
@@ -62,9 +60,8 @@ void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_
 
     if (1 == __inline_slice_get_bit(tab->slices_z[idx], idx))
     {
-        // TODO place hadamards
-
         tableau_transverse_hadamard(tab, idx);
+        clifford_queue_local_clifford_right(queue, _H_, idx);   
         return;
     }
 
@@ -77,6 +74,7 @@ void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_
             tableau_idx_swap_transverse(tab, idx, j);
 
             tableau_transverse_hadamard(tab, idx);
+            clifford_queue_local_clifford_right(queue, _H_, idx);   
             return; 
         } 
     }

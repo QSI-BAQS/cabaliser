@@ -160,7 +160,6 @@ void test_64x64()
         assert(((uint8_t*)arr_a_chunk)[i] == ((uint8_t*)arr_a_simd)[i]);
     }
 
-
     simd_transpose_64x64(ptrs_a_simd, ptrs_b_simd);
     chunk_transpose_64x64(ptrs_a_chunk, ptrs_b_chunk);
 
@@ -178,19 +177,95 @@ void test_64x64()
         assert(((uint8_t*)arr_b_chunk)[i] == ((uint8_t*)arr_b_simd)[i]);
         assert(((uint8_t*)arr_a_chunk)[i] == ((uint8_t*)arr_a_simd)[i]);
     }
-
     
     free(arr_a_chunk);
     free(arr_a_simd);
     free(arr_b_chunk);
     free(arr_b_simd);
+}
 
 
+void test_inplace_64x64()
+{
+    const size_t n_channels = 64;
+    const size_t stride = 1; 
+
+    uint64_t* arr_a_chunk = NULL;
+    uint64_t* arr_a_simd = NULL;
+
+    uint64_t* arr_b_chunk = NULL;
+    uint64_t* arr_b_simd = NULL;
+
+    // Creating a single 64x64 block
+    const size_t n_bytes = sizeof(uint64_t) * n_channels;
+    const size_t col_size = sizeof(uint64_t);
+
+    // Set up aligned memory
+    posix_memalign((void**)&arr_a_chunk, 64, n_bytes);  
+    posix_memalign((void**)&arr_a_simd, 64, n_bytes);  
+
+    posix_memalign((void**)&arr_b_chunk, 64, n_bytes);  
+
+    // Flush the memory 
+    memset(arr_a_chunk, 0, n_bytes); 
+    memset(arr_a_simd, 0, n_bytes); 
+
+    memset(arr_b_chunk, 0, n_bytes); 
+
+
+    uint64_t* ptrs_a_chunk[64] = {NULL};     
+    uint64_t* ptrs_a_simd[64] = {NULL};     
+
+    uint64_t* ptrs_b_chunk[64] = {NULL};     
+    
+    for (size_t i = 0; i < n_channels; i++)
+    {
+        ptrs_a_chunk[i] = arr_a_chunk + i;
+        ptrs_a_simd[i] = arr_a_simd + i;
+
+        ptrs_b_chunk[i] = arr_b_chunk + i;
+    }
+
+    for (size_t i = 0; i < n_bytes; i++)
+    {
+        ((uint8_t*)arr_a_chunk)[i] = (i | (i % 3)) | (i << (i % 7));
+        ((uint8_t*)arr_a_simd)[i] = (i | (i % 3)) | (i << (i % 7));
+
+    }
+
+    // Initial state equal    
+    assert(n_bytes == 8 * 64);
+    for (size_t i = 0; i < n_bytes; i++)
+    {
+        assert(((uint8_t*)arr_a_chunk)[i] == ((uint8_t*)arr_a_simd)[i]);
+    }
+
+    simd_transpose_64x64_inplace(ptrs_a_simd);
+    chunk_transpose_64x64(ptrs_a_chunk, ptrs_b_chunk);
+
+    for (size_t i = 0; i < n_bytes; i++)
+    {
+        assert(((uint8_t*)arr_b_chunk)[i] == ((uint8_t*)arr_a_simd)[i]);
+    }
+
+    simd_transpose_64x64_inplace(ptrs_a_simd);
+    chunk_transpose_64x64(ptrs_a_chunk, ptrs_b_chunk);
+
+    for (size_t i = 0; i < n_bytes; i++)
+    {
+        assert(((uint8_t*)arr_a_chunk)[i] == ((uint8_t*)arr_a_simd)[i]);
+    }
+    
+    free(arr_a_chunk);
+    free(arr_a_simd);
+    free(arr_b_chunk);
 }
 
 int main()
 {
     test_2x16();
     test_64x64();
+    test_inplace_64x64();
+
     return 0;
 }

@@ -25,6 +25,8 @@ typedef uint64_t uint64_ta64 ;//__attribute__((aligned(32)));
 
 void simd_transpose_2x16(uint8_t** src, uint8_t** targ);
 void simd_transpose_64x64(uint64_t* src[64], uint64_t* targ[64]);
+void simd_transpose_64x64_inplace(uint64_t* src[64]);
+
 
 void chunk_transpose_2x16(uint8_t** src, uint8_t** targ);
 void chunk_transpose_64x64(uint64_t* src[64], uint64_t* targ[64]);
