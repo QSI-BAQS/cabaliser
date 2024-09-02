@@ -235,8 +235,6 @@ chunk_transpose_2x16(uint8_t** src, uint8_t** targ)
 
 
 
-
-
 void __attribute__((noinline))
 chunk_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
 {
@@ -252,13 +250,13 @@ chunk_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
         {
             for (size_t i = 0; i < 16; i++)
             {
-                targ_ptr[i] = (uint64_t*)((uint16_t*)(targ_block + i + 16 * row) + col);
-                src_ptr[i] = (uint64_t*)((uint16_t*)(block_a[i + 16 * row]) + col); 
+                targ_ptr[i] = (uint64_t*)(((uint16_t*)(targ_block + i + 16 * row)) + col);
+                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_a[i + 16 * col])) + row); 
             }
-
-            chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
+            chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);
         }
     }
+
 
     for (size_t col = 0; col < 4; col++) 
     {
@@ -266,14 +264,13 @@ chunk_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
         {
             for (size_t i = 0; i < 16; i++)
             {
-                targ_ptr[i] = (uint64_t*)((uint16_t*)(src_block + i + 16 * row) + col);
-                src_ptr[i] = (uint64_t*)((uint16_t*)(block_b[i + 16 * row]) + col); 
+                targ_ptr[i] = (uint64_t*)(((uint16_t*)(src_block + i + 16 * row)) + col);
+                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_b[i + 16 * col])) + row); 
             }
-
-            chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
+            chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);
         }
     }
-   
+
     for (size_t i = 0; i < 64; i++)
     {
         memcpy(block_a[i], src_block + i, 8); 
@@ -299,11 +296,10 @@ void simd_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
         {
             for (size_t i = 0; i < 16; i++)
             {
-                targ_ptr[i] = (uint64_t*)((uint16_t*)(targ_block + i + 16 * row) + col);
-                src_ptr[i] = (uint64_t*)((uint16_t*)(block_a[i + 16 * row]) + col); 
+                targ_ptr[i] = (uint64_t*)(((uint16_t*)(targ_block + i + 16 * row)) + col);
+                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_a[i + 16 * col])) + row); 
             }
-
-            simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
+            chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);
         }
     }
 
@@ -314,11 +310,10 @@ void simd_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
         {
             for (size_t i = 0; i < 16; i++)
             {
-                targ_ptr[i] = (uint64_t*)((uint16_t*)(src_block + i + 16 * row) + col);
-                src_ptr[i] = (uint64_t*)((uint16_t*)(block_b[i + 16 * row]) + col); 
+                targ_ptr[i] = (uint64_t*)(((uint16_t*)(src_block + i + 16 * row)) + col);
+                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_b[i + 16 * col])) + row); 
             }
-
-            simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
+            chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);
         }
     }
 
@@ -356,5 +351,44 @@ void simd_transpose_64x64_inplace(uint64_t* block_a[64])
         memcpy(block_a[i], targ_block + i, 8); 
     } 
  
+    return;
+}
+
+
+static inline
+uint8_t __inline_get_bit(
+    uint64_t* slice,
+    const size_t index)
+{
+    uint64_t mask = 1ull << (index % 64);
+    return !!(slice[index / 64] & mask); 
+}
+
+void __inline_set_bit(
+    uint64_t* slice,
+    const size_t index,
+    const uint8_t value)
+{
+    slice[index / 64] &= ~(1ull << (index % 64)); 
+    slice[index / 64] |= (1ull & value) << (index % 64); 
+}
+
+void transpose_naive(uint64_t** block, const size_t size)
+{
+
+    for (size_t i = 0; i < size; i++)
+    {
+        // Inner loop should run along the current orientation, and hence along the cache lines 
+        uint64_t* ptr = block[i]; 
+    
+        for (size_t j = i + 1; j < size; j++)
+        {
+            uint8_t val_a = __inline_get_bit(ptr, j); 
+            uint8_t val_b = __inline_get_bit(block[j], i); 
+
+            __inline_set_bit(ptr, j, val_b);
+            __inline_set_bit(block[j], i, val_a);
+        }    
+    }
     return;
 }

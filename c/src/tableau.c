@@ -255,31 +255,31 @@ void tableau_transpose(tableau_t* tab)
     {
         for (size_t i = 0; i < 64; i++)
         {
-            src_ptr[i] = tab->slices_x[i + (64 * col)] + col;
+            src_ptr[i] = tab->slices_x[i];
         }
         printf("Diagonal Transpose %lu\n", col);
         simd_transpose_64x64_inplace(src_ptr);
     }
 
 
-    // Doing the remainder naively
-    for (size_t i = chunk_elements; i < tab->n_qubits; i++)
-    {
-        // Inner loop should run along the current orientation, and hence along the cache lines 
-        tableau_slice_p ptr_x = tab->slices_x[i]; 
-    
-        for (size_t j = 0; j < tab->n_qubits; j++)
-        {
-
-            uint8_t val_a = __inline_slice_get_bit(ptr_x, j); 
-            uint8_t val_b = __inline_slice_get_bit(tab->slices_x[j], i); 
-
-            //printf("%lu %lu %d %d\n", i, j, val_a, val_b);
-
-            __inline_slice_set_bit(ptr_x, j, val_b);
-            __inline_slice_set_bit(tab->slices_x[j], i, val_a);
-        }    
-    }
+//    // Doing the remainder naively
+//    for (size_t i = chunk_elements * 64; i < tab->n_qubits; i++)
+//    {
+//        // Inner loop should run along the current orientation, and hence along the cache lines 
+//        tableau_slice_p ptr_x = tab->slices_x[i]; 
+//    
+//        for (size_t j = 0; j < tab->n_qubits; j++)
+//        {
+//
+//            uint8_t val_a = __inline_slice_get_bit(ptr_x, j); 
+//            uint8_t val_b = __inline_slice_get_bit(tab->slices_x[j], i); 
+//
+//            //printf("%lu %lu %d %d\n", i, j, val_a, val_b);
+//
+//            __inline_slice_set_bit(ptr_x, j, val_b);
+//            __inline_slice_set_bit(tab->slices_x[j], i, val_a);
+//        }    
+//    }
    
     return;
 }

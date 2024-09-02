@@ -2,6 +2,21 @@
 
 #include "tableau.h"
 
+void print(uint64_t** arr_a, const size_t n_channels, const size_t x_offset, const size_t y_offset_bytes, const size_t y_offset_bits)
+{
+    for (size_t i = 0; i < n_channels; i++)
+    {
+        printf("|");
+        for (size_t j = 0; j < n_channels; j++)
+        {
+            printf("%d ", !!((arr_a[j + x_offset][y_offset_bytes] >> y_offset_bits) & (1 << i)));
+        }
+        printf("|\n");
+    } 
+printf("\n");
+}
+
+
 tableau_t* tableau_random_create(size_t n_qubits)
 {
     tableau_t* tab = tableau_create(n_qubits);
@@ -43,25 +58,32 @@ void test_small(const size_t n_qubits)
     tableau_t* tab = tableau_random_create(n_qubits); 
     tableau_t* tab_cmp = tableau_copy(tab);  
 
+    print(tab->slices_x, 16, 16, 0, 0);
+    //print(tab_cmp->slices_x, 16, 16, 0, 0);
+
     tableau_transpose(tab);  
     tableau_transpose_naive(tab_cmp);
+
+    print(tab->slices_x, 16, 0, 0, 16);
+    //print(tab_cmp->slices_x, 16, 0, 0, 16);
+
 
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
         for (size_t j = 0; j < tab->slice_len; j++)
         {
-            assert(tab->slices_x[i][j] == tab_cmp->slices_x[i][j]);
+            //printf("%d %d\n",(uint8_t)(tab->slices_x[i][0]), (uint8_t)(tab_cmp->slices_x[i][0]));
+            assert(((uint8_t)(tab->slices_x[i][0])) == ((uint8_t)(tab_cmp->slices_x[i][0])));
             //assert(tab->slices_z[i][j] == tab_cmp->slices_z[i][j]);
         }
     } 
- 
     return;
 }
 
 
 int main()
 {
-
+    srand(3);
     test_small(64);
 
 //    for (size_t i = 3; i < 256; i++)
