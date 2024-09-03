@@ -95,6 +95,17 @@ void __inline_slice_set_bit(
 
     return; 
 }
+static inline
+void __atomic_inline_slice_set_bit(
+    tableau_slice_p slice,
+    const size_t index,
+    const uint8_t value)
+{
+    __atomic_and_fetch(slice + (index / CHUNK_SIZE_BITS), ~(1ull << (index % CHUNK_SIZE_BITS)), __ATOMIC_ACQUIRE); 
+    __atomic_or_fetch(slice + (index / CHUNK_SIZE_BITS), (1ull & value) << (index % CHUNK_SIZE_BITS), __ATOMIC_RELEASE); 
+
+    return; 
+}
 
 /*
  * slice_get_bit

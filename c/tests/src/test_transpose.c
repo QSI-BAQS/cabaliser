@@ -2,21 +2,6 @@
 
 #include "simd_transpose.h"
 
-void print(uint64_t** arr_a, const size_t n_channels, const size_t x_offset, const size_t y_offset_bytes, const size_t y_offset_bits)
-{
-    for (size_t i = 0; i < n_channels; i++)
-    {
-        printf("|");
-        for (size_t j = 0; j < n_channels; j++)
-        {
-            printf("%d ", !!((arr_a[j + x_offset][y_offset_bytes] >> y_offset_bits) & (1 << i)));
-        }
-        printf("|\n");
-    } 
-printf("\n");
-}
-
-
 
 void test_2x16()
 {
@@ -163,14 +148,6 @@ void test_64x64()
     memcpy(arr_a_chunk, arr_a_naive, n_bytes); 
     memcpy(arr_a_simd, arr_a_naive, n_bytes); 
 
-    print(ptrs_a_naive, 16, 16, 0, 0);
-    //print(ptrs_a_naive, 16, 16, 0, 0);
-    //print(ptrs_a_chunk, 16, 16, 0, 0);
-
-//    print(ptrs_a_simd, 16, 0, 0, 16);
-//    print(ptrs_a_simd, 16, 16, 0, 16);
-
-
     // Initial state equal    
     assert(n_bytes == 8 * 64);
     for (size_t i = 0; i < n_bytes; i++)
@@ -183,16 +160,6 @@ void test_64x64()
     transpose_naive(ptrs_a_naive, 64);
     simd_transpose_64x64(ptrs_a_simd, ptrs_b_simd);
     chunk_transpose_64x64(ptrs_a_chunk, ptrs_b_chunk);
-
-    print(ptrs_a_naive, 16, 16, 0, 32);
-    print(ptrs_b_chunk, 16, 16, 0, 32);
-    print(ptrs_b_simd, 16, 16, 0, 32);
-
-
-//    print(ptrs_b_simd, 16, 16, 0, 0);
-//    print(ptrs_b_simd, 16, 0, 0, 16);
-//    print(ptrs_b_simd, 16, 16, 0, 16);
-
 
     for (size_t i = 0; i < n_bytes; i++)
     {
@@ -295,9 +262,12 @@ void test_inplace_64x64()
 
 int main()
 {
-    test_2x16();
-    test_64x64();
-    //test_inplace_64x64();
-
+    for (size_t i = 0; i < 1000; i++)
+    {
+        srand(i);
+        test_2x16();
+        test_64x64();
+        test_inplace_64x64();
+    }
     return 0;
 }

@@ -218,68 +218,67 @@ void tableau_col_elim_X(tableau_t const* tab, const size_t idx)
  * tableau_transpose
  * Transposes the tableau
  */
+void tableau_transpose_slices(tableau_t* tab, uint64_t** slices); 
 void tableau_transpose(tableau_t* tab)
 {
 
     if (tab->n_qubits < 64)
     {
-        printf("Naive Transpose\n");
         tableau_transpose_naive(tab);
         return;
     }
 
-    const size_t chunk_elements =  (tab->slice_len * 8 * sizeof(uint64_t) / 64); 
+    tableau_transpose_slices(tab, tab->slices_x);
+    tableau_transpose_slices(tab, tab->slices_z);
+}
+void tableau_transpose_slices(tableau_t* tab, uint64_t** slices) 
+{
+    const size_t chunk_elements =  tab->n_qubits / (8 * sizeof(uint64_t)); 
+    const size_t remainder_elements = tab->n_qubits % 64; 
 
-    printf("Chunk Elements: %lu \n", chunk_elements);
-    const size_t remainder_elements = tab->slice_len % 64; 
 
     uint64_t* src_ptr[64] = {NULL};
     uint64_t* targ_ptr[64] = {NULL};
-   
-    for (size_t col = 1; col < chunk_elements; col++) 
+  
+    for (size_t col = 0; col < chunk_elements; col++) 
     {
-        for (size_t row = col; row < chunk_elements; row++) 
+        for (size_t row = col + 1; row < chunk_elements; row++) 
         {
              // TODO Vectorise this
             for (size_t i = 0; i < 64; i++)
             {
-                src_ptr[i] = tab->slices_x[i + (64 * col)] + row;
-                targ_ptr[i] = tab->slices_x[i + (64 * row)] + col;
+                src_ptr[i] = slices[i + (64 * col)] + row;
+                targ_ptr[i] = slices[i + (64 * row)] + col;
             }
-            printf("Transpose %lu %lu\n", row, col);
             simd_transpose_64x64(src_ptr, targ_ptr);
         }
     }
 
+    // Inplace diagonal
     for (size_t col = 0; col < chunk_elements; col++)
     {
         for (size_t i = 0; i < 64; i++)
         {
-            src_ptr[i] = tab->slices_x[i];
+            src_ptr[i] = slices[i + (64 * col)] + col;
         }
-        printf("Diagonal Transpose %lu\n", col);
         simd_transpose_64x64_inplace(src_ptr);
     }
 
+    // Doing the remainder naively
+    for (size_t i = chunk_elements * 64; i < tab->n_qubits; i++)
+    {
+        // Inner loop should run along the current orientation, and hence along the cache lines 
+        tableau_slice_p ptr_x = slices[i]; 
+   
+        for (size_t j = 0; j < tab->n_qubits - (remainder_elements - (i - chunk_elements * 64)); j++)
+        {
+            uint8_t val_a = __inline_slice_get_bit(ptr_x, j); 
+            uint8_t val_b = __inline_slice_get_bit(slices[j], i); 
 
-//    // Doing the remainder naively
-//    for (size_t i = chunk_elements * 64; i < tab->n_qubits; i++)
-//    {
-//        // Inner loop should run along the current orientation, and hence along the cache lines 
-//        tableau_slice_p ptr_x = tab->slices_x[i]; 
-//    
-//        for (size_t j = 0; j < tab->n_qubits; j++)
-//        {
-//
-//            uint8_t val_a = __inline_slice_get_bit(ptr_x, j); 
-//            uint8_t val_b = __inline_slice_get_bit(tab->slices_x[j], i); 
-//
-//            //printf("%lu %lu %d %d\n", i, j, val_a, val_b);
-//
-//            __inline_slice_set_bit(ptr_x, j, val_b);
-//            __inline_slice_set_bit(tab->slices_x[j], i, val_a);
-//        }    
-//    }
+            __inline_slice_set_bit(ptr_x, j, val_b);
+            __inline_slice_set_bit(slices[j], i, val_a);
+        }    
+    }
    
     return;
 }

@@ -6,12 +6,11 @@ CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable ${OMPFLAG}
 
 # Optimisation Flags
 CFLAGS += -Ofast -fPIC
-CFLAGS += -mavx -mavx2 -mlzcnt -mbmi2 
+CFLAGS += -mavx2 -mlzcnt -mbmi2 
 
 
 TARGET := cjab.so
 TARGET_FLAGS := -shared -Wl,-soname,${TARGET}  
-
 
  
 SRCDIR := src
@@ -22,6 +21,9 @@ LIBS := -I${LIBDIR}
 
 TESTDIR := tests
 TEST_SRCDIR := ${TESTDIR}/src
+TEST_LIBDIR := ${TESTDIR}/lib
+TEST_LIBS := -I${TEST_LIBDIR}
+
 
 BENCHMARK_DIR := benchmarks
 BENCHMARK_SRCDIR := ${BENCHMARK_DIR}/src
@@ -36,7 +38,6 @@ OBJFILES := $(patsubst ${SRCDIR}/%.c, ${BUILDDIR}/%.o, ${SRCFILES})
 TRANSPOSE := simd_transpose
 TRANSPOSE_CFLAGS += -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
 TRANSPOSE_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
-
 
 
 # Test Files
@@ -95,8 +96,7 @@ ${BUILDDIR}/%.o : ${SRCDIR}/%.c
 	${CC} ${CFLAGS} ${LIBS} -c -o $@ $^
 
 ${TESTDIR}/%.out : ${OBJFILES} ${TEST_SRCDIR}/%.c 
-	${CC} ${CFLAGS} ${LIBS} -o $@ $^
-
+	${CC} ${CFLAGS} ${TEST_LIBS} ${LIBS} -o $@ $^
 
 ${BENCHMARK_DIR}/%.out : ${OBJFILES} ${BENCHMARK_SRCDIR}/%.c 
 	${CC} ${CFLAGS} ${LIBS} -o $@ $^

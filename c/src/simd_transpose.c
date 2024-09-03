@@ -339,8 +339,8 @@ void simd_transpose_64x64_inplace(uint64_t* block_a[64])
         {
             for (size_t i = 0; i < 16; i++)
             {
-                targ_ptr[i] = (uint64_t*)((uint16_t*)(targ_block + i + 16 * row) + col);
-                src_ptr[i] = (uint64_t*)((uint16_t*)(block_a[i + 16 * row]) + col); 
+                targ_ptr[i] = (uint64_t*)(((uint16_t*)(targ_block + i + 16 * row)) + col);
+                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_a[i + 16 * col])) + row); 
             }
 
             simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
