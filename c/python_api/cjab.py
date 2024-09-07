@@ -3,7 +3,6 @@ from typing import Final
 import struct
 import numpy as np
 
-
 # TODO: Relative import paths and wrap in a package
 lib = cdll.LoadLibrary('../cjab.so')
 
@@ -51,10 +50,25 @@ class Widget():
             Constructor for the widget
             Allocates a large tableau
         '''
-        self.n_qubits = n_qubits
-        self.n_qubits_max = n_qubits_max
+        self.__decomposed = False
+        self.widget = lib.widget_create(n_qubits, n_qubits_max) 
 
-        self.widget = lib.widget_create(self.n_qubits, self.n_qubits_max) 
+
+    def get_n_qubits(self) -> int:
+        '''
+            get_n_qubits
+            Getter method for the widget
+            Returns the current number of allocated qubits on the widget 
+        '''
+        return lib.widget_get_n_qubits(self.widget)
+
+    def get_max_qubits(self) -> int:
+        '''
+            get_max_qubits
+            Getter method for the widget
+            Returns the maximum number of allocatable qubits on the widget 
+        '''
+        return lib.widget_get_max_qubits(self.widget)
 
 
     def __del__(self):
@@ -64,6 +78,17 @@ class Widget():
             Frees the underlying C object
         '''
         lib.widget_destroy(self.widget)
+
+    def get_adjacencies(self, qubit: int):
+        try:
+            assert(self.__decomposed)
+        except:
+            raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies"))
+        arr = (ctypes.c_int)
+
+    def decompose(self):
+        lib.widget_decompose(self.widget)
+        self.__decomposed = True
 
 class Operation(): 
     def __init__(self, op : np.uint8, arg_a : np.uint64, arg_b : np.uint64): 

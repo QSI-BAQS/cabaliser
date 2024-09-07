@@ -15,6 +15,8 @@ void __inline_local_clifford_gate(
 {
     size_t target = wid->q_map[inst->arg]; 
     wid->queue->table[target] = LOCAL_CLIFFORD_LEFT(inst->opcode, wid->queue->table[target]);
+
+    // TODO Pauli Correction
     return;
 } 
 
@@ -61,6 +63,7 @@ void __inline_non_local_clifford_gate(
     wid->queue->table[targ] = _I_;
     TWO_QUBIT_OPERATIONS[inst->opcode & INSTRUCTION_OPERATOR_MASK](wid->tableau, ctrl, targ);
 
+    // TODO Pauli correction
     return;
 } 
 
@@ -79,16 +82,28 @@ void __inline_rz_gate(
     widget_t* wid,
     struct rz_instruction* inst) 
 {
-    wid->n_qubits += 1;  
-
+    
     // This could be handled with a better return
     assert(wid->n_qubits < wid->max_qubits);
 
-    size_t idx = WMAP_LOOKUP(wid, inst->arg);
+    const size_t ctrl = WMAP_LOOKUP(wid, inst->arg);
+    const size_t targ = wid->n_qubits; 
 
-    wid->queue->non_clifford[idx] = inst->tag;
-    wid->q_map[idx] = wid->n_qubits;
+    wid->queue->non_clifford[ctrl] = inst->tag;
+    wid->q_map[ctrl] = wid->n_qubits;
 
+
+    SINGLE_QUBIT_OPERATIONS[wid->queue->table[ctrl] & INSTRUCTION_OPERATOR_MASK](wid->tableau, ctrl);
+    wid->queue->table[ctrl] = _I_;
+
+    SINGLE_QUBIT_OPERATIONS[wid->queue->table[targ] & INSTRUCTION_OPERATOR_MASK](wid->tableau, targ);
+    wid->queue->table[targ] = _I_;
+
+    tableau_CNOT(wid->tableau, ctrl, targ);
+
+    wid->n_qubits += 1;  
+
+    // TODO Pauli Correction
     return;
 }
 
@@ -106,7 +121,6 @@ void parse_instruction_block(
     instruction_stream_u* instructions,
     const size_t n_instructions)
 {
-    
     #pragma GCC unroll 8
     for (size_t i = 0; i < n_instructions; i++)
     {
@@ -124,6 +138,6 @@ void parse_instruction_block(
             __inline_rz_gate(wid, (struct rz_instruction*) instructions + i);
             break;
         }
-    } 
+    }
     return;
-} 
+}

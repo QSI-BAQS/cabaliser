@@ -78,7 +78,7 @@ test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} ${PANDORA_TEST_RUNNERS}
 
 
 benchmark: benchmarks 
-benchmarks: CFLAGS += ${OMPFLAG} -pg -g 
+benchmarks: CFLAGS += ${OMPFLAG} -pg
 benchmarks: ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS} 
 
 

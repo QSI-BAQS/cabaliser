@@ -3,12 +3,13 @@
 /*
  * widget_create
  * Constructor for widget object
+ * :: initial_qubits : const size_t :: Initial number of qubits that are allocated 
  * :: max_qubits : const size_t :: Maximum number of qubits that may be allocated 
- *
  */
 widget_t* widget_create(const size_t initial_qubits, const size_t max_qubits)
 {
-    widget_t* wid = malloc(sizeof(widget_t));  
+    widget_t* wid = (widget_t*)malloc(sizeof(widget_t));  
+    wid->n_initial_qubits = initial_qubits;
     wid->n_qubits = initial_qubits;
     wid->max_qubits = max_qubits; 
     wid->tableau = tableau_create(max_qubits);
@@ -32,6 +33,55 @@ void widget_destroy(widget_t* wid)
     free(wid);
 }
 
+/*
+ * widget_get_n_qubits
+ * widget_get_n_initial_qubits
+ * widget_get_max_qubits
+ * Getter methods for the widget
+ * :: wid : const widget_t* :: 
+ */
+size_t widget_get_n_qubits(const widget_t* wid)
+{
+    return wid->n_qubits;
+}
+size_t widget_get_n_qubits(const widget_t* wid)
+{
+    return wid->n_initial_qubits;
+}
+size_t widget_get_max_qubits(const widget_t* wid)
+{
+    return wid->max_qubits;
+}
+
+/*
+ * widget_get_adjacencies
+ * For a qubit in the tableau, list all adjacent qubits 
+ * :: wid : const widget_t* :: The widget to get adjacencies for 
+ * :: target_qubit : const size_t :: The target qubit 
+ * Returns a heap allocated array of uint64_t objects
+ */
+size_t* widget_get_adjacencies(const widget_t* wid, const size_t target_qubit)
+{
+    for (size_t i = 0; i < wid->tableau->n_qubits; i++)  
+    {
+
+    }
+    return NULL;
+}
+
+/*
+ * widget_get_io_map
+ * Indicates the mapping of input to output qubits
+ * Input qubits are ordered from 1 to n, output mapping indicates the qubit number
+ * :: wid : const widget_t* :: Widget to get the mapping for
+ */
+size_t* widget_get_io_map(const widget_t* wid) 
+{
+    const size_t n_bytes = sizeof(size_t) * wid->n_initial_qubits; 
+    size_t* map = (size_t*)malloc(n_bytes); 
+    memcpy(map, wid->q_map, n_bytes);
+    return map; 
+}
 
 /*
  * widget_decompose
