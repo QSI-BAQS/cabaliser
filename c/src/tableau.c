@@ -311,68 +311,68 @@ void tableau_transpose_naive(tableau_t* tab)
 }
 
 
-/*
- * gs_tableau_transpose
- * Transposes a tableau for a known graph state
- * The only difference is this guarantees the mututal independence of the input qubits 
- * These may be excluded from the transpose operation
- */
-void gs_tableau_transpose(tableau_t* tab, const size_t input_qubits)
-{
-    // Flip orientation
-    tab->orientation ^= 1;
-
-    // Prevent bad inputs
-    DEBUG_CHECK(input_qubits <= tab->n_qubits);
-
-    // Independent input qubits  
-    // Outer loop should jump between cache lines 
-    for (size_t i = 0; i < input_qubits; i++)
-    {
-        // Inner loop should run along the current orientation, and hence along the cache lines 
-        tableau_slice_p ptr_x = tab->slices_x[i]; 
-        tableau_slice_p ptr_z = tab->slices_z[i];
-        #pragma GCC unroll 8
-        for (size_t j = input_qubits; j < tab->n_qubits; j++)
-        {
-            uint8_t val_a = __inline_slice_get_bit(ptr_x, j); 
-            uint8_t val_b = __inline_slice_get_bit(tab->slices_x[j], i); 
-         
-            __inline_slice_set_bit(ptr_x, j, val_b); 
-            __inline_slice_set_bit(tab->slices_x[j], j, val_a); 
-
-            val_a = __inline_slice_get_bit(ptr_z, j); 
-            val_b = __inline_slice_get_bit(tab->slices_z[j], i); 
-         
-            __inline_slice_set_bit(ptr_z, j, val_b); 
-            __inline_slice_set_bit(tab->slices_z[j], j, val_a); 
-        }    
-    }
-    
-    // Outer loop should jump between cache lines 
-    for (size_t i = input_qubits; i < tab->n_qubits; i++)
-    {
-        // Inner loop should run along the current orientation, and hence along the cache lines 
-        tableau_slice_p ptr_x = tab->slices_x[i]; 
-        tableau_slice_p ptr_z = tab->slices_z[i];
-        #pragma GCC unroll 8
-        for (size_t j = i + 1; j < tab->n_qubits; j++)
-        {
-            uint8_t val_a = __inline_slice_get_bit(ptr_x, j); 
-            uint8_t val_b = __inline_slice_get_bit(tab->slices_x[j], i); 
-         
-            __inline_slice_set_bit(ptr_x, j, val_b); 
-            __inline_slice_set_bit(tab->slices_x[j], j, val_a); 
-
-            val_a = __inline_slice_get_bit(ptr_z, j); 
-            val_b = __inline_slice_get_bit(tab->slices_z[j], i); 
-         
-            __inline_slice_set_bit(ptr_z, j, val_b); 
-            __inline_slice_set_bit(tab->slices_z[j], j, val_a); 
-        }    
-    }
-
-}
+///*
+// * gs_tableau_transpose
+// * Transposes a tableau for a known graph state
+// * The only difference is this guarantees the mututal independence of the input qubits 
+// * These may be excluded from the transpose operation
+// */
+//void gs_tableau_transpose(tableau_t* tab, const size_t input_qubits)
+//{
+//    // Flip orientation
+//    tab->orientation ^= 1;
+//
+//    // Prevent bad inputs
+//    DEBUG_CHECK(input_qubits <= tab->n_qubits);
+//
+//    // Independent input qubits  
+//    // Outer loop should jump between cache lines 
+//    for (size_t i = 0; i < input_qubits; i++)
+//    {
+//        // Inner loop should run along the current orientation, and hence along the cache lines 
+//        tableau_slice_p ptr_x = tab->slices_x[i]; 
+//        tableau_slice_p ptr_z = tab->slices_z[i];
+//        #pragma GCC unroll 8
+//        for (size_t j = input_qubits; j < tab->n_qubits; j++)
+//        {
+//            uint8_t val_a = __inline_slice_get_bit(ptr_x, j); 
+//            uint8_t val_b = __inline_slice_get_bit(tab->slices_x[j], i); 
+//         
+//            __inline_slice_set_bit(ptr_x, j, val_b); 
+//            __inline_slice_set_bit(tab->slices_x[j], j, val_a); 
+//
+//            val_a = __inline_slice_get_bit(ptr_z, j); 
+//            val_b = __inline_slice_get_bit(tab->slices_z[j], i); 
+//         
+//            __inline_slice_set_bit(ptr_z, j, val_b); 
+//            __inline_slice_set_bit(tab->slices_z[j], j, val_a); 
+//        }    
+//    }
+//    
+//    // Outer loop should jump between cache lines 
+//    for (size_t i = input_qubits; i < tab->n_qubits; i++)
+//    {
+//        // Inner loop should run along the current orientation, and hence along the cache lines 
+//        tableau_slice_p ptr_x = tab->slices_x[i]; 
+//        tableau_slice_p ptr_z = tab->slices_z[i];
+//        #pragma GCC unroll 8
+//        for (size_t j = i + 1; j < tab->n_qubits; j++)
+//        {
+//            uint8_t val_a = __inline_slice_get_bit(ptr_x, j); 
+//            uint8_t val_b = __inline_slice_get_bit(tab->slices_x[j], i); 
+//         
+//            __inline_slice_set_bit(ptr_x, j, val_b); 
+//            __inline_slice_set_bit(tab->slices_x[j], j, val_a); 
+//
+//            val_a = __inline_slice_get_bit(ptr_z, j); 
+//            val_b = __inline_slice_get_bit(tab->slices_z[j], i); 
+//         
+//            __inline_slice_set_bit(ptr_z, j, val_b); 
+//            __inline_slice_set_bit(tab->slices_z[j], j, val_a); 
+//        }    
+//    }
+//
+//}
 
 
 /*

@@ -103,7 +103,6 @@ void widget_decompose(widget_t* wid)
         }
 
         tableau_X_diag_col_upper(wid->tableau, i);
-
     }
 
 
@@ -118,7 +117,8 @@ void widget_decompose(widget_t* wid)
 
 
     // Phase operation to set Z diagonal to zero 
-    //#pragma omp parallel for
+    // Loop acts on separate cache line entries for each element
+    #pragma omp parallel for
     for (size_t i = 0; i < wid->n_qubits; i++)
     {
         if (__inline_slice_get_bit(wid->tableau->slices_z[i], i))
@@ -138,6 +138,7 @@ void widget_decompose(widget_t* wid)
              clifford_queue_local_clifford_right(wid->queue, _Z_, i);
         }
     }
+    // The previous loop zeros the phases, this loop just does it faster
     #pragma omp parallel for
     for (size_t i = 0; i < wid->tableau->slice_len; i++)
     {

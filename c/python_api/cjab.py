@@ -83,7 +83,7 @@ class Widget():
         try:
             assert(self.__decomposed)
         except:
-            raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies"))
+            raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
         arr = (ctypes.c_int)
 
     def decompose(self):

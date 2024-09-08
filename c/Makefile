@@ -36,6 +36,7 @@ OBJFILES := $(patsubst ${SRCDIR}/%.c, ${BUILDDIR}/%.o, ${SRCFILES})
 # Transpose requires disabling some loop mangling
 # The loop vectorisation flags don't mesh well with the casts between pointer types
 TRANSPOSE := simd_transpose
+TRANSPOSE_TEST := test_transpose
 TRANSPOSE_CFLAGS += -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
 TRANSPOSE_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
 
@@ -55,7 +56,6 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 .PHONY: pandora_api
 
 include pandora_api/Makefile 
-#include src/transpose/Makefile 
 
 # Build Rules
 all : ${TARGET} ${BUILDDIR} 
@@ -95,8 +95,12 @@ ${BUILDDIR}/${TRANSPOSE}.o : ${SRCDIR}/${TRANSPOSE}.c
 ${BUILDDIR}/%.o : ${SRCDIR}/%.c
 	${CC} ${CFLAGS} ${LIBS} -c -o $@ $^
 
-${TESTDIR}/%.out : ${OBJFILES} ${TEST_SRCDIR}/%.c 
+${TESTDIR}/%.out : ${OBJFILES} ${TEST_SRCDIR}/%.c
 	${CC} ${CFLAGS} ${TEST_LIBS} ${LIBS} -o $@ $^
+
+${TESTDIR}/${TEST_TRANSPOSE}.out : ${OBJFILES} ${TEST_SRCDIR}/${TEST_TRANSPOSE}.c 
+	${CC} ${CFLAGS} ${TRANSPOSE_CFLAGS} ${LIBS} -o $@ $^
+
 
 ${BENCHMARK_DIR}/%.out : ${OBJFILES} ${BENCHMARK_SRCDIR}/%.c 
 	${CC} ${CFLAGS} ${LIBS} -o $@ $^
@@ -109,3 +113,4 @@ obj:
 clean: 
 	rm -rf ${BUILDDIR}
 	rm -rf ${TESTDIR}/*.out
+	rm -rf ${BENCHMARK_DIR}/*.out

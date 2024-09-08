@@ -4,7 +4,6 @@
 static inline
 void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
 {
-
     __m256i msrc = _mm256_set_epi16(
             *(uint16_t*)src[15],
             *(uint16_t*)src[14],
@@ -210,6 +209,80 @@ void simd_transpose_2x16(uint8_t** src, uint8_t** targ)
 }
 
 
+void simd_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
+{
+     uint64_t src_block[64] = {0};
+     uint64_t targ_block[64] = {0};
+    
+     uint64_t* src_ptr[16];
+     uint64_t* targ_ptr[16] = {NULL};
+
+
+    for (size_t col = 0; col < 4; col++) 
+    {
+        for (size_t row = 0; row < 4; row++)  
+        {
+            for (size_t i = 0; i < 16; i++)
+            {
+                targ_ptr[i] = (uint64_t*)(((uint16_t*)(targ_block + i + 16 * row)) + col);
+                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_a[i + 16 * col])) + row); 
+            }
+            simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);
+        }
+    }
+
+
+    for (size_t col = 0; col < 4; col++) 
+    {
+        for (size_t row = 0; row < 4; row++)  
+        {
+            for (size_t i = 0; i < 16; i++)
+            {
+                targ_ptr[i] = (uint64_t*)(((uint16_t*)(src_block + i + 16 * row)) + col);
+                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_b[i + 16 * col])) + row); 
+            }
+            simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);
+        }
+    }
+
+    for (size_t i = 0; i < 64; i++)
+    {
+        memcpy(block_a[i], src_block + i, 8); 
+        memcpy(block_b[i], targ_block + i, 8); 
+    } 
+ 
+    return;
+}
+void simd_transpose_64x64_inplace(uint64_t* block_a[64])
+{
+     uint64_t targ_block[64] = {0};
+    
+     uint64_t* src_ptr[16];
+     uint64_t* targ_ptr[16] = {NULL};
+
+
+    for (size_t col = 0; col < 4; col++) 
+    {
+        for (size_t row = 0; row < 4; row++)  
+        {
+            for (size_t i = 0; i < 16; i++)
+            {
+                targ_ptr[i] = (uint64_t*)(((uint16_t*)(targ_block + i + 16 * row)) + col);
+                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_a[i + 16 * col])) + row); 
+            }
+
+            simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
+        }
+    }
+    for (size_t i = 0; i < 64; i++)
+    {
+        memcpy(block_a[i], targ_block + i, 8); 
+    } 
+ 
+    return;
+}
+
+
 /*
  * Scalar implementation of the simd transpose
  * Used for regression testing
@@ -281,79 +354,6 @@ chunk_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
 }
 
 
-void simd_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
-{
-     uint64_t src_block[64] = {0};
-     uint64_t targ_block[64] = {0};
-    
-     uint64_t* src_ptr[16];
-     uint64_t* targ_ptr[16] = {NULL};
-
-
-    for (size_t col = 0; col < 4; col++) 
-    {
-        for (size_t row = 0; row < 4; row++)  
-        {
-            for (size_t i = 0; i < 16; i++)
-            {
-                targ_ptr[i] = (uint64_t*)(((uint16_t*)(targ_block + i + 16 * row)) + col);
-                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_a[i + 16 * col])) + row); 
-            }
-            chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);
-        }
-    }
-
-
-    for (size_t col = 0; col < 4; col++) 
-    {
-        for (size_t row = 0; row < 4; row++)  
-        {
-            for (size_t i = 0; i < 16; i++)
-            {
-                targ_ptr[i] = (uint64_t*)(((uint16_t*)(src_block + i + 16 * row)) + col);
-                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_b[i + 16 * col])) + row); 
-            }
-            chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);
-        }
-    }
-
-    for (size_t i = 0; i < 64; i++)
-    {
-        memcpy(block_a[i], src_block + i, 8); 
-        memcpy(block_b[i], targ_block + i, 8); 
-    } 
- 
-    return;
-}
-void simd_transpose_64x64_inplace(uint64_t* block_a[64])
-{
-     uint64_t targ_block[64] = {0};
-    
-     uint64_t* src_ptr[16];
-     uint64_t* targ_ptr[16] = {NULL};
-
-
-    for (size_t col = 0; col < 4; col++) 
-    {
-        for (size_t row = 0; row < 4; row++)  
-        {
-            for (size_t i = 0; i < 16; i++)
-            {
-                targ_ptr[i] = (uint64_t*)(((uint16_t*)(targ_block + i + 16 * row)) + col);
-                src_ptr[i] = (uint64_t*)(((uint16_t*)(block_a[i + 16 * col])) + row); 
-            }
-
-            simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
-        }
-    }
-    for (size_t i = 0; i < 64; i++)
-    {
-        memcpy(block_a[i], targ_block + i, 8); 
-    } 
- 
-    return;
-}
-
 
 static inline
 uint8_t __inline_get_bit(
@@ -392,3 +392,5 @@ void transpose_naive(uint64_t** block, const size_t size)
     }
     return;
 }
+
+

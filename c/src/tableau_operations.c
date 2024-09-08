@@ -887,6 +887,7 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
     CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
     size_t i;
+    // TODO the compiler isn't able to avx this section of code itself, CNOT appears to be near instant while CZ is non-trivial
     #pragma omp parallel private(i)
     { 
         #pragma omp for simd
@@ -902,6 +903,3 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
         }  
     }
 }
-
-
-
