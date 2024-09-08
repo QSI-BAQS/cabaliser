@@ -89,7 +89,7 @@ void __inline_rz_gate(
     const size_t ctrl = WMAP_LOOKUP(wid, inst->arg);
     const size_t targ = wid->n_qubits; 
 
-    wid->queue->non_clifford[ctrl] = inst->tag;
+    wid->queue->non_cliffords[ctrl] = inst->tag;
     wid->q_map[ctrl] = wid->n_qubits;
 
 

@@ -12,19 +12,25 @@
 clifford_queue_t* clifford_queue_create(const size_t n_qubits)
 {
     void* instructions = NULL;
-    const size_t instruction_table_size = n_qubits; 
-    int err_code = posix_memalign(&instructions, CACHE_SIZE, instruction_table_size); 
+
+    int err_code = posix_memalign(&instructions, CACHE_SIZE, n_qubits); 
     assert(0 == err_code);
-    
-    memset(instructions, _I_, instruction_table_size); 
+    memset(instructions, _I_, n_qubits); 
 
     clifford_queue_t* que = NULL; 
     err_code = posix_memalign((void**)&que, CACHE_SIZE,  sizeof(clifford_queue_t));
     assert(0 == err_code);
 
+    non_clifford_tag_t* non_cliffords = NULL;
+    err_code = posix_memalign((void**)&non_cliffords, CACHE_SIZE,  n_qubits * sizeof(non_clifford_tag_t));
+    assert(0 == err_code);
+    memset(non_cliffords, 0, n_qubits * sizeof(non_clifford_tag_t)); 
+
+
     que->table = (instruction_t*)instructions;
     que->n_qubits = n_qubits;
-    
+    que->non_cliffords = (non_clifford_tag_t*)non_cliffords; 
+
     return que;
 }
 

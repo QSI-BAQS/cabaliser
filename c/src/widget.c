@@ -44,7 +44,7 @@ size_t widget_get_n_qubits(const widget_t* wid)
 {
     return wid->n_qubits;
 }
-size_t widget_get_n_qubits(const widget_t* wid)
+size_t widget_get_n_initial_qubits(const widget_t* wid)
 {
     return wid->n_initial_qubits;
 }
@@ -118,33 +118,43 @@ void widget_decompose(widget_t* wid)
 
 
     // Phase operation to set Z diagonal to zero 
+    //#pragma omp parallel for
     for (size_t i = 0; i < wid->n_qubits; i++)
     {
         if (__inline_slice_get_bit(wid->tableau->slices_z[i], i))
         {
-            // TODO transverse phase
             __inline_slice_set_bit(wid->tableau->slices_z[i], i, 0);
+            clifford_queue_local_clifford_right(wid->queue, _S_, i);
+
         }
     }
 
     // Z to set phases to 0
+    #pragma omp parallel for
     for (size_t i = 0; i < wid->n_qubits; i++)
     {
         if (__inline_slice_get_bit(wid->tableau->phases, i))
         {
-            // TODO transverse Z 
-            __inline_slice_set_bit(wid->tableau->phases, i, 0);
+             clifford_queue_local_clifford_right(wid->queue, _Z_, i);
         }
+    }
+    #pragma omp parallel for
+    for (size_t i = 0; i < wid->tableau->slice_len; i++)
+    {
+        wid->tableau->phases[i] = 0;    
     }
 
-    for (size_t i = 0; i < wid->n_qubits; i++)
-    {
-        if (__inline_slice_get_bit(wid->tableau->slices_z[i], i))
-        {
-            // TODO transverse phase
-            __inline_slice_set_bit(wid->tableau->slices_z[i], i, 0);
-        }
-    }
+//    // TODO double check that this is doing something
+//    #pragma omp parallel for
+//    for (size_t i = 0; i < wid->n_qubits; i++)
+//    {
+//        if (__inline_slice_get_bit(wid->tableau->slices_z[i], i))
+//        {
+//            __inline_slice_set_bit(wid->tableau->slices_z[i], i, 0);
+//            clifford_queue_local_clifford_right(wid->queue, _S_, i);
+//        }
+//    }
+//    
 
     return;
 }

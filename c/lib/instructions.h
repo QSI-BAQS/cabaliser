@@ -42,7 +42,7 @@ struct clifford_queue_t
 {
     size_t n_qubits; // Number of qubits
     instruction_t* table; // Queued instructions for each qubit 
-    non_clifford_tag_t* non_clifford; // Terminating non-clifford instructions 
+    non_clifford_tag_t* non_cliffords; // Terminating non-clifford instructions 
 };
 
 /*

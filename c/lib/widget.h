@@ -5,6 +5,8 @@
 #include "tableau_operations.h"
 
 #include "instructions.h"
+#include "instructions.h"
+
 #include "qubit_map.h"
 
 #define WMAP_LOOKUP(widget, idx) (widget->q_map[idx])

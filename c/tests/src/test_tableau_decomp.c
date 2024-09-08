@@ -101,13 +101,20 @@ void test_random(const size_t n_qubits)
 {
     widget_t* wid = widget_random_create(n_qubits, n_qubits * 10);
 
+
     widget_decompose(wid);    
+
 
     for (size_t i = 0; i < n_qubits; i++)//n_qubits; i++)
     {
         assert(0 == __inline_slice_get_bit(wid->tableau->slices_z[i], i));
         assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
         assert(i == tableau_ctz(wid->tableau->slices_x[i], wid->tableau->slice_len));
+    }
+
+    for (size_t i = 0; i < wid->tableau->slice_len; i++)
+    {
+        assert(0 == wid->tableau->phases[i]);
     }
 
     widget_destroy(wid);

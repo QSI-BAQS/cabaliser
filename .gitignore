@@ -1,0 +1,3 @@
+*.so
+*gmon.out
+*.bak
