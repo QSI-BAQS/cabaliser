@@ -90,7 +90,7 @@ void __inline_rz_gate(
     const size_t targ = wid->n_qubits; 
 
     wid->queue->non_cliffords[ctrl] = inst->tag;
-    wid->q_map[ctrl] = wid->n_qubits;
+    wid->q_map[inst->arg] = wid->n_qubits;
 
 
     SINGLE_QUBIT_OPERATIONS[wid->queue->table[ctrl] & INSTRUCTION_OPERATOR_MASK](wid->tableau, ctrl);
