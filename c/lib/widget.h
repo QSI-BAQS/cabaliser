@@ -8,6 +8,7 @@
 #include "instructions.h"
 
 #include "qubit_map.h"
+#include "adjacency.h"
 
 #define WMAP_LOOKUP(widget, idx) (widget->q_map[idx])
 
@@ -67,6 +68,7 @@ size_t widget_get_max_qubits(const widget_t* wid);
  * :: wid : const widget_t* :: Widget to get the mapping for
  */
 size_t* widget_get_io_map(const widget_t* wid);
+struct adjacency_obj widget_get_adjacencies(const widget_t* wid, const size_t target_qubit);
 
 
 #endif

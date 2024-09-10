@@ -85,6 +85,7 @@ instruction_stream_u* create_toffoli()
     inst[13].single.arg = 2;
 
 
+
     return inst;
 }
 
@@ -136,6 +137,35 @@ void test_toffoli()
     assert(4 == wid->tableau->slices_z[6][0]);
     assert(0 == wid->tableau->slices_z[7][0]);
     assert(0 == wid->tableau->slices_z[8][0]);
+
+    // Testing the adjacency output
+    struct adjacency_obj adj = widget_get_adjacencies(wid, 0);
+    assert(0 == adj.n_adjacent);
+
+    adj = widget_get_adjacencies(wid, 1);
+    assert(0 == adj.n_adjacent);
+
+    adj = widget_get_adjacencies(wid, 2);
+    assert(4 == adj.n_adjacent);
+   
+    int32_t edges[4] = {3, 4, 5, 6}; 
+
+    for (size_t i = 0; i < 4; i++)
+    {
+        bool found = 0;
+        for (size_t j = 0; j < adj.n_adjacent; j++)
+        {
+            found |= (edges[i] == adj.adjacencies[j]);
+        }
+        assert(found);
+    }
+
+    for (size_t i = 3; i <= 6; i++)
+    {
+        adj = widget_get_adjacencies(wid, i);
+        assert(1 == adj.n_adjacent);
+        assert(2 == adj.adjacencies[0]);
+    }
 
     widget_destroy(wid);
     return;

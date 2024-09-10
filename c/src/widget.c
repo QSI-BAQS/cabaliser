@@ -60,13 +60,36 @@ size_t widget_get_max_qubits(const widget_t* wid)
  * :: target_qubit : const size_t :: The target qubit 
  * Returns a heap allocated array of uint64_t objects
  */
-size_t* widget_get_adjacencies(const widget_t* wid, const size_t target_qubit)
+struct adjacency_obj widget_get_adjacencies(const widget_t* wid, const size_t target_qubit)
 {
-    for (size_t i = 0; i < wid->tableau->n_qubits; i++)  
-    {
+    struct adjacency_obj adj; 
+    adj.adjacencies = malloc(wid->n_qubits * sizeof(uint32_t));
+    adj.targ = target_qubit;
+    adj.n_adjacent = 0;
 
+    tableau_slice_p slice = wid->tableau->slices_z[target_qubit];
+     
+    #pragma omp parallel for 
+    for (size_t i = 0; i < wid->tableau->slice_len; i++)  
+    {
+        if (slice[i] > 0 )
+        {
+            CHUNK_OBJ obj = slice[i];
+            while (obj > 0)
+            {
+                uint32_t edge =  __CHUNK_CTZ(obj);
+                obj ^= (1ull << edge);  
+                edge += i * sizeof(CHUNK_OBJ);
+    
+                // Test that fetch occurs prior to addition
+                uint32_t idx = __sync_fetch_and_add(&(adj.n_adjacent), 1); 
+                adj.adjacencies[idx] = (uint32_t)edge;
+            }
+        }
     }
-    return NULL;
+    // This is always a smaller allocation and so setting this variable should do nothing
+    adj.adjacencies = realloc(adj.adjacencies, adj.n_adjacent * sizeof(uint32_t));
+    return adj;
 }
 
 /*

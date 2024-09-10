@@ -239,7 +239,7 @@ void tableau_transpose_slices(tableau_t* tab, uint64_t** slices)
 
     uint64_t* src_ptr[64] = {NULL};
     uint64_t* targ_ptr[64] = {NULL};
-  
+ 
     for (size_t col = 0; col < chunk_elements; col++) 
     {
         for (size_t row = col + 1; row < chunk_elements; row++) 

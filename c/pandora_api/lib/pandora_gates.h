@@ -50,7 +50,7 @@ size_t pandora_ZPow(struct pandora_map_t*, struct pandora_gate_t*, instruction_s
 #ifdef PANDORA_GATE_SRC 
 
     const static instruction_t pauli_map_g[3] = {_X_, _Y_, _Z_}; 
-    #define GATE_TO_PAULI_INSTRUCTION(pandora_gate) (pauli_map_g[gate->gate_name[6] - 'X']) // NB: Using strings to do this is silly 
+    #define GATE_TO_PAULI_INSTRUCTION(pandora_gate) (pauli_map_g[gate->gate_name[6] - 'X'](pandora_gate)) // NB: Using strings to do this is silly 
 
 
 // Lookup table for translating pandora gates to an instruction stream

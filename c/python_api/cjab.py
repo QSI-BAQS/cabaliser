@@ -1,4 +1,4 @@
-from ctypes import cdll
+from ctypes import cdll, Structure, Union, c_int, c_char, POINTER
 from typing import Final
 import struct
 import numpy as np
@@ -84,18 +84,64 @@ class Widget():
             assert(self.__decomposed)
         except:
             raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
-        arr = (ctypes.c_int)
+        adjacency_obj = lib.widget_get_adjacencies(self.widget,qubit)
 
     def decompose(self):
         lib.widget_decompose(self.widget)
         self.__decomposed = True
 
-class Operation(): 
-    def __init__(self, op : np.uint8, arg_a : np.uint64, arg_b : np.uint64): 
-        self.opcode = op
-        self.arg_a = arg_a
-        self.arg_b = arg_b
+class SingleQubitOperationType(Structure): 
+    _fields_ = [
+        ('opcode', c_char), 
+        ('arg', c_int), 
+        ]
 
-    def pack(self):
-        struct.pack('@cNN', self.opcode, self.arg_a, self.arg_b)
+class TwoQubitOperationType(Structure): 
+    _fields_ = [
+        ('opcode', c_char), 
+        ('ctrl', c_int), 
+        ('targ', c_int), 
+        ]
+
+class RzQubitOperationType(Structure): 
+    _fields_ = [
+        ('opcode', c_char), 
+        ('arg', c_int), 
+        ('tag', c_int), 
+        ]
+
+class OperationType(Union): 
+    _fields_ = [
+        ('single', SingleQubitOperation), 
+        ('two_qubits', TwoQubitOperation), 
+        ('rz', RzQubitOperation), 
+        ]
+
+class AdjacencyType(Structure):
+    _fields_ = [
+        ('n_elements', c_int),
+        ('src', c_int),
+        ('adjacent', POINTER(c_int))]
+    
+    def __iter__(self):
+        for i in range(self.n_elements:
+            yield self.adjacent[i]
+
+    def __len__(self):
+        return self.n_elements
+
+def SingleQubitOperation(arr, i, opcode, arg):
+        arr[i].single.opcode = opcode
+        arr[i].single.arg_a = arg_a
+        arr[i].single.arg_b = arg_b
+
+def TwoQubitOperation(arr, i, opcode, ctrl, targ):
+        arr[i].single.opcode = opcode
+        arr[i].single.ctrl = ctrl
+        arr[i].single.targ = targ
+
+def RzOperation(arr, i, opcode, arg, tag):
+        arr[i].rz.opcode = opcode
+        arr[i].rz.arg = arg
+        arr[i].rz.tag = tag
 
