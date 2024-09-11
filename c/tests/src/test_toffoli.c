@@ -84,8 +84,6 @@ instruction_stream_u* create_toffoli()
     inst[13].single.opcode = _H_;
     inst[13].single.arg = 2;
 
-
-
     return inst;
 }
 

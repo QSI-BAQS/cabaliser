@@ -47,16 +47,22 @@ class AdjacencyType(Structure):
         ctypes wrapper for array of adjacent edges
     '''
     _fields_ = [
-        ('n_elements', c_int),
         ('src', c_int),
-        ('adjacent', POINTER(c_int))]
-    
+        ('n_adjacent', c_int),
+        ('adjacencies', POINTER(c_int))]
+   
+class Adjacency: 
+    def __init__(self, adj):
+        self.adj = AdjacencyType(adj)
+        self.src = int(self.adj.src)
+        self.n_adjacent = int(self.adj.n_adjacent)
+
     def __iter__(self):
-        for i in range(self.n_elements:
-            yield self.adjacent[i]
+        for i in range(self.n_adjacent):
+            yield self.adj.adjacencies[i]
 
     def __len__(self):
-        return self.n_elements
+        return self.adj.n_elements
 
 def SingleQubitOperation(arr, idx, opcode, arg):
     '''
@@ -67,9 +73,8 @@ def SingleQubitOperation(arr, idx, opcode, arg):
         :: arg : uint32_t :: Target qubit 
         Writes the operation to the index of the array
     '''
-        arr[idx].single.opcode = opcode
-        arr[idx].single.arg_a = arg_a
-        arr[idx].single.arg_b = arg_b
+    arr[idx].single.opcode = opcode
+    arr[idx].single.arg = arg
 
 def TwoQubitOperation(arr, idx, opcode, ctrl, targ):
     '''
@@ -82,9 +87,9 @@ def TwoQubitOperation(arr, idx, opcode, ctrl, targ):
         Writes the operation to the index of the array
     '''
 
-        arr[idx].single.opcode = opcode
-        arr[idx].single.ctrl = ctrl
-        arr[idx].single.targ = targ
+    arr[idx].single.opcode = opcode
+    arr[idx].single.ctrl = ctrl
+    arr[idx].single.targ = targ
 
 def RzOperation(arr, i, opcode, arg, tag):
     '''
@@ -96,9 +101,9 @@ def RzOperation(arr, i, opcode, arg, tag):
         :: tag : uint32_t :: Tag for the rz angle  
         Writes the operation to the index of the array
     '''
-        arr[i].rz.opcode = opcode
-        arr[i].rz.arg = arg
-        arr[i].rz.tag = tag
+    arr[i].rz.opcode = opcode
+    arr[i].rz.arg = arg
+    arr[i].rz.tag = tag
 
 # Map from gates symbols to constructors
 class OperationSequence():
@@ -109,7 +114,7 @@ class OperationSequence():
         This object has a pre-allocated maximum number of supported operations 
     '''
     CONSTRUCTOR_MAP = (
-          {i: SingleQubitOperation for i in SINGLE_QUBIT_GATE} 
+          {i: SingleQubitOperation for i in SINGLE_QUBIT_GATES} 
         | {i: TwoQubitOperation for i in TWO_QUBIT_GATES} 
         | {_RZ_ : RzOperation})
 
@@ -119,7 +124,7 @@ class OperationSequence():
         :: n_instructions : int :: Maximum number of instructions for this sequence 
         '''
         self.n_instructions = n_instructions
-        self.ops = OperationType * n_instructions
+        self.ops = (OperationType * n_instructions)()
         self.curr_instructions = 0
 
     def __getitem__(self, idx : int):
@@ -150,7 +155,7 @@ class OperationSequence():
         '''
         for i in range(self.curr_instructions):
             yield self.ops[i]
-        raise StopIteration() 
+        return
 
     def append(self, opcode, *args): 
         if self.curr_instructions == self.n_instructions:
@@ -169,6 +174,12 @@ class OperationSequence():
             self.curr_instructions += 1
 
     def __add__(self, other):   
+        '''
+            __add__
+            Helper function to make these arrays more list-like
+            :: other : OperationSequence :: Another operation sequence 
+            Returns a new operation sequence containing lhs operations then rhs operations
+        '''
         seq = OperationSequence(self.n_instructions + other.n_instructions) 
         # This could probably be done with a wrap around memcpy
         for op in self:

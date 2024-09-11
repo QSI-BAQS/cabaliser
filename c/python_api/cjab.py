@@ -1,7 +1,7 @@
 from ctypes import cdll, Structure, Union, c_int, c_char, POINTER
 import struct
 import numpy as np
-from operation_sequence import  
+from operation_sequence import OperationSequence, Adjacency
 
 # TODO: Relative import paths and wrap in a package
 lib = cdll.LoadLibrary('../cjab.so')
@@ -41,7 +41,7 @@ class Widget():
         lib.parse_instruction_block(
             self.widget,
             operations.ops,
-            operations.curr_operations)
+            operations.curr_instructions)
         return
 
     def __call__(self, *args, **kwargs):
@@ -61,7 +61,8 @@ class Widget():
             assert(self.__decomposed)
         except:
             raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
-        adjacency_obj = lib.widget_get_adjacencies(self.widget,qubit)
+        adjacency_obj = Adjacency(lib.widget_get_adjacencies(self.widget,qubit))
+        return adjacency_obj
 
     def decompose(self):
         lib.widget_decompose(self.widget)

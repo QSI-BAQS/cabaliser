@@ -55,7 +55,7 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 .PHONY: benchmark benchmarks
 .PHONY: pandora_api
 
-include pandora_api/Makefile 
+#include pandora_api/Makefile 
 
 # Build Rules
 all : ${TARGET} ${BUILDDIR} 
