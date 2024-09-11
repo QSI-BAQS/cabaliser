@@ -82,6 +82,7 @@ struct adjacency_obj widget_get_adjacencies(const widget_t* wid, const size_t ta
                 edge += i * sizeof(CHUNK_OBJ);
     
                 // Test that fetch occurs prior to addition
+                // TODO wrap in macro for multi-arch support 
                 uint32_t idx = __sync_fetch_and_add(&(adj.n_adjacent), 1); 
                 adj.adjacencies[idx] = (uint32_t)edge;
             }
