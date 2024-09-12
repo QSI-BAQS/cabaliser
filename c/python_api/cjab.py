@@ -65,5 +65,7 @@ class Widget():
         return adjacency_obj
 
     def decompose(self):
+        if (not self.__decomposed):
+            raise Exception("Attempted to decompose twice")
         lib.widget_decompose(self.widget)
         self.__decomposed = True

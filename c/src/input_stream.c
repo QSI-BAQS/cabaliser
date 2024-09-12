@@ -124,6 +124,7 @@ void parse_instruction_block(
     #pragma GCC unroll 8
     for (size_t i = 0; i < n_instructions; i++)
     {
+
         // The switch is the masked opcode, picking the three highest bits
         switch ((instructions + i)->instruction & INSTRUCTION_TYPE_MASK)  
         {
