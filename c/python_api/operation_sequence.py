@@ -42,27 +42,6 @@ class OperationType(Union):
         ('rz', RzQubitOperationType), 
         ]
 
-class AdjacencyType(Structure):
-    '''
-        ctypes wrapper for array of adjacent edges
-    '''
-    _fields_ = [
-        ('src', c_int),
-        ('n_adjacent', c_int),
-        ('adjacencies', POINTER(c_int))]
-   
-class Adjacency: 
-    def __init__(self, adj):
-        self.adj = AdjacencyType(adj)
-        self.src = int(self.adj.src)
-        self.n_adjacent = int(self.adj.n_adjacent)
-
-    def __iter__(self):
-        for i in range(self.n_adjacent):
-            yield self.adj.adjacencies[i]
-
-    def __len__(self):
-        return self.adj.n_elements
 
 def SingleQubitOperation(arr, idx, opcode, arg):
     '''
@@ -104,6 +83,16 @@ def RzOperation(arr, i, opcode, arg, tag):
     arr[i].rz.opcode = opcode
     arr[i].rz.arg = arg
     arr[i].rz.tag = tag
+
+class AdjacencyType(Structure):
+    '''
+        ctypes wrapper for array of adjacent edges
+    '''
+    _fields_ = [
+        ('src', c_int),
+        ('n_adjacent', c_int),
+        ('adjacencies', POINTER(c_int))]
+
 
 # Map from gates symbols to constructors
 class OperationSequence():
@@ -164,7 +153,6 @@ class OperationSequence():
         self.CONSTRUCTOR_MAP[opcode](self.ops, self.curr_instructions, opcode, *args)  
         self.curr_instructions += 1
         
-
     def _append(self, *operations):
         if self.curr_instructions + len(operations) > self.n_instructions:  
             raise Exception("Exceeded Length of Array")

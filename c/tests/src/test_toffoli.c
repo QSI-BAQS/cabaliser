@@ -171,7 +171,6 @@ void test_toffoli()
 
 int main()
 {
-    
     test_toffoli();
 
     return 0;
