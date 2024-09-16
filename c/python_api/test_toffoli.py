@@ -40,3 +40,6 @@ assert(4 == wid.get_adjacencies(2).n_adjacent)
 
 for i in range(3, 7):
     assert(1 == wid.get_adjacencies(i).n_adjacent)
+
+
+

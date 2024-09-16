@@ -1,14 +1,33 @@
-from ctypes import cdll, Structure, Union, c_int, c_char, POINTER
+from ctypes import cdll, Structure, Union, c_int, c_byte, c_size_t, POINTER
 import struct
 
 from gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, _RZ_ 
+
+class CliffordQueueType(Structure):
+    _fields_ = [
+        ('n_qubits', c_size_t), 
+        ('cliffords', POINTER(c_byte)), 
+        ('measurement_tags', POINTER(c_int)) 
+    ]
+
+
+class WidgetType(Structure):
+    _fields_ = [
+        ('n_qubits', c_size_t), 
+        ('n_initial_qubits', c_size_t), 
+        ('max_qubits', c_size_t), 
+        ('__tableau', POINTER(c_size_t)), 
+        ('queue', POINTER(CliffordQueueType)), 
+        ('map', POINTER(c_size_t)) 
+    ]
+
 
 class SingleQubitOperationType(Structure): 
     '''
         ctypes wrapper for single qubit operation
     '''
     _fields_ = [
-        ('opcode', c_char), 
+        ('opcode', c_byte), 
         ('arg', c_int), 
         ]
 
@@ -17,7 +36,7 @@ class TwoQubitOperationType(Structure):
         ctypes wrapper for two qubit operation
     '''
     _fields_ = [
-        ('opcode', c_char), 
+        ('opcode', c_byte), 
         ('ctrl', c_int), 
         ('targ', c_int), 
         ]
@@ -27,7 +46,7 @@ class RzQubitOperationType(Structure):
         ctypes wrapper for rz operations
     '''
     _fields_ = [
-        ('opcode', c_char), 
+        ('opcode', c_byte), 
         ('arg', c_int), 
         ('tag', c_int), 
         ]
@@ -84,6 +103,11 @@ def RzOperation(arr, i, opcode, arg, tag):
     arr[i].rz.arg = arg
     arr[i].rz.tag = tag
 
+
+LocalCliffordType = c_byte # 1 byte
+MeasurementTagType = c_int # 4 bytes
+AdjacencyEdgeType = c_int # 4 bytes
+IOMapType = c_int # 4 bytes
 class AdjacencyType(Structure):
     '''
         ctypes wrapper for array of adjacent edges
@@ -91,7 +115,7 @@ class AdjacencyType(Structure):
     _fields_ = [
         ('src', c_int),
         ('n_adjacent', c_int),
-        ('adjacencies', POINTER(c_int))]
+        ('adjacencies', POINTER(AdjacencyEdgeType))]
 
 
 # Map from gates symbols to constructors
