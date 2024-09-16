@@ -68,16 +68,6 @@ size_t widget_get_max_qubits(const widget_t* wid);
  * :: wid : const widget_t* :: Widget to get the mapping for
  */
 size_t* widget_get_io_map(const widget_t* wid);
-
-/*
- * widget_get_adjacencies_api
- * For a qubit in the tableau, list all adjacent qubits 
- * :: wid : const widget_t* :: The widget to get adjacencies for 
- * :: target_qubit : const size_t :: The target qubit 
- * :: adj : struct adjacency_obj* :: Pointer to object to write to
- * Returns a heap allocated array of uint64_t objects
- */
-void widget_get_adjacencies_api(const widget_t* wid, const size_t target_qubit, struct adjacency_obj* adj);
 struct adjacency_obj widget_get_adjacencies(const widget_t* wid, const size_t target_qubit);
 
 

@@ -2,6 +2,7 @@ from ctypes import cdll, Structure, Union, c_int, c_char, POINTER
 import struct
 import numpy as np
 from operation_sequence import OperationSequence, AdjacencyType, WidgetType, LocalCliffordType, MeasurementTagType
+from qubit_array import QubitArray
 
 # TODO: Relative import paths and wrap in a package
 lib = cdll.LoadLibrary('../cjab.so')
@@ -19,7 +20,7 @@ class Widget():
         self.widget = lib.widget_create(n_qubits, n_qubits_max)
 
         self.local_cliffords = None
-        self.measurements = None
+        self.measurement_tags = None
         self.io_map = None 
 
     def get_n_qubits(self) -> int:
@@ -90,14 +91,13 @@ class Widget():
         if not self.__decomposed:
             raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
 
-        if self.local_cliffords is None:
+        if self.measurement_tags is None:
+            measurement_tags = POINTER(MeasurementTagType)() 
+            ptr = POINTER(MeasurementTagType)(measurement_tags)
+            lib.widget_get_measurement_tags_api(self.widget, ptr)
+            self.measurement_tags = MeasurementTags(self.get_n_qubits(), measurement_tags)
 
-            local_cliffords = POINTER(LocalCliffordType)() 
-            ptr = POINTER(LocalCliffordType)(local_cliffords)
-            lib.widget_get_local_cliffords_api(self.widget, ptr)
-            self.local_cliffords = LocalCliffords(self.get_n_qubits(), local_cliffords)
-
-        return self.local_cliffords
+        return self.measurement_tags
 
     def get_adjacencies(self, qubit: int):
         '''
@@ -125,13 +125,15 @@ class Widget():
         self.__decomposed = True
 
 
-class Measurements(QubitArray): 
+class MeasurementTags(QubitArray): 
     pass
 
 class LocalCliffords(QubitArray): 
     pass
 
-  
+class IOMap(QubitArray): 
+    pass
+
  
 class Adjacency(QubitArray): 
     '''
@@ -143,17 +145,6 @@ class Adjacency(QubitArray):
         self.src = int(self.adj.src)
         self.n_adjacent = int(self.adj.n_adjacent)
         super().__init__(self.n_adjacent, self.adj.adjacencies)
-
-    def __iter__(self):
-        for i in range(self.n_adjacent):
-            yield self.adj.adjacencies[i]
-
-    def __getitem__(self, idx : int):
-        if idx > self.n_adjacent:
-            raise IndexError("Adjacency index is out of range")  
-
-    def __len__(self):
-        return self.adj.n_elements
 
     def __repr__(self):
         return f"Qubit: {self.src} {list(iter(self))}"

@@ -93,29 +93,7 @@ struct adjacency_obj widget_get_adjacencies(const widget_t* wid, const size_t ta
     adj.adjacencies = realloc(adj.adjacencies, adj.n_adjacent * sizeof(uint32_t));
     return adj;
 }
-/*
- * widget_get_adjacencies_api
- * For a qubit in the tableau, list all adjacent qubits 
- * :: wid : const widget_t* :: The widget to get adjacencies for 
- * :: target_qubit : const size_t :: The target qubit 
- * :: adj : struct adjacency_obj* :: Pointer to object to write to
- * Returns a heap allocated array of uint64_t objects
- */
-void widget_get_adjacencies_api(const widget_t* wid, const size_t target_qubit, struct adjacency_obj* adj)
-{
-    *adj = widget_get_adjacencies(wid, target_qubit); 
-}
 
-/*
- * widget_destroy_adjacencies 
- * Frees adjacency resources
- * :: adj : struct adjacency_obj :: Adjacency object
- * Frees the array of adjacencies from the object
- */
-void widget_destroy_adjacencies(struct adjacency_obj* adj)
-{
-    free(adj->adjacencies);
-}
 
 /*
  * widget_get_io_map

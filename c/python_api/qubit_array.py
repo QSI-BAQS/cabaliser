@@ -1,7 +1,7 @@
 class QubitArray: 
     '''
-        LocalCliffords
-        Python wrapper for Cliffords  
+        QubitArray 
+        Python wrapper for Ctype arrays  
     '''
     def __init__(self, n_qubits : int, arr):
         self.n_qubits = n_qubits
