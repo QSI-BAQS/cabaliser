@@ -1,7 +1,7 @@
 from ctypes import cdll, Structure, Union, c_int, c_char, POINTER
 import struct
 import numpy as np
-from operation_sequence import OperationSequence, AdjacencyType, WidgetType, LocalCliffordType, MeasurementTagType
+from operation_sequence import OperationSequence, AdjacencyType, WidgetType, LocalCliffordType, MeasurementTagType, IOMapType
 from qubit_array import QubitArray
 
 # TODO: Relative import paths and wrap in a package
@@ -38,6 +38,15 @@ class Widget():
             Returns the maximum number of allocatable qubits on the widget 
         '''
         return lib.widget_get_max_qubits(self.widget)
+
+    def get_initial_qubits(self) -> int:
+        '''
+            get_initial_qubits
+            Getter method for the widget
+            Returns the initial number of allocatable qubits on the widget 
+        '''
+        return lib.widget_get_n_initial_qubits(self.widget)
+
 
     def process_operations(self, operations):
         '''
@@ -99,6 +108,23 @@ class Widget():
 
         return self.measurement_tags
 
+    def get_io_map(self):
+        '''
+            get_io_map
+            Returns a wrapper around an array of measurements 
+        '''
+        if not self.__decomposed:
+            raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
+
+        if self.io_map is None:
+            io_map = POINTER(IOMapType)() 
+            ptr = POINTER(IOMapType)(io_map)
+            lib.widget_get_io_map_api(self.widget, ptr)
+            self.io_map = IOMap(self.get_initial_qubits(), io_map)
+
+        return self.io_map
+
+
     def get_adjacencies(self, qubit: int):
         '''
             Given a qubit get the adjacencies on the graph
@@ -119,6 +145,9 @@ class Widget():
         return adj 
 
     def decompose(self):
+        '''
+            Decomposes the operation sequence into an algorithmically specific graph (asg)
+        '''
         if self.__decomposed:
             raise Exception("Attempted to decompose twice")
         lib.widget_decompose(self.widget)

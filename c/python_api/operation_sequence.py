@@ -107,7 +107,7 @@ def RzOperation(arr, i, opcode, arg, tag):
 LocalCliffordType = c_byte # 1 byte
 MeasurementTagType = c_int # 4 bytes
 AdjacencyEdgeType = c_int # 4 bytes
-IOMapType = c_int # 4 bytes
+IOMapType = c_size_t # 8 bytes
 class AdjacencyType(Structure):
     '''
         ctypes wrapper for array of adjacent edges
