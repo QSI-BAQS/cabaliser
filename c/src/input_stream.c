@@ -142,3 +142,33 @@ void parse_instruction_block(
     }
     return;
 }
+
+/*
+ * teleport_input
+ * Sets the widget up to accept teleported inputs
+ * :: wid : widget_t* :: Widget on which to teleport inputs 
+ * This just applies a hadamard to the first $n$ qubits, then performs pairwise CNOT operations between qubits $i$ and $n + i$  
+ * This operation should be called before any gates are passed
+ */
+void teleport_input(widget_t* wid)
+{
+    // Check that we have sufficient memory for this operation
+    assert(wid->max_qubits > 2 * wid->n_initial_qubits);
+
+    // Double the number of initial qubits 
+    wid->n_qubits *= 2;
+    
+    // This could be replaced with a different tableau preparation step
+    memset(wid->queue->table, _H_, wid->n_initial_qubits);  
+    for (size_t i = 0; i < wid->n_initial_qubits; i++)
+    {
+
+        // Construct a Bell state
+        tableau_CNOT(wid->tableau, i, wid->n_initial_qubits + i);
+
+        // Fix up the map, we should now be indexing off the target qubit  
+        wid->q_map[i] += wid->n_initial_qubits;      
+    }
+     
+    return;
+}

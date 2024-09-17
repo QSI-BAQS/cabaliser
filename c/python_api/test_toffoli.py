@@ -35,8 +35,8 @@ ops = cjab.OperationSequence(len(toffoli))
 for opcode, args in toffoli:
     ops.append(opcode, *args)
 
-# Create widget
-wid = cjab.Widget(n_qubits, max_qubits)
+# Create widget, do not teleport input
+wid = cjab.Widget(n_qubits, max_qubits, teleport_input=False)
 
 # Apply operation on widget
 wid(ops)

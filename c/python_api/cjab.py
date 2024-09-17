@@ -10,7 +10,7 @@ lib.widget_create.restype = POINTER(WidgetType)
 
 
 class Widget():
-    def __init__(self, n_qubits : int, n_qubits_max : int): 
+    def __init__(self, n_qubits : int, n_qubits_max : int, teleport_input=True): 
         '''
             __init__
             Constructor for the widget
@@ -18,6 +18,10 @@ class Widget():
         '''
         self.__decomposed = False
         self.widget = lib.widget_create(n_qubits, n_qubits_max)
+        self.teleport_input = teleport_input
+
+        if self.teleport_input:
+            lib.teleport_input(self.widget)
 
         self.local_cliffords = None
         self.measurement_tags = None
@@ -30,6 +34,10 @@ class Widget():
             Returns the current number of allocated qubits on the widget 
         '''
         return lib.widget_get_n_qubits(self.widget)
+     
+    @property
+    def n_qubits(self):
+        return self.get_n_qubits()
 
     def get_max_qubits(self) -> int:
         '''
@@ -39,6 +47,11 @@ class Widget():
         '''
         return lib.widget_get_max_qubits(self.widget)
 
+    @property
+    def max_qubits(self):
+        return self.get_max_qubits()
+
+
     def get_initial_qubits(self) -> int:
         '''
             get_initial_qubits
@@ -47,6 +60,9 @@ class Widget():
         '''
         return lib.widget_get_n_initial_qubits(self.widget)
 
+    @property
+    def n_initial_qubits(self):
+        return self.get_n_initial_qubits()
 
     def process_operations(self, operations):
         '''

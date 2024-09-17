@@ -28,5 +28,14 @@ void parse_instruction_block(
  */
 void apply_local_cliffords(widget_t* wid);
 
+/*
+ * teleport_input
+ * Sets the widget up to accept teleported inputs
+ * :: wid : widget_t* :: Widget on which to teleport inputs 
+ * This just applies a hadamard to the first $n$ qubits, then performs pairwise CNOT operations between qubits $i$ and $n + i$  
+ * This operation should be called before any gates are passed
+ */
+void teleport_input(widget_t* wid);
+
 
 #endif
