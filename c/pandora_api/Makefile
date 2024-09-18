@@ -13,7 +13,7 @@ PANDORA_CFLAGS += -mavx -mavx2 -mlzcnt
 # These are here to make sure that optimisations don't ruin the library
 PANDORA_CFLAGS += -fkeep-inline-functions -fkeep-static-functions 
 
-PANDORA_TARGET := pandora_api
+PANDORA_TARGET := ${PANDORA_DIR}/pandora_api
  
 PANDORA_SRCDIR := ${PANDORA_DIR}/src
 PANDORA_LIBDIR := ${PANDORA_DIR}/lib

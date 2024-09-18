@@ -1,5 +1,4 @@
 #include <libpq-fe.h>
-
 #include "db_connect.h"
 
 static void
@@ -122,4 +121,3 @@ main(int argc, char **argv)
 
     return 0;
 }
-
