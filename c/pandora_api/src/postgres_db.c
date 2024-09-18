@@ -10,7 +10,7 @@ PGconn* db_connect(const char* conninfo)
 
     PGconn* conn = PQconnectdb(conninfo);
     db_connection_status(conn);
-    db_set_secure_search(conn);
+    //db_set_secure_search(conn);
 
     return conn;
 } 
@@ -64,12 +64,23 @@ void db_connection_status(PGconn* conn)
 void db_set_secure_search(PGconn *conn)
 {
     PGresult* res = PQexec(conn, DB_SET_SECURE_SEARCH);
+    db_check_result_status(conn, res);
+    PQclear(res);
+}
 
-    if (PQresultStatus(res) != PGRES_TUPLES_OK)
+/*
+ * db_check_result_status
+ * Checks that query results are correct
+ * :: conn : PGconn* :: Connection object
+ * :: result : PGresult* :: Query result
+ * Terminates program if result object throws an error
+ */
+void db_check_result_status(PGconn* conn, PGresult* result)
+{
+    if (PQresultStatus(result) != PGRES_TUPLES_OK)
     {
         fprintf(stderr, "SET failed: %s", PQerrorMessage(conn));
-        PQclear(res);
+        PQclear(result);
         db_conn_exit(conn);
     }
-    PQclear(res);
 }

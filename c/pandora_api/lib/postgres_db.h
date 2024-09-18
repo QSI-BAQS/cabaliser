@@ -43,5 +43,13 @@ void db_connection_status(PGconn* conn);
  */
 void db_set_secure_search(PGconn *conn);
 
+/*
+ * db_check_result_status
+ * Checks that query results are correct
+ * :: conn : PGconn* :: Connection object
+ * :: result : PGresult* :: Query result
+ * Terminates program if result object throws an error
+ */
+void db_check_result_status(PGconn* conn, PGresult* result);
 
 #endif
