@@ -55,10 +55,11 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 .PHONY: benchmark benchmarks
 .PHONY: pandora_api
 
-include pandora_api/Makefile 
 
 # Build Rules
 all : ${TARGET} ${BUILDDIR} 
+
+include pandora_api/Makefile 
 
 debug_L3: CFLAGS += -DDEBUG -DDEBUG_LEVEL=3
 debug_L3: test 
