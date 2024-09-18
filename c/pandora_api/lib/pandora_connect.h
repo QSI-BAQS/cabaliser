@@ -9,10 +9,15 @@
 
 #define PANDORA_DB_STR "dbname = %s"
 #define PANDORA_COUNT_N_QUBITS  "SELECT COUNT(*) FROM linked_circuit_qubit WHERE type = 'In'"
+#define PANDORA_INITIAL  "SELECT type, qub_1, next_q1 FROM linked_circuit_qubit WHERE type = 'In'"
+
+#define PANDORA_DECORATED_TABLE "CREATE TABLE IF NOT EXISTS decorated_circuit(id INT PRIMARY KEY, gate INT REFERENCES linked_circuit_qubit, layer INT)"
 
 struct pandora_t {
     size_t db_name_len;
     char* db_name;
+    size_t tag_name_len;
+    char* tag_name;
     PGconn* conn; 
 };
 typedef struct pandora_t pandora_t; 
