@@ -6,6 +6,8 @@
 
 #include <libpq-fe.h>
 
+#define POSTGRES_BINARY_FORMAT (1) 
+#define POSTGRES_STRING_FORMAT (0) 
 #define DB_SET_SECURE_SEARCH "SELECT pg_catalog.set_config('search_path', '', false)"
 
 /*

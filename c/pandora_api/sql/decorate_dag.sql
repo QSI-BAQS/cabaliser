@@ -1,3 +1,14 @@
+-- Create the table
+CREATE TABLE IF NOT EXISTS decorated_circuit(
+    id INT PRIMARY KEY REFERENCES linked_circuit_qubit,
+    layer INT
+);
+
+-- Stored procedures operating over the table
+
+--
+-- Reset each gate to unvisited 
+--
 CREATE OR REPLACE PROCEDURE unvisit_circuit()
 LANGUAGE plpgsql
 AS $$
@@ -8,6 +19,9 @@ COMMIT;
 END;$$;
 
 
+--
+-- Read input nodes and create a decorated initial layer  
+-- 
 CREATE OR REPLACE PROCEDURE decorate_input()
 LANGUAGE plpgsql
 AS $$
@@ -30,6 +44,9 @@ UPDATE linked_circuit_qubit
 COMMIT;
 END;$$;
 
+--
+-- Tag each gate with a layer number, layer by layer 
+--
 CREATE OR REPLACE PROCEDURE decorate_layer(
     layer_num int
     )
@@ -71,7 +88,9 @@ UPDATE linked_circuit_qubit
 COMMIT;
 END;$$;
 
--- Loop to parse the whole circuit
+--
+-- Loop to decorate the whole circuit
+--
 CREATE OR REPLACE PROCEDURE decorate_circuit()
 LANGUAGE plpgsql
 AS $$
@@ -93,4 +112,3 @@ END LOOP;
 -- Commit to be safe
 COMMIT;
 END;$$;
-

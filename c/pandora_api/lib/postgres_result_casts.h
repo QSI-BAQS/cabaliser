@@ -2,11 +2,15 @@
 #define POSTGRES_RESULT_CASTS_H
 
 #include <assert.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <libpq-fe.h>
+
+#include "instruction_table.h"
+
+#include "pandora_gates.h"
+
 
 /*
  * pg_result_print

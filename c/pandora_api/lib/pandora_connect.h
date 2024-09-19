@@ -9,9 +9,12 @@
 
 #define PANDORA_DB_STR "dbname = %s"
 #define PANDORA_COUNT_N_QUBITS  "SELECT COUNT(*) FROM linked_circuit_qubit WHERE type = 'In'"
-#define PANDORA_INITIAL  "SELECT type, qub_1, next_q1 FROM linked_circuit_qubit WHERE type = 'In'"
 
-#define PANDORA_DECORATED_TABLE "CREATE TABLE IF NOT EXISTS decorated_circuit(id INT PRIMARY KEY, gate INT REFERENCES linked_circuit_qubit, layer INT)"
+#define PANDORA_DECORATION "CALL decorate_circuit()" 
+
+#define PANDORA_INITIAL  "SELECT type, qub_1 FROM linked_circuit_qubit WHERE type = 'In'"
+#define PANDORA_GET_LAYER  "SELECT type, param, qub_1, qub_2, qub_3 FROM linked_circuit_qubit WHERE id = (SELECT decorated_circuit.id FROM decorated_circuit WHERE decorated_circuit.id = linked_circuit_qubit.id AND layer = $1)"
+
 
 struct pandora_t {
     size_t db_name_len;
