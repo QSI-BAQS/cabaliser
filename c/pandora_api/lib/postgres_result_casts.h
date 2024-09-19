@@ -28,5 +28,13 @@ void pg_result_print(PGresult* result);
  */
 int32_t pg_result_to_int32_t(PGresult* result);
 
+/*
+ * pg_result_to_pandora_gates
+ * Converts the output of a query on the pandora table to an array of pandora_gate_t structs  
+ * :: result : PGresult* :: Result object
+ * Does not clear the connection after use
+ */
+size_t pg_result_to_pandora_gates(PGresult* result, instruction_stream_u** stream);
+
 
 #endif

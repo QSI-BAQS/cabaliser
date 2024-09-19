@@ -116,7 +116,6 @@ size_t (*const PANDORA_GATE_TRANSLATION[32])(struct pandora_gate_t*, instruction
 #define PANDORA_PAULI_STR_OFFSET 7
 #define PANDORA_PAULI_OFFSET 'X' 
 
-
 #else 
     extern const size_t (*PANDORA_GATE_TRANSLATION[32])(struct pandora_gate_t*, instruction_stream_u*); 
 #endif

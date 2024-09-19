@@ -62,8 +62,12 @@ size_t pg_result_to_pandora_gates(PGresult* result, instruction_stream_u** strea
     // Allow virtual memory to handle this
     // Worst case is that every gate is a toffoli and must be decomposed 
     instruction_stream_u* dst = (instruction_stream_u*)malloc(sizeof(instruction_stream_u) * N_TOFFOLI_DECOMP * n_tuples);
+
     pandora_gate_t gate;
     size_t n_ops = 0;
+
+    printf("N Tuples: %lu\n", n_tuples); 
+   
 
     for (size_t i = 0; i < n_tuples; i++)
     {
@@ -72,6 +76,8 @@ size_t pg_result_to_pandora_gates(PGresult* result, instruction_stream_u** strea
         gate.qubit_0 = *(int*)PQgetvalue(result, i, 2);
         gate.qubit_1 = *(int*)PQgetvalue(result, i, 3);
         gate.qubit_2 = *(int*)PQgetvalue(result, i, 4);
+
+        printf("Gate: %s\n", gate.gate_type); 
 
         n_ops += pandora_gate_parse(&gate, dst + n_ops);
     }

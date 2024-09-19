@@ -3,7 +3,7 @@
 
 size_t pandora_gate_parse(pandora_gate_t* gate, instruction_stream_u* stream)
 {
-   return PANDORA_GATE_TRANSLATION[(int)(gate->gate_type[0])](gate, stream);
+   return PANDORA_GATE_TRANSLATION[(int)(gate->gate_type[0] - 'A')](gate, stream);
 }
 
 size_t pandora_Pauli(struct pandora_gate_t* gate, instruction_stream_u* stream)

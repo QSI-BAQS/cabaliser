@@ -53,7 +53,6 @@ void pandora_decorate_circuit(pandora_t* pan)
 
     // Conditionally decorate the table
     PGresult* result = PQexec(pan->conn, PANDORA_DECORATION);
-    db_check_result_status(pan->conn, result);
     PQclear(result);
 
     return;
@@ -124,7 +123,7 @@ void pandora_connect(pandora_t* pan)
  * :: pan : pandora_t* :: Pandora connection object 
  * Returns the number of qubits as a size_t 
  */
-size_t pandora_get_n_qubits(pandora_t* pan)
+size_t pandora_connect_get_n_qubits(pandora_t* pan)
 {
     pandora_connect(pan);
 
@@ -147,15 +146,17 @@ size_t pandora_get_n_qubits(pandora_t* pan)
  *
  * :: pan : pandora_t* :: Pandora connection object 
  * :: layer : size_t :: Layer to process 
- *
- * Returns a gate stream object
+ * :: stream : instruction_stream_u** :: Pointer to stream obj pointer  
+ * Returns the number of gates in the stream 
  */
-void* pandora_get_gates_layer(pandora_t* pan, const size_t layer)
+size_t pandora_get_gates_layer(pandora_t* pan, const size_t layer, instruction_stream_u** stream)
 { 
 
-    char* param_values[1] = {(char*)&layer}; 
+    uint32_t ht_layer = htonl(layer);
+    char* param_values[1] = {(char*)&ht_layer}; 
 
     const static int n_params = 1;
+    const static Oid param_types[1] = {};
     const static int param_lengths[1] = {sizeof(int)}; 
     const static int param_formats[1] = {POSTGRES_BINARY_FORMAT};
 
@@ -164,14 +165,16 @@ void* pandora_get_gates_layer(pandora_t* pan, const size_t layer)
         pan->conn, 
         PANDORA_GET_LAYER,
         n_params, 
-        NULL,
+        param_types,
         (const char* const*)param_values,
         param_lengths,
         param_formats,
         POSTGRES_BINARY_FORMAT 
     );
     db_check_result_status(pan->conn, result);
+    
+    size_t n_gates = pg_result_to_pandora_gates(result, stream);
 
     PQclear(result);
-    return NULL;
+    return n_gates;
 }

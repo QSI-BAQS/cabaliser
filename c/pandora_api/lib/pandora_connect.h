@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <arpa/inet.h>
+
+#include "instruction_table.h"
+
 #include "postgres_db.h"
 #include "postgres_result_casts.h"
 
@@ -42,8 +46,26 @@ void pandora_destroy(pandora_t* pan);
 void pandora_connect(pandora_t* pan);
 void pandora_disconnect(pandora_t* pan);
 
-size_t pandora_get_n_qubits(pandora_t* pan);
+size_t pandora_connect_get_n_qubits(pandora_t* pan);
 
+
+/*
+ * pandora_decorate_circuit
+ * Gets the number of qubits from the database
+ * :: pan : pandora_t* :: Pandora connection object 
+ * Returns the number of qubits as a size_t 
+ */
+void pandora_decorate_circuit(pandora_t* pan);
+
+/*
+ * pandora_get_gates_layer
+ *
+ * :: pan : pandora_t* :: Pandora connection object 
+ * :: layer : size_t :: Layer to process 
+ * :: stream : instruction_stream_u** :: Pointer to stream obj pointer  
+ * Returns the number of gates in the stream 
+ */
+size_t pandora_get_gates_layer(pandora_t* pan, const size_t layer, instruction_stream_u** stream);
 
 #endif
 
