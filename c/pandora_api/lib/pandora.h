@@ -8,4 +8,6 @@
 #include "instruction_table.h"
 #include "consts.h"
 
+#include "pandora_gates.h"
+
 #endif
