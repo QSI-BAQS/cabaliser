@@ -40,7 +40,6 @@ int32_t pg_result_to_int32_t(PGresult* result)
 
     char* pq_val = PQgetvalue(result, 0, 0);
     int32_t val;
-    printf("Val: %s\n", pq_val);
 
     sscanf(pq_val, "%d", &val); 
 
@@ -66,9 +65,6 @@ size_t pg_result_to_pandora_gates(PGresult* result, instruction_stream_u** strea
     pandora_gate_t gate;
     size_t n_ops = 0;
 
-    printf("N Tuples: %lu\n", n_tuples); 
-   
-
     for (size_t i = 0; i < n_tuples; i++)
     {
         gate.gate_type = PQgetvalue(result, i, 0);
@@ -77,11 +73,11 @@ size_t pg_result_to_pandora_gates(PGresult* result, instruction_stream_u** strea
         gate.qubit_1 = *(int*)PQgetvalue(result, i, 3);
         gate.qubit_2 = *(int*)PQgetvalue(result, i, 4);
 
-        printf("Gate: %s\n", gate.gate_type); 
 
         n_ops += pandora_gate_parse(&gate, dst + n_ops);
     }
 
     *stream = dst;
+
     return n_ops;
 }

@@ -42,19 +42,24 @@ size_t pandora_get_n_qubits(char* db_name)
 void pandora_load_db(widget_t* wid, char* db_name)
 {
 
+ 
     pandora_t* pan = pandora_create(db_name);
 
-    pandora_init_db(db_name);
     instruction_stream_u* stream = NULL;
 
     size_t n_gates = 1;
-    for (size_t layer = 1; 0 < (n_gates = pandora_get_gates_layer(pan, layer, &stream)); layer++)
+    for (size_t layer = 1; n_gates > 0; layer++)
     {
-        parse_instruction_block(wid, stream, n_gates);
+        //printf("Layer: %lu\n", layer);
+        n_gates = pandora_get_gates_layer(pan, layer, &stream);
+
+        //printf("Parsing");
+        parse_instruction_block(wid, stream, n_gates);  
+
+        //printf("Gates at layer %lu : %lu\n", layer, n_gates );
         free(stream);
     }
-   
-    pandora_destroy(pan); 
- 
 
+    pandora_destroy(pan); 
+   
 }

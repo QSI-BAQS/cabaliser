@@ -70,36 +70,36 @@ size_t pandora_R(struct pandora_gate_t* gate, instruction_stream_u* stream)
     {
         case 'x':
             stream[0].single.opcode = _H_;
-            stream[0].single.arg = gate.qubit_0; // TODO arg tracking
+            stream[0].single.arg = gate->qubit_0; // TODO arg tracking
 
             stream[0].rz.opcode = _RZ_;
-            stream[1].rz.arg = gate.qubit_0; // TODO arg tracking
-            stream[1].rz.tag = gate.qubit_0; // TODO tagging;
+            stream[1].rz.arg = gate->qubit_0; // TODO arg tracking
+            stream[1].rz.tag = gate->qubit_0; // TODO tagging;
             stream[2].single.opcode = _H_;
-            stream[2].single.arg = gate.qubit_0; // TODO arg tracking
+            stream[2].single.arg = gate->qubit_0; // TODO arg tracking
             return 3;
         case 'y':
             stream[0].single.opcode = _S_;
-            stream[0].single.arg = gate.qubit_0; // TODO arg tracking
+            stream[0].single.arg = gate->qubit_0; // TODO arg tracking
 
             stream[1].single.opcode = _H_;
-            stream[1].single.arg = gate.qubit_0; // TODO arg tracking
+            stream[1].single.arg = gate->qubit_0; // TODO arg tracking
             stream[2].rz.opcode = _RZ_;
 
-            stream[2].rz.arg = gate.qubit_0; // TODO arg tracking
-            stream[2].rz.tag = gate.qubit_0; // TODO tagging;
+            stream[2].rz.arg = gate->qubit_0; // TODO arg tracking
+            stream[2].rz.tag = gate->qubit_0; // TODO tagging;
 
             stream[3].single.opcode = _H_;
-            stream[3].single.arg = gate.qubit_0; // TODO arg tracking
+            stream[3].single.arg = gate->qubit_0; // TODO arg tracking
             stream[4].single.opcode = _S_;
-            stream[4].single.arg = gate.qubit_0; // TODO arg tracking
+            stream[4].single.arg = gate->qubit_0; // TODO arg tracking
 
             return 5;
 
         case 'z': // Rz is native
             stream[0].rz.opcode = _RZ_;
             stream[0].rz.arg = _RZ_;
-            stream[0].rz.tag = gate.param; // TODO tagging;
+            stream[0].rz.tag = gate->param; // TODO tagging;
             return 1;
     }
     return 0;
