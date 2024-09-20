@@ -1,26 +1,26 @@
 PANDORA_SHELL := /bin/bash
 PANDORA_CC := gcc
-PANDORA_CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable ${OMPFLAG}
+PANDORA_CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -fPIC ${OMPFLAG} 
 
 PANDORA_DIR := pandora_api
 LIBPQ := /lib/libpq.so
 
 # Optimisation Flags
-PANDORA_CFLAGS += -Os -Ofast # We aren't doing floating point arithmetic, so this is fine
+PANDORA_CFLAGS += -Os -O3 # We aren't doing floating point arithmetic, so this is fine
 PANDORA_CFLAGS += -mavx -mavx2 -mlzcnt 
 
 # Library Flags
 # These are here to make sure that optimisations don't ruin the library
 PANDORA_CFLAGS += -fkeep-inline-functions -fkeep-static-functions 
 
-PANDORA_TARGET := ${PANDORA_DIR}/pandora_api
+#PANDORA_TARGET := ${PANDORA_DIR}/pandora_api
  
 PANDORA_SRCDIR := ${PANDORA_DIR}/src
 PANDORA_LIBDIR := ${PANDORA_DIR}/lib
 PANDORA_BUILDDIR := ${BUILDDIR}/${PANDORA_DIR}
 
 
-PANDORA_LIBS := -I${PANDORA_LIBDIR} -I${LIBDIR} -L${LIBPQ} -lpq ${LIB_BENCHQ}   
+PANDORA_LIBS := -I${PANDORA_LIBDIR} -I${LIBDIR} -L${LIBPQ} -lpq
 
 PANDORA_TESTDIR := tests
 PANDORA_TEST_SRCDIR := ${TESTDIR}/src
@@ -37,7 +37,7 @@ PANDORA_TEST_RUNNERS := $(patsubst ${PANDORA_TEST_SRCDIR}/%.c, ${PANDORA_TESTDIR
 .PHONY: pandora_tests
 
 # Build Rules
-pandora_api : ${PANDORA_TARGET} ${BUILDDIR}    
+pandora_api : ${PANDORA_BUILDDIR}  ${PANDORA_OBJFILES}    
 
 pandora_tests : test
 pandora_test: ${BUILDDIR} ${PANDORA_OBJFILES} ${TEST_RUNNERS} 

@@ -112,24 +112,6 @@ void tableau_X_diag_col_lower(tableau_t* tab, const size_t idx)
 
     #pragma omp parallel
     {
-//        #pragma omp for
-        //for (j = 0; j < chunk_max; j++)
-        //{
-        //    while (0 != slice[j]) 
-        //    {
-        //        size_t targ = CHUNK_SIZE_BITS * j +  __CHUNK_CTZ(slice[j]);
-        //        tableau_slice_xor(tab, idx, targ);
-        //    }
-        //}
-        //
-        //for (j = 0; j < chunk_offset; j++) 
-        //{
-        //     if (1 == __inline_slice_get_bit(tab->slices_x[idx], j))
-        //     {
-        //         size_t targ = CHUNK_SIZE_BITS * chunk_max + j; 
-        //         tableau_slice_xor(tab, idx, j);
-        //     }
-        //}
         #pragma omp for
         for (j = 0; j < idx; j++) 
         {
@@ -172,7 +154,11 @@ void tableau_H(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     {
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
@@ -193,7 +179,11 @@ void tableau_S(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     {
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
@@ -218,7 +208,11 @@ void tableau_Z(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i) 
     {
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_x[i], __ATOMIC_RELAXED);      
@@ -251,7 +245,11 @@ void tableau_R(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i) 
     {
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_x[i] & ~slice_z[i], __ATOMIC_RELAXED);
@@ -292,7 +290,11 @@ void tableau_X(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i) 
     {
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_z[i], __ATOMIC_RELAXED);      
@@ -320,7 +322,11 @@ void tableau_Y(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_z[i] ^ slice_x[i], __ATOMIC_RELAXED);      
@@ -347,7 +353,11 @@ void tableau_HX(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, ~slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
@@ -377,7 +387,11 @@ void tableau_SX(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, ~slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
@@ -407,7 +421,11 @@ void tableau_RX(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_x[i] | slice_z[i], __ATOMIC_RELAXED);      
@@ -436,7 +454,11 @@ void tableau_HZ(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, ~slice_z[i] & slice_x[i], __ATOMIC_RELAXED);      
@@ -469,7 +491,11 @@ void tableau_HY(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_z[i] ^ slice_x[i], __ATOMIC_RELAXED);      
@@ -503,7 +529,11 @@ void tableau_SH(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             slice_x[i] ^= slice_z[i];
@@ -539,7 +569,11 @@ void tableau_RH(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_z[i], __ATOMIC_RELAXED);
@@ -573,7 +607,11 @@ void tableau_HS(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             slice_x[i] ^= slice_z[i];
@@ -606,7 +644,11 @@ void tableau_HR(tableau_t* tab, const size_t targ)
     size_t i; 
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             slice_z[i] ^= slice_x[i];
@@ -645,7 +687,11 @@ void tableau_HSX(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_x[i] ^ slice_z[i], __ATOMIC_RELAXED);
@@ -685,7 +731,11 @@ void tableau_HRX(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_z[i], __ATOMIC_RELAXED);
@@ -706,7 +756,11 @@ void tableau_SHY(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_z[i] ^ slice_x[i], __ATOMIC_RELAXED);
@@ -727,7 +781,11 @@ void tableau_RHY(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_x[i], __ATOMIC_RELAXED);
@@ -748,7 +806,11 @@ void tableau_HSH(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, ~slice_x[i] & slice_z[i], __ATOMIC_RELAXED);
@@ -766,7 +828,11 @@ void tableau_HRH(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_x[i] & slice_z[i], __ATOMIC_RELAXED);
@@ -785,7 +851,11 @@ void tableau_RHS(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_x[i] | slice_z[i], __ATOMIC_RELAXED);
@@ -804,7 +874,11 @@ void tableau_SHR(tableau_t* tab, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, slice_x[i] & ~slice_z[i], __ATOMIC_RELAXED);
@@ -832,7 +906,11 @@ void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, ctrl_slice_x[i] & targ_slice_z[i] & ~(targ_slice_x[i] ^ ctrl_slice_z[i]), __ATOMIC_RELAXED);
@@ -890,7 +968,11 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
     // TODO the compiler isn't able to avx this section of code itself, CNOT appears to be near instant while CZ is non-trivial
     #pragma omp parallel private(i)
     { 
+        #ifdef __GNUC__
+        #ifndef __clang__
         #pragma omp for simd
+        #endif
+        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             __atomic_fetch_xor(slice_r + i, (

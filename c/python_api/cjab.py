@@ -1,4 +1,4 @@
-from ctypes import cdll, Structure, Union, c_int, c_char, POINTER
+from ctypes import cdll, Structure, Union, c_int, c_char, c_buffer, POINTER
 import struct
 import numpy as np
 from operation_sequence import OperationSequence, AdjacencyType, WidgetType, LocalCliffordType, MeasurementTagType, IOMapType
@@ -168,6 +168,16 @@ class Widget():
             raise Exception("Attempted to decompose twice")
         lib.widget_decompose(self.widget)
         self.__decomposed = True
+
+
+    def load_pandora(self, db_name : str):
+        '''
+            load_pandora
+            Loads gates from a pandora database
+        '''
+        db_name = c_buffer(db_name.encode('ascii')) 
+        lib.pandora_load_db(self.widget, db_name)
+
 
 
 class MeasurementTags(QubitArray): 

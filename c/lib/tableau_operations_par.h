@@ -53,35 +53,37 @@ void tableau_par_CNOT(struct distributed_tableau_op* op);
 void tableau_par_CZ(struct distributed_tableau_op* op);
 
 #ifdef TABLEAU_OPERATIONS_PAR_SRC
-  const void (*SINGLE_QUBIT_PAR_OPERATIONS[N_LOCAL_CLIFFORDS])(struct distributed_tableau_op* op) = {
-        tableau_par_I, 
-        tableau_par_X, 
-        tableau_par_Y, 
-        tableau_par_Z, 
-        tableau_par_H, 
-        tableau_par_S, 
-        tableau_par_R, 
-        tableau_par_HX,
-        tableau_par_SX,
-        tableau_par_RX,
-        tableau_par_HY,
-        tableau_par_HZ,
-        tableau_par_SH,
-        tableau_par_RH,
-        tableau_par_HS,
-        tableau_par_HR,
-        tableau_par_HSX,
-        tableau_par_HRX,
-        tableau_par_SHY,
-        tableau_par_RHY,
-        tableau_par_HSH,
-        tableau_par_HRH,
-        tableau_par_RHS,
-        tableau_par_SHR};
+
+    // GCC has no issue without the void* casts, clang throws errors 
+    const void (*SINGLE_QUBIT_PAR_OPERATIONS[N_LOCAL_CLIFFORDS])(struct distributed_tableau_op* op) = {
+        (void*)tableau_par_I, 
+        (void*)tableau_par_X, 
+        (void*)tableau_par_Y, 
+        (void*)tableau_par_Z, 
+        (void*)tableau_par_H, 
+        (void*)tableau_par_S, 
+        (void*)tableau_par_R, 
+        (void*)tableau_par_HX,
+        (void*)tableau_par_SX,
+        (void*)tableau_par_RX,
+        (void*)tableau_par_HY,
+        (void*)tableau_par_HZ,
+        (void*)tableau_par_SH,
+        (void*)tableau_par_RH,
+        (void*)tableau_par_HS,
+        (void*)tableau_par_HR,
+        (void*)tableau_par_HSX,
+        (void*)tableau_par_HRX,
+        (void*)tableau_par_SHY,
+        (void*)tableau_par_RHY,
+        (void*)tableau_par_HSH,
+        (void*)tableau_par_HRH,
+        (void*)tableau_par_RHS,
+        (void*)tableau_par_SHR};
 
     const void (*TWO_QUBIT_PAR_OPERATIONS[N_LOCAL_CLIFFORDS])(struct distributed_tableau_op* op) = {
-        tableau_par_CNOT,
-        tableau_par_CZ
+        (void*)tableau_par_CNOT,
+        (void*)tableau_par_CZ
 };
 
 #else

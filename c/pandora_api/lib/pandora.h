@@ -6,6 +6,8 @@
 #include <assert.h>
 
 #include "instruction_table.h"
+#include "input_stream.h"
+
 #include "consts.h"
 
 #include "pandora_connect.h"
@@ -24,5 +26,6 @@ size_t pandora_to_instruction_stream(char* db_name, instruction_stream_u** strea
 
 size_t pandora_get_n_qubits(char* db_name);
 
+void pandora_load_db(widget_t* wid, char* db_name);
 
 #endif
