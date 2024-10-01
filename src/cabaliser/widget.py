@@ -1,17 +1,25 @@
-from ctypes import Structure, Union, c_int, c_char, c_buffer, POINTER
+'''
+    Widget object
+    Exposes an API to the cabaliser c_lib's widget object
+'''
 import struct
-import numpy as np
-from cabaliser.operation_sequence import OperationSequence, AdjacencyType,  WidgetType, LocalCliffordType, MeasurementTagType, IOMapType
+from ctypes import POINTER
+
+from cabaliser.operation_sequence import OperationSequence
+from cabaliser.structs import AdjacencyType, WidgetType, LocalCliffordType, MeasurementTagType, IOMapType
 
 from cabaliser.io_array_wrappers import MeasurementTags, LocalCliffords, IOMap
 from cabaliser.qubit_array import QubitArray
-
-
-# TODO: Relative import paths and wrap in a package
 from cabaliser.lib_cabaliser import lib
+
+# Override return type
 lib.widget_create.restype = POINTER(WidgetType)
 
 class Widget():
+    '''
+        Widget object
+        Exposes an API to the cabaliser c_lib's widget object
+    '''
     def __init__(self, n_qubits : int, n_qubits_max : int, teleport_input=True):
         '''
             __init__
