@@ -1,0 +1,4 @@
+vgcore*
+build/*
+tests/*.out
+benchmarks/*.out
