@@ -5,7 +5,7 @@ from operation_sequence import OperationSequence, AdjacencyType, WidgetType, Loc
 from qubit_array import QubitArray
 
 # TODO: Relative import paths and wrap in a package
-lib = cdll.LoadLibrary('../cjab.so')
+lib = cdll.LoadLibrary('../cabaliser.so')
 lib.widget_create.restype = POINTER(WidgetType) 
 
 
@@ -176,6 +176,8 @@ class Widget():
             Loads gates from a pandora database
         '''
         db_name = c_buffer(db_name.encode('ascii')) 
+        lib.pandora_n_qubits(db_name)
+
         lib.pandora_load_db(self.widget, db_name)
 
 

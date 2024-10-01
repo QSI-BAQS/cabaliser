@@ -3,15 +3,12 @@ CC := gcc
 OMPFLAG := -fopenmp
 CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable ${OMPFLAG}
 
-
 # Optimisation Flags
 CFLAGS += -Ofast -fPIC
 CFLAGS += -mavx2 -mlzcnt -mbmi2 
 
-
-TARGET := cjab.so
+TARGET := lib_cabaliser.so
 TARGET_FLAGS := -shared -Wl,-soname,${TARGET}  
-
  
 SRCDIR := src
 LIBDIR := lib
@@ -28,12 +25,10 @@ TEST_LIBS := -I${TEST_LIBDIR}
 BENCHMARK_DIR := benchmarks
 BENCHMARK_SRCDIR := ${BENCHMARK_DIR}/src
 
-
 # Source Files
 SRCFILES := $(wildcard ${SRCDIR}/*.c)
 OBJFILES := $(patsubst ${SRCDIR}/%.c, ${BUILDDIR}/%.o, ${SRCFILES})
 COND_OBJFILES := ${OBJFILES} 
-
 
 # Transpose requires disabling some loop mangling
 # The loop vectorisation flags don't mesh well with the casts between pointer types
@@ -47,6 +42,14 @@ TRANSPOSE_CFLAGS_CLANG := -march=native -O1
 TEST_SRCFILES := $(wildcard ${TEST_SRCDIR}/*.c)
 TEST_RUNNERS := $(patsubst ${TEST_SRCDIR}/%.c, ${TESTDIR}/%.out, ${TEST_SRCFILES})
 
+PAULI_TRACKER_DIR :=  pauli_tracker
+PAULI_TRACKER_RUSTLIB_DIR := ${PAULI_TRACKER_DIR}/pauli_tracker 
+PAULI_TRACKER_LIB := ${PAULI_TRACKER_RUSTLIB_DIR}/target/release/libpauli_tracker.rlib
+
+MBQC_SCHEDULER_DIR := mbqc_scheduling
+MBQC_SCHEDULER_RUSTLIB_DIR := ${MBQC_SCHEDULER_DIR}/mbqc_scheduling 
+MBQC_SCHEDULER_LIB := ${MBQC_SCHEDULER_RUSTLIB_DIR}/target/release/libmbqc_scheduling.rlib
+
 # Benchmark Files
 BENCHMARK_SRCFILES := $(wildcard ${BENCHMARK_SRCDIR}/*.c)
 BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out, ${BENCHMARK_SRCFILES})
@@ -56,6 +59,8 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 .PHONY: test tests
 .PHONY: benchmark benchmarks
 .PHONY: pandora_api
+.PHONY: ${PAULI_TRACKER}
+.PHONY: ${MBQC_SCHEDULER}
 
 
 # Build Rules
@@ -89,20 +94,29 @@ benchmarks: CFLAGS += ${OMPFLAG} -pg
 benchmarks: ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS} 
 
 
+
 ${BUILDDIR} :    
 	mkdir -p ${BUILDDIR}
 
 ${TARGET} : ${BUILDDIR} ${OBJFILES} ${COND_OBJFILES}
 	${CC} ${CFLAGS} ${TARGET_FLAGS} -o $@ ${COND_OBJFILES} ${LIBS}  
 
-
-
+# Compilation of the transpose operation
 ${BUILDDIR}/${TRANSPOSE}.o : ${SRCDIR}/${TRANSPOSE}.c
 ifeq ($(CC),gcc) # Clang doesn't support some of the optimisation flags
 		${CC} ${CFLAGS} ${TRANSPOSE_CFLAGS} ${LIBS} -c -o $@ $^
 else
 		${CC} ${CFLAGS} ${TRANSPOSE_CFLAGS_CLANG} ${LIBS} -c -o $@ $^
 endif
+
+# Dependent libraries
+pauli_tracker: ${PAULI_TRACKER_LIB}
+mbqc_scheduling: ${MBQC_SCHEDULER_LIB}
+${PAULI_TRACKER_LIB}:
+	cd ${PAULI_TRACKER_RUSTLIB_DIR}; cargo build --release
+${MBQC_SCHEDULER_LIB}:
+	cd ${MBQC_SCHEDULER_RUSTLIB_DIR}; cargo build --release
+
 
 ${BUILDDIR}/%.o : ${SRCDIR}/%.c
 	${CC} ${CFLAGS} ${LIBS} -c -o $@ $^
@@ -126,3 +140,5 @@ clean:
 	rm -rf ${BUILDDIR}
 	rm -rf ${TESTDIR}/*.out
 	rm -rf ${BENCHMARK_DIR}/*.out
+	cd ${PAULI_TRACKER_RUSTLIB_DIR}; cargo clean
+	cd ${MBQC_SCHEDULER_RUSTLIB_DIR}; cargo clean

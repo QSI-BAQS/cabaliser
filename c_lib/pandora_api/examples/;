@@ -10,9 +10,15 @@ int main()
 
     pandora_t* pan = pandora_create(db_name);
 
-//    printf("%lu\n", pandora_get_n_qubits(db_name));
+    printf("Connected\n");
 
-    //pandora_init_db(db_name);
+    //printf("%lu\n", pandora_get_n_qubits(db_name));
+
+    pandora_init_db(db_name);
+
+    printf("Initialised\n");
+
+
     instruction_stream_u* stream = NULL;
 
     size_t n_gates = 1;
