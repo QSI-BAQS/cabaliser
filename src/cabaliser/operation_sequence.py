@@ -3,7 +3,7 @@
 '''
 from ctypes import Structure, Union, c_int, c_byte, c_size_t, POINTER
 
-from gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ
+from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ
 
 class CliffordQueueType(Structure):
     '''

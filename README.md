@@ -15,10 +15,15 @@ The Python side of the code provides a thin wrapper around the C code
 
 ## Installation ##
 
+To build the C library:
 - `make`, this should build the shared object library 
 - `make test` will build the tests, which are stored in the `tests` directory.
 - `make benchmark` will build some random benchmarks, that are stored in the `benchmarks` directory
 
+To build the Python wrapper:
+- `pip install .`
+
+TODO: Invoke make from buildtools 
 
 To compile the Pandora integration you will need the appropriate package that provides the `libpq-fe.h` headers for your system.
 On arch this is `postgresql-libs`.

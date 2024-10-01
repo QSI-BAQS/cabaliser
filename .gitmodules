@@ -1,0 +1,6 @@
+[submodule "c_lib/mbqc_scheduling"]
+	path = c_lib/mbqc_scheduling
+	url = https://github.com/taeruh/mbqc_scheduling.git
+[submodule "c_lib/pauli_tracker"]
+	path = c_lib/pauli_tracker
+	url = https://github.com/taeruh/pauli_tracker.git

@@ -64,7 +64,7 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 
 
 # Build Rules
-all : ${TARGET} ${BUILDDIR} 
+all : ${TARGET} ${BUILDDIR}
 
 include pandora_api/Makefile 
 
@@ -98,7 +98,7 @@ benchmarks: ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS}
 ${BUILDDIR} :    
 	mkdir -p ${BUILDDIR}
 
-${TARGET} : ${BUILDDIR} ${OBJFILES} ${COND_OBJFILES}
+${TARGET} : ${BUILDDIR} ${OBJFILES} ${COND_OBJFILES} ${PAULI_TRACKER_LIB} ${MBQC_SCHEDULER_LIB} 
 	${CC} ${CFLAGS} ${TARGET_FLAGS} -o $@ ${COND_OBJFILES} ${LIBS}  
 
 # Compilation of the transpose operation
