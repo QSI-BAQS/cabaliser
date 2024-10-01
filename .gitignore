@@ -1,4 +1,4 @@
-*.so
-*gmon.out
-*.bak
-*__pycache__*
+vgcore*
+build/*
+tests/*.out
+benchmarks/*.out
