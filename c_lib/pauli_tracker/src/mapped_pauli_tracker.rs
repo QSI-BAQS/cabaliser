@@ -67,6 +67,18 @@ extern "C" fn pauli_track_x(mapped_pauli_tracker: &mut MappedPauliTracker, measu
 }
 
 /*
+ * pauli_tracker_greedy_order
+ * Returns the measurement order and dependencies 
+ * :: mapped_pauli_tracker : &MappedPauliTracker :: Pauli tracker object to print 
+ * Acts in place, and writes to stdout
+ */
+#[no_mangle]
+extern "C" fn pauli_tracker_greedy_order(mapped_pauli_tracker: &MappedPauliTracker) {
+    
+
+}
+
+/*
  * pauli_tracker_print
  * Small printing function for the pauli tracker
  * :: mapped_pauli_tracker : &MappedPauliTracker :: Pauli tracker object to print 
