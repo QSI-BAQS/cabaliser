@@ -4,6 +4,8 @@
     Output is identical to up to a permutation of qubit indicies
     for the |000> state 
 '''
+import unittest
+
 from cabaliser import gates
 from cabaliser.operation_sequence import OperationSequence 
 from cabaliser.widget import Widget
@@ -13,7 +15,6 @@ _I_ = 0
 _T_ = 1
 _Tdag_ = 2
 
-import unittest
 class ToffoliTest(unittest.TestCase):
 
     # Parameterised toffoli gate
