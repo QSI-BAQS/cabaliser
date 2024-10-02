@@ -1,0 +1,14 @@
+[package]
+name = "pauli_tracker_clib"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+bitvec = "1.0.1"
+
+[dependencies.pauli_tracker]
+version = "0.4.3"
+features = ["bitvec"]
