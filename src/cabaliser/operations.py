@@ -1,7 +1,8 @@
 '''
-    Corresponding structs and Python Classes    
+    Corresponding structs and Python Classes
 '''
-from ctypes import Structure, Union, c_int, c_byte, c_size_t, POINTER
+from ctypes import Structure, Union, c_int, c_byte
+
 
 class SingleQubitOperationType(Structure):
     '''
@@ -51,6 +52,7 @@ def TwoQubitOperation(arr, idx: int, opcode: c_byte, ctrl: int, targ: int):
     arr[idx].single.ctrl = ctrl
     arr[idx].single.targ = targ
 
+
 class RzQubitOperationType(Structure):
     '''
         ctypes wrapper for rz operations
@@ -60,6 +62,7 @@ class RzQubitOperationType(Structure):
         ('arg', c_int),
         ('tag', c_int),
         ]
+
 
 def RzOperation(arr, i, opcode, arg, tag):
     '''
@@ -74,6 +77,7 @@ def RzOperation(arr, i, opcode, arg, tag):
     arr[i].rz.opcode = opcode
     arr[i].rz.arg = arg
     arr[i].rz.tag = tag
+
 
 class OperationType(Union):
     '''

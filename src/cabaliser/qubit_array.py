@@ -3,6 +3,7 @@
     Exposes some simple python interfaces
 '''
 
+
 class QubitArray:
     '''
         QubitArray

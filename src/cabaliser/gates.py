@@ -1,6 +1,6 @@
 '''
     Constant values associated with gates
-    This mirrors the contents of `lib/instruction_table.h`
+    This mirrors the contents of `lib/instruction_table.h
 '''
 from typing import Final
 from ctypes import c_int8

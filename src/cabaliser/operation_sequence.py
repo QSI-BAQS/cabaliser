@@ -1,21 +1,28 @@
+'''
+    Operation Sequence
+    Wrapper for sequences of operations
+    Exposes these sequences to the C api
+'''
 from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ
-from cabaliser.operations import OperationType, SingleQubitOperation, TwoQubitOperation, RzOperation  
+from cabaliser.operations import OperationType, SingleQubitOperation, TwoQubitOperation, RzOperation
+
+
 class OperationSequence():
     '''
         Operation sequence object
         This is a wrapper for an array of ctypes operations
-        :: n_instructions : int :: Maximum number of instructions for this sequence
+        :: n_instructions: int :: Maximum number of instructions for this sequence
         This object has a pre-allocated maximum number of supported operations
     '''
     CONSTRUCTOR_MAP = (
           {i: SingleQubitOperation for i in SINGLE_QUBIT_GATES}
         | {i: TwoQubitOperation for i in TWO_QUBIT_GATES}
-        | {RZ : RzOperation})
+        | {RZ: RzOperation})
 
-    def __init__(self, n_instructions : int):
+    def __init__(self, n_instructions: int):
         '''
         Constructor for the operation sequence object
-        :: n_instructions : int :: Maximum number of instructions for this sequence
+        :: n_instructions: int :: Maximum number of instructions for this sequence
         '''
         self.n_instructions = n_instructions
         self.ops = (OperationType * n_instructions)()
@@ -24,11 +31,11 @@ class OperationSequence():
         self.max_qubit_index = 0
         self.n_rz_operations = 0
 
-    def __getitem__(self, idx : int):
+    def __getitem__(self, idx: int):
         '''
             __getitem__
             Gets an operation from the array
-            :: idx : int :: index to query
+            :: idx: int :: index to query
             Warning: negative integers will return the value from
             negative addresses, they will NOT index from the end
             of the array
@@ -39,14 +46,14 @@ class OperationSequence():
         '''
             __setitem__
             Sets an operation from the array
-            :: idx : int :: index to query
-            :: value : OperationType :: The operation to write to that element
+            :: idx: int :: index to query
+            :: value: OperationType :: The operation to write to that element
             Warning: negative integers will write to addresses
-            below the address of the array, 
+            below the address of the array,
             they will NOT index from the end of the array
         '''
         self.ops[idx] = value
-        self.max_qubit_index = max(self.max_qubit_index, value.max_qubit_index)   
+        self.max_qubit_index = max(self.max_qubit_index, value.max_qubit_index)
 
     def __iter__(self):
         '''
@@ -59,17 +66,23 @@ class OperationSequence():
 
     def append(self, opcode, *args):
         '''
-            append 
-            :: opcode :: Operation code to append   
-            :: *args :: Arguments to pass to the instruction  
-            Calls an internal constructor table to build the appropriate operation 
+            append
+            :: opcode :: Operation code to append
+            :: *args :: Arguments to pass to the instruction
+            Calls an internal constructor table to build the appropriate operation
         '''
         if self.curr_instructions == self.n_instructions:
             raise IndexError("Exceeded Length of Array")
 
+        # This function acts to append the opcode to the ops array
         self.CONSTRUCTOR_MAP[opcode](self.ops, self.curr_instructions, opcode, *args)
-        self.curr_instructions += 1
 
+        # Update sequence params
+        if opcode == RZ:
+            self.sequence_params_rz(*args)
+        else:
+            self.sequence_params(*args)
+        self.curr_instructions += 1
 
     def _append(self, *operations):
         if self.curr_instructions + len(operations) > self.n_instructions:
@@ -93,11 +106,20 @@ class OperationSequence():
         for op in other:
             seq._append(op)
 
-    def sequence_params_rz(self, operation):  
+        seq.max_qubit_index = max(self.max_qubit_index, other.max_qubit_index)
+        seq.n_rz_operations = self.n_rz_operations + other.n_rz_operations
+        return seq
+
+    def sequence_params_rz(self, *params):
+        '''
+            Updates parameters for rz operations
+            This corresponds to one extra qubit
+        '''
         self.n_rz_operations += 1
-        self.max_qubit_index = max(self.max_qubit_index, operation.rz.arg) 
+        self.sequence_params(*params)
 
-    def sequence_params_single(self, operation):  
-        self.max_qubit_index = max(self.max_qubit_index, operation.single.arg) 
-
-
+    def sequence_params(self, *params):
+        '''
+            Updates the maximum qubit index in use
+        '''
+        self.max_qubit_index = max(self.max_qubit_index, *params)
