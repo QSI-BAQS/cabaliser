@@ -12,6 +12,8 @@ from cabaliser.io_array_wrappers import MeasurementTags, LocalCliffords, IOMap
 from cabaliser.qubit_array import QubitArray
 from cabaliser.lib_cabaliser import lib
 
+from cabaliser.exceptions import WidgetNotDecomposedException
+
 # Override return type
 lib.widget_create.restype = POINTER(WidgetType)
 
@@ -107,7 +109,7 @@ class Widget():
             Returns a wrapper around an array of the Pauli corrections
         '''
         if not self.__decomposed:
-            raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
+            raise WidgetNotDecomposedException("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
 
         if self.local_cliffords is None:
 
@@ -124,7 +126,7 @@ class Widget():
             Returns a wrapper around an array of measurements
         '''
         if not self.__decomposed:
-            raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
+            raise WidgetNotDecomposedException("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
 
         if self.measurement_tags is None:
             measurement_tags = POINTER(MeasurementTagType)()
@@ -140,7 +142,7 @@ class Widget():
             Returns a wrapper around an array of measurements
         '''
         if not self.__decomposed:
-            raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
+            raise WidgetNotDecomposedException("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
 
         if self.io_map is None:
             io_map = POINTER(IOMapType)()
@@ -157,7 +159,7 @@ class Widget():
             Reported qubits are graph state indices
         '''
         if not self.__decomposed:
-            raise Exception("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
+            raise WidgetNotDecomposedException("Attempted to read out the graph state without decomposing the tableau, please call `Widget.decompose()` before extracting the adjacencies")
 
         if qubit > self.get_n_qubits():
             raise IndexError("Attempted to access qubit out of range")
@@ -175,7 +177,7 @@ class Widget():
             Decomposes the operation sequence into an algorithmically specific graph (asg)
         '''
         if self.__decomposed:
-            raise Exception("Attempted to decompose twice")
+            raise WidgetNotDecomposedException("Attempted to decompose twice")
         lib.widget_decompose(self.widget)
         self.__decomposed = True
 
