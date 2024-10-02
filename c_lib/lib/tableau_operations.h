@@ -95,8 +95,6 @@ void tableau_SHR(tableau_t* tab, const size_t targ);
 void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ);
 void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ);
 
-
-
 #ifdef TABLEAU_OPERATIONS_SRC
 
   void (*SINGLE_QUBIT_OPERATIONS[N_LOCAL_CLIFFORDS])(tableau_t*, const size_t targ) = {
