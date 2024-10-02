@@ -1,5 +1,5 @@
 from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ
-from cabaliser.operations import OperationType,SingleQubitOperation, TwoQubitOperation, RzOperation  
+from cabaliser.operations import OperationType, SingleQubitOperation, TwoQubitOperation, RzOperation  
 class OperationSequence():
     '''
         Operation sequence object
@@ -21,6 +21,9 @@ class OperationSequence():
         self.ops = (OperationType * n_instructions)()
         self.curr_instructions = 0
 
+        self.max_qubit_index = 0
+        self.n_rz_operations = 0
+
     def __getitem__(self, idx : int):
         '''
             __getitem__
@@ -32,7 +35,7 @@ class OperationSequence():
         '''
         return self.ops[idx]
 
-    def __setitem__(self, idx, value):
+    def __setitem__(self, idx, value: OperationType):
         '''
             __setitem__
             Sets an operation from the array
@@ -43,6 +46,7 @@ class OperationSequence():
             they will NOT index from the end of the array
         '''
         self.ops[idx] = value
+        self.max_qubit_index = max(self.max_qubit_index, value.max_qubit_index)   
 
     def __iter__(self):
         '''
@@ -66,6 +70,7 @@ class OperationSequence():
         self.CONSTRUCTOR_MAP[opcode](self.ops, self.curr_instructions, opcode, *args)
         self.curr_instructions += 1
 
+
     def _append(self, *operations):
         if self.curr_instructions + len(operations) > self.n_instructions:
             raise IndexError("Exceeded Length of Array")
@@ -87,3 +92,12 @@ class OperationSequence():
             seq._append(op)
         for op in other:
             seq._append(op)
+
+    def sequence_params_rz(self, operation):  
+        self.n_rz_operations += 1
+        self.max_qubit_index = max(self.max_qubit_index, operation.rz.arg) 
+
+    def sequence_params_single(self, operation):  
+        self.max_qubit_index = max(self.max_qubit_index, operation.single.arg) 
+
+

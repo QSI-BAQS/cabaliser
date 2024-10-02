@@ -12,6 +12,7 @@ class SingleQubitOperationType(Structure):
         ('arg', c_int),
         ]
 
+
 def SingleQubitOperation(arr, idx, opcode, arg):
     '''
        Constructor for single qubit operations
@@ -36,7 +37,7 @@ class TwoQubitOperationType(Structure):
         ]
 
 
-def TwoQubitOperation(arr, idx, opcode, ctrl, targ):
+def TwoQubitOperation(arr, idx: int, opcode: c_byte, ctrl: int, targ: int):
     '''
        Constructor for two qubit operations
         :: arr : array :: Array to write to
@@ -46,11 +47,9 @@ def TwoQubitOperation(arr, idx, opcode, ctrl, targ):
         :: targ : uint32_t :: Second qubit argument
         Writes the operation to the index of the array
     '''
-
     arr[idx].single.opcode = opcode
     arr[idx].single.ctrl = ctrl
     arr[idx].single.targ = targ
-
 
 class RzQubitOperationType(Structure):
     '''
@@ -75,7 +74,6 @@ def RzOperation(arr, i, opcode, arg, tag):
     arr[i].rz.opcode = opcode
     arr[i].rz.arg = arg
     arr[i].rz.tag = tag
-
 
 class OperationType(Union):
     '''

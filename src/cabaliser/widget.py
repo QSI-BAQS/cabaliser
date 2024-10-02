@@ -2,17 +2,15 @@
     Widget object
     Exposes an API to the cabaliser c_lib's widget object
 '''
-import struct
-from ctypes import POINTER
+from ctypes import POINTER, c_buffer
 
 from cabaliser.operation_sequence import OperationSequence
-from cabaliser.structs import AdjacencyType, WidgetType, LocalCliffordType, MeasurementTagType, IOMapType
-
+from cabaliser.structs import AdjacencyType, WidgetType
+from cabaliser.structs import LocalCliffordType, MeasurementTagType, IOMapType
 from cabaliser.io_array_wrappers import MeasurementTags, LocalCliffords, IOMap
 from cabaliser.qubit_array import QubitArray
 from cabaliser.lib_cabaliser import lib
-
-from cabaliser.exceptions import WidgetNotDecomposedException
+from cabaliser.exceptions import WidgetNotDecomposedException, WidgetDecomposedException
 
 # Override return type
 lib.widget_create.restype = POINTER(WidgetType)
@@ -22,7 +20,7 @@ class Widget():
         Widget object
         Exposes an API to the cabaliser c_lib's widget object
     '''
-    def __init__(self, n_qubits : int, n_qubits_max : int, teleport_input=True):
+    def __init__(self, n_qubits: int, n_qubits_max: int, teleport_input: bool=True):
         '''
             __init__
             Constructor for the widget
@@ -49,6 +47,10 @@ class Widget():
 
     @property
     def n_qubits(self):
+        '''
+            n_qubits
+            Property wrapper to get the current number of qubits in the widget
+        '''
         return self.get_n_qubits()
 
     def get_max_qubits(self) -> int:
@@ -60,11 +62,14 @@ class Widget():
         return lib.widget_get_max_qubits(self.widget)
 
     @property
-    def max_qubits(self):
+    def max_qubits(self) -> int:
+        '''
+            max_qubits
+            Property wrapper for get_max_qubits
+        '''
         return self.get_max_qubits()
 
-
-    def get_initial_qubits(self) -> int:
+    def get_n_initial_qubits(self) -> int:
         '''
             get_initial_qubits
             Getter method for the widget
@@ -73,27 +78,28 @@ class Widget():
         return lib.widget_get_n_initial_qubits(self.widget)
 
     @property
-    def n_initial_qubits(self):
+    def n_initial_qubits(self) -> int:
+        '''
+            Property wrapper for getting the number of initial qubits
+        '''
         return self.get_n_initial_qubits()
 
-    def process_operations(self, operations):
+    def process_operations(self, operations: OperationSequence):
         '''
             Parses an array of operations
-            :: operations : Operations :: Wrapper around an array of operations
+            :: operations: Operations :: Wrapper around an array of operations
             Acts in place on the widget
         '''
         lib.parse_instruction_block(
             self.widget,
             operations.ops,
             operations.curr_instructions)
-        return
 
     def __call__(self, *args, **kwargs):
         '''
             Consumes a list of operations
         '''
         self.process_operations(*args, **kwargs)
-
 
     def __del__(self):
         '''
@@ -148,12 +154,12 @@ class Widget():
             io_map = POINTER(IOMapType)()
             ptr = POINTER(IOMapType)(io_map)
             lib.widget_get_io_map_api(self.widget, ptr)
-            self.io_map = IOMap(self.get_initial_qubits(), io_map)
+            self.io_map = IOMap(self.get_n_initial_qubits(), io_map)
 
         return self.io_map
 
 
-    def get_adjacencies(self, qubit: int):
+    def get_adjacencies(self, qubit: int) -> AdjacencyType:
         '''
             Given a qubit get the adjacencies on the graph
             Reported qubits are graph state indices
@@ -177,12 +183,12 @@ class Widget():
             Decomposes the operation sequence into an algorithmically specific graph (asg)
         '''
         if self.__decomposed:
-            raise WidgetNotDecomposedException("Attempted to decompose twice")
+            raise WidgetDecomposedException("Attempted to decompose twice")
         lib.widget_decompose(self.widget)
         self.__decomposed = True
 
 
-    def load_pandora(self, db_name : str):
+    def load_pandora(self, db_name: str):
         '''
             load_pandora
             Loads gates from a pandora database
@@ -193,23 +199,21 @@ class Widget():
         lib.pandora_load_db(self.widget, db_name)
 
 
-
-
 class Adjacency(QubitArray):
     '''
         Adjacency
         Python wrapper for adjacency object
     '''
-    def __init__(self, adj : AdjacencyType):
+    def __init__(self, adj: AdjacencyType):
         self.adj = adj
         self.src = int(self.adj.src)
         self.n_adjacent = int(self.adj.n_adjacent)
         super().__init__(self.n_adjacent, self.adj.adjacencies)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Qubit: {self.src} {list(iter(self))}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()
 
     def __del__(self):
