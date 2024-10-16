@@ -1,3 +1,4 @@
+#define PAULI_TRACKER_SRC
 #include "pauli_tracker.h"
 
 /*
@@ -39,7 +40,7 @@ void pauli_track_x(
 
 
 /*
- * pauli_track_x
+ * pauli_track_z
  * :: tracker : void* :: Opaque pointer to rust tracker object 
  * :: uintptr_t : measured_qubit :: Qubit that was measured 
  * :: target_qubit : uintptr_t :: Target of the correction operator
@@ -51,4 +52,15 @@ void pauli_track_z(
     uintptr_t target_qubit)
 {
     lib_pauli_track_z(tracker, measured_qubit, target_qubit);
+}
+
+
+/*
+ * pauli_track_I
+ * :: tracker : void* :: Tracker object 
+ * :: target : size_t :: Target of operation 
+ */
+void pauli_track_I_(void* tracker, size_t target)
+{
+    return;
 }

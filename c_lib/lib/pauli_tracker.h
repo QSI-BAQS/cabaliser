@@ -10,7 +10,6 @@ struct pauli_frame_t
     void*  elements;
 };
 
-
 struct dependency_t
 {
     size_t len;
@@ -24,16 +23,69 @@ struct dependency_t
  * Creates a new opaque object via a rust library binding
  */
 void* pauli_tracker_create(size_t n_qubits);
+
+
+/*
+ * pauli_tracker_destroy
+ * Destroys the pauli tracker object
+ * :: tracker : void* :: Opaque pointer to rust object 
+ * Wrapper around the rust destructor method 
+ */
 void pauli_tracker_destroy(void* tracker);
+
+/*
+ * pauli_track_x
+ * :: tracker : void* :: Opaque pointer to rust tracker object 
+ * :: uintptr_t : measured_qubit :: Qubit that was measured 
+ * :: target_qubit : uintptr_t :: Target of the correction operator
+ * Adds a tracking term for the target qubit depending on the measurement result 
+ */
 void pauli_track_x(
     void* tracker, 
     uintptr_t measured_qubit,
     uintptr_t target_qubit);
 
+/*
+ * pauli_track_z
+ * :: tracker : void* :: Opaque pointer to rust tracker object 
+ * :: uintptr_t : measured_qubit :: Qubit that was measured 
+ * :: target_qubit : uintptr_t :: Target of the correction operator
+ * Adds a tracking term for the target qubit depending on the measurement result 
+ */
 void pauli_track_z(
     void* tracker, 
     uintptr_t measured_qubit,
     uintptr_t target_qubit);
 
+// TODO: Double check these equivalence classes
+#ifdef PAULI_TRACKER_SRC
+const void (*TRACKER_TABLE)(void*, size_t)[24] = {
+ pauli_track_I_, // _I_
+ pauli_track_I_, // _X_
+ pauli_track_I_, // _Y_
+ pauli_track_I_, // _Z_
+ pauli_tracker_h, // _H_
+ pauli_tracker_s, // _S_
+ pauli_tracker_s, // _R_
+ pauli_tracker_h, // _HX_
+ pauli_tracker_s, // _SX_
+ pauli_tracker_s, // _RX_
+ pauli_tracker_h, // _HY_
+ pauli_tracker_h, // _HZ_
+ pauli_tracker_sh, // _SH_
+ pauli_tracker_sh, // _RH_
+ pauli_tracker_hs, // _HS_
+ pauli_tracker_hs, // _HR_
+ pauli_tracker_hs, // _HSX_
+ pauli_tracker_hs, // _HRX_
+ pauli_tracker_sh, // _SHY_
+ pauli_tracker_sh, // _RHY_
+ pauli_tracker_shs, // _HSH_
+ pauli_tracker_shs, // _HRH_,
+ pauli_tracker_shs, // _RHS_,
+ pauli_tracker_shs  // _SHR_
+};
+
+#endif
 
 #endif

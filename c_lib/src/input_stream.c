@@ -162,13 +162,17 @@ void teleport_input(widget_t* wid)
     memset(wid->queue->table, _H_, wid->n_initial_qubits);  
     for (size_t i = 0; i < wid->n_initial_qubits; i++)
     {
-
         // Construct a Bell state
         tableau_CNOT(wid->tableau, i, wid->n_initial_qubits + i);
 
         // Fix up the map, we should now be indexing off the target qubit  
         wid->q_map[i] += wid->n_initial_qubits;      
+        // TODO: Stop proxying the input qubits like this 
+        pauli_track_z(wid->pauli_tracker, i, wid->n_initial_qubits + i);
+    
+        // This correction is fine
+        pauli_track_x(wid->pauli_tracker, i, wid->n_initial_qubits + i);
     }
-     
+
     return;
 }
