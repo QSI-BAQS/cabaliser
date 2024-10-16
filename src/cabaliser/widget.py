@@ -110,6 +110,21 @@ class Widget():
         '''
         lib.widget_destroy(self.widget)
 
+
+    def json(self):
+        '''
+            Returns a dict object of all relevant properties 
+        '''
+        obj = {
+               'n_qubits': self.n_qubits,
+               'adjacencies': {i: self.get_adjacencies(i).to_list() for i in self.n_qubits},
+               'local_cliffords': self.get_local_cliffords().to_list(),
+               'measurement_schedule': None,
+               'measurement_tags': self.get_measurement_tags().to_list(),
+               'IO map': self.get_io_map().to_list() 
+               }
+        return obj
+
     def get_local_cliffords(self):
         '''
             get_corrections
@@ -206,7 +221,6 @@ class Widget():
         lib.pandora_n_qubits(db_name)
 
         lib.pandora_load_db(self.widget, db_name)
-
 
 class Adjacency(QubitArray):
     '''

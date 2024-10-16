@@ -40,3 +40,9 @@ class QubitArray:
             Returns the length of the array
         '''
         return self.n_qubits
+
+    def to_list(self):
+        '''
+            Converts the underlying array to a Python list
+        '''
+        return list(iter(self))
