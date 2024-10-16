@@ -60,7 +60,7 @@ void pauli_track_z(
  * :: tracker : void* :: Tracker object 
  * :: target : size_t :: Target of operation 
  */
-void pauli_track_I_(void* tracker, size_t target)
+void pauli_track_I_(MappedPauliTracker* tracker, size_t target)
 {
     return;
 }

@@ -117,7 +117,7 @@ class Widget():
         '''
         obj = {
                'n_qubits': self.n_qubits,
-               'adjacencies': {i: self.get_adjacencies(i).to_list() for i in self.n_qubits},
+               'adjacencies': {i: self.get_adjacencies(i).to_list() for i in range(self.n_qubits)},
                'local_cliffords': self.get_local_cliffords().to_list(),
                'measurement_schedule': None,
                'measurement_tags': self.get_measurement_tags().to_list(),
