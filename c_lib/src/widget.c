@@ -30,7 +30,7 @@ void widget_destroy(widget_t* wid)
     tableau_destroy(wid->tableau);
     clifford_queue_destroy(wid->queue);
     qubit_map_destroy(wid->q_map);
-
+    pauli_tracker_destroy(wid->pauli_tracker);
     free(wid);
 }
 

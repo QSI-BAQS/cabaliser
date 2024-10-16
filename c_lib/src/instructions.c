@@ -1,6 +1,5 @@
 #define INSTRUCTIONS_SRC 
 
-
 #include "instructions.h"
 
 /*
@@ -25,7 +24,6 @@ clifford_queue_t* clifford_queue_create(const size_t n_qubits)
     err_code = posix_memalign((void**)&non_cliffords, CACHE_SIZE,  n_qubits * sizeof(non_clifford_tag_t));
     assert(0 == err_code);
     memset(non_cliffords, 0, n_qubits * sizeof(non_clifford_tag_t)); 
-
 
     que->table = (instruction_t*)instructions;
     que->n_qubits = n_qubits;
