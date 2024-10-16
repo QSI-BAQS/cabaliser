@@ -2,3 +2,7 @@ vgcore*
 build/*
 tests/*.out
 benchmarks/*.out
+dist/*
+*__pycache__*
+*bak
+*egg-info*
