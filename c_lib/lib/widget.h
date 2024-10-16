@@ -10,6 +10,8 @@
 #include "qubit_map.h"
 #include "adjacency.h"
 
+#include "pauli_tracker.h"
+
 #define WMAP_LOOKUP(widget, idx) (widget->q_map[idx])
 
 struct widget_t {
@@ -19,6 +21,7 @@ struct widget_t {
     struct tableau_t* tableau;
     struct clifford_queue_t* queue;
     qubit_map_t* q_map;
+    void* pauli_tracker;
 };
 typedef struct widget_t widget_t;
 

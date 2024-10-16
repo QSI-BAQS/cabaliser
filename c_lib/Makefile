@@ -21,7 +21,6 @@ TEST_SRCDIR := ${TESTDIR}/src
 TEST_LIBDIR := ${TESTDIR}/lib
 TEST_LIBS := -I${TEST_LIBDIR}
 
-
 BENCHMARK_DIR := benchmarks
 BENCHMARK_SRCDIR := ${BENCHMARK_DIR}/src
 
@@ -42,10 +41,16 @@ TRANSPOSE_CFLAGS_CLANG := -march=native -O1
 TEST_SRCFILES := $(wildcard ${TEST_SRCDIR}/*.c)
 TEST_RUNNERS := $(patsubst ${TEST_SRCDIR}/%.c, ${TESTDIR}/%.out, ${TEST_SRCFILES})
 
+# TODO: Relative pathing 
+PAULI_TRACKER_CLIB := pauli_tracker_clib
 PAULI_TRACKER_DIR := pauli_tracker
-PAULI_TRACKER_LIB := ${PAULI_TRACKER_RUSTLIB_DIR}/target/release/libpauli_tracker_clib.a
+PAULI_TRACKER_RUSTLIB_DIR := pauli_tracker
+PAULI_TRACKER_LIB := $(shell pwd)/${PAULI_TRACKER_RUSTLIB_DIR}/target/release
 PAULI_TRACKER_HEADERS := ${PAULI_TRACKER_DIR}/lib
 
+LINK_LIBS := -L${PAULI_TRACKER_LIB} -Wl,-Bstatic -l${PAULI_TRACKER_CLIB} -Wl,-Bdynamic 
+
+LIBS += -I${PAULI_TRACKER_HEADERS} 
 
 MBQC_SCHEDULER_DIR := mbqc_scheduling
 MBQC_SCHEDULER_RUSTLIB_DIR := ${MBQC_SCHEDULER_DIR}/mbqc_scheduling 
@@ -86,7 +91,7 @@ debug: CFLAGS += -fopt-info -fopt-info-loop -fopt-info-loop-missed -fopt-info-ve
 debug: test 
 
 test : CFLAGS += -g
-tests : test pandora_test
+tests : test pandora_test ${PAULI_TRACKER_LIB}
 test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} ${PANDORA_TEST_RUNNERS} 
 
 
@@ -98,7 +103,7 @@ ${BUILDDIR} :
 	mkdir -p ${BUILDDIR}
 
 ${TARGET} : ${BUILDDIR} ${OBJFILES} ${COND_OBJFILES} ${PAULI_TRACKER_LIB} ${MBQC_SCHEDULER_LIB} 
-	${CC} ${CFLAGS} ${TARGET_FLAGS} -o $@ ${COND_OBJFILES} ${LIBS}  
+	${CC} ${CFLAGS} ${TARGET_FLAGS} -o $@ ${COND_OBJFILES} ${LINK_LIBS} ${LIBS}  
 
 # Compilation of the transpose operation
 ${BUILDDIR}/${TRANSPOSE}.o : ${SRCDIR}/${TRANSPOSE}.c
@@ -116,22 +121,20 @@ ${PAULI_TRACKER_LIB}:
 	cd ${PAULI_TRACKER_DIR}; make all
 
 ${MBQC_SCHEDULER_LIB}:
-	cd ${MBQC_SCHEDULER_RUSTLIB_DIR}; cargo build --release
-
+	@echo PASS
+	#cd ${MBQC_SCHEDULER_RUSTLIB_DIR}; cargo build --release
 
 ${BUILDDIR}/%.o : ${SRCDIR}/%.c
-	${CC} ${CFLAGS} ${LIBS} -c -o $@ $^
+	${CC} $^ ${CFLAGS} ${LINK_LIBS} ${LIBS} -c -o $@ 
 
 ${TESTDIR}/%.out : ${OBJFILES} ${TEST_SRCDIR}/%.c
-	${CC} ${CFLAGS} ${TEST_LIBS} ${LIBS} -o $@ $^
+	${CC} $^ ${CFLAGS} ${LINK_LIBS} ${TEST_LIBS} ${LIBS} -o $@ 
 
 ${TESTDIR}/${TEST_TRANSPOSE}.out : ${OBJFILES} ${TEST_SRCDIR}/${TEST_TRANSPOSE}.c 
-	${CC} ${CFLAGS} ${TRANSPOSE_CFLAGS} ${LIBS} -o $@ $^
-
+	${CC} $^ ${CFLAGS} ${TRANSPOSE_CFLAGS} ${LINK_LIBS} ${LIBS} -o $@ 
 
 ${BENCHMARK_DIR}/%.out : ${OBJFILES} ${BENCHMARK_SRCDIR}/%.c 
-	${CC} ${CFLAGS} ${LIBS} -o $@ $^
-
+	${CC} $^ ${CFLAGS} ${LIBS} -o $@
 
 obj:
 	@echo ${OBJFILES}

@@ -15,6 +15,7 @@ widget_t* widget_create(const size_t initial_qubits, const size_t max_qubits)
     wid->tableau = tableau_create(max_qubits);
     wid->queue = clifford_queue_create(max_qubits);
     wid->q_map = qubit_map_create(initial_qubits, max_qubits); 
+    wid->pauli_tracker = pauli_tracker_create(max_qubits);
 
     return wid;
 }

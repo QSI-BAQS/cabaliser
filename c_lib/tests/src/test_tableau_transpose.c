@@ -44,8 +44,8 @@ void test_tableau_transpose(const size_t n_qubits)
                i += 64;
             }
 
-            // assert(tab->slices_x[i][j] == tab_cmp->slices_x[i][j]);
-            //assert(tab->slices_z[i][j] == tab_cmp->slices_z[i][j]);
+            assert(tab->slices_x[i][j] == tab_cmp->slices_x[i][j]);
+            assert(tab->slices_z[i][j] == tab_cmp->slices_z[i][j]);
         }
     } 
     return;

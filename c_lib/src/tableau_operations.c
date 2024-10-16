@@ -104,10 +104,6 @@ void tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
 void tableau_X_diag_col_lower(tableau_t* tab, const size_t idx)
 {
     size_t j;
-    const size_t chunk_max = idx / sizeof(CHUNK_OBJ);
-    const size_t chunk_offset = idx % sizeof(CHUNK_OBJ);
-
-
     CHUNK_OBJ* slice = tab->slices_x[idx];
 
     #pragma omp parallel
