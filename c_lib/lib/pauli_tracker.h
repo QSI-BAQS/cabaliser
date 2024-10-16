@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 #include "lib_pauli_tracker.h" 
+#include "lib_pauli_tracker_cliffords.h" 
+
 
 struct pauli_frame_t
 {
@@ -56,6 +58,13 @@ void pauli_track_z(
     void* tracker, 
     uintptr_t measured_qubit,
     uintptr_t target_qubit);
+
+/*
+ * pauli_track_I
+ * :: tracker : void* :: Tracker object 
+ * :: target : size_t :: Target of operation 
+ */
+void pauli_track_I_(void* tracker, size_t target);
 
 // TODO: Double check these equivalence classes
 #ifdef PAULI_TRACKER_SRC
