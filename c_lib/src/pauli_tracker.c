@@ -1,6 +1,8 @@
 #define PAULI_TRACKER_SRC
 #include "pauli_tracker.h"
 
+#include <stdio.h>
+
 /*
  * pauli_tracker_create
  * Creates a pauli tracker object

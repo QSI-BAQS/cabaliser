@@ -16,7 +16,8 @@ void __inline_local_clifford_gate(
     size_t target = wid->q_map[inst->arg]; 
     wid->queue->table[target] = LOCAL_CLIFFORD_LEFT(inst->opcode, wid->queue->table[target]);
 
-    // TODO Pauli Correction
+    // Pauli Correction Tracking
+    PAULI_TRACKER_LOCAL(inst->opcode)(wid->pauli_tracker, target);
     return;
 } 
 
@@ -63,7 +64,10 @@ void __inline_non_local_clifford_gate(
     wid->queue->table[targ] = _I_;
     TWO_QUBIT_OPERATIONS[inst->opcode & INSTRUCTION_OPERATOR_MASK](wid->tableau, ctrl, targ);
 
-    // TODO Pauli correction
+
+    // Pauli Correction Tracking
+    PAULI_TRACKER_NON_LOCAL(inst->opcode)(wid->pauli_tracker, ctrl, targ);
+
     return;
 } 
 
@@ -101,9 +105,13 @@ void __inline_rz_gate(
 
     tableau_CNOT(wid->tableau, ctrl, targ);
 
+    // Propagate tracked Pauli corrections 
+    pauli_tracker_cx(wid->pauli_tracker, ctrl, targ); 
+    pauli_track_z(wid->pauli_tracker, ctrl, targ);
+
+    // Number of qubits increases by one
     wid->n_qubits += 1;  
 
-    // TODO Pauli Correction
     return;
 }
 

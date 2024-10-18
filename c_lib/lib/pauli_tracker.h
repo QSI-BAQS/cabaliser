@@ -2,9 +2,10 @@
 #define PAULI_TRACKER_H
 
 #include <stddef.h>
+
+#include "instruction_table.h"
 #include "lib_pauli_tracker.h" 
 #include "lib_pauli_tracker_cliffords.h" 
-
 
 struct pauli_frame_t
 {
@@ -68,7 +69,7 @@ void pauli_track_I_(MappedPauliTracker* tracker, size_t target);
 
 // TODO: Double check these equivalence classes
 #ifdef PAULI_TRACKER_SRC
-const void (*TRACKER_TABLE[24])(MappedPauliTracker*, size_t) = {
+const void (*PAULI_TRACKER_LOCAL_TABLE[24])(MappedPauliTracker*, size_t) = {
  pauli_track_I_, // _I_
  pauli_track_I_, // _X_
  pauli_track_I_, // _Y_
@@ -95,11 +96,20 @@ const void (*TRACKER_TABLE[24])(MappedPauliTracker*, size_t) = {
  pauli_tracker_shs  // _SHR_
 };
 
-const void (*NON_LOCAL_TABLE[2])(MappedPauliTracker*, size_t ctrl, size_t targ) = { 
+const void (*PAULI_TRACKER_NON_LOCAL_TABLE[2])(MappedPauliTracker*, size_t ctrl, size_t targ) = { 
     pauli_tracker_cx,
     pauli_tracker_cz
 };
 
+#else
+
+extern const void (*PAULI_TRACKER_LOCAL_TABLE[24])(MappedPauliTracker*, size_t); 
+extern const void (*PAULI_TRACKER_NON_LOCAL_TABLE[2])(MappedPauliTracker*, size_t ctrl, size_t targ); 
+
 #endif
+
+#define PAULI_TRACKER_LOCAL(opcode) (PAULI_TRACKER_LOCAL_TABLE[opcode - _I_]) 
+
+#define PAULI_TRACKER_NON_LOCAL(opcode) (PAULI_TRACKER_NON_LOCAL_TABLE[opcode - _CNOT_]) 
 
 #endif
