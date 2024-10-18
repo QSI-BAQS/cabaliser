@@ -42,6 +42,7 @@ clifford_queue_t* clifford_queue_create(const size_t n_qubits)
 void clifford_queue_destroy(clifford_queue_t* que)
 {
     free(que->table);
+    free(que->non_cliffords);
     free(que);
 }
 
