@@ -12,16 +12,19 @@ The Python side of the code provides a thin wrapper around the C code
 - Compiler is assumed to be `gcc`, if you are compiling on a Mac you may discover that Apple has helpfully aliased `gcc` to `clang`.
 - Various operations assume that your CPU supports `bmi2` and `avx2` instructions along with some collection of atomic operations.
 - `postgresql-libs, libpqxx` or equivalent packages that provides libqp headers for pandora integration
+- `rustc` is required to compile the Pauli Tracker library  
 
 ## Installation ##
 
 To build the C library:
 - `make`, this should build the shared object library 
 - `make test` will build the tests, which are stored in the `tests` directory.
-- `make benchmark` will build some random benchmarks, that are stored in the `benchmarks` directory
+- `make benchmark` will build some seeded random benchmarks, that are stored in the `benchmarks` directory
+- `make paulitracker` will build just the pauli tracker
+- `make pandora` will build the pandora integration objects, I'm not yet happy with the stability of these so they are currently an optional build
 
 To build the Python wrapper:
-- `pip install .`
+- `pip install -e .`
 
 TODO: Invoke make from buildtools 
 
