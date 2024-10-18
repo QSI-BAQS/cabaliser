@@ -71,3 +71,5 @@ for m, tag in zip(measurements, wid.get_measurement_tags()):
 io_map = [7, 8, 6]
 for i, j in zip(io_map, wid.get_io_map()):
     assert i == j
+
+print(wid.json())

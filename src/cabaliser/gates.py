@@ -53,3 +53,30 @@ SINGLE_QUBIT_GATES = {
     Sd}
 
 TWO_QUBIT_GATES = {CNOT, CZ}
+
+SINGLE_QUBIT_GATE_TABLE = {
+    I: "I",
+    X: "X",
+    Y: "Y",
+    Z: "Z",
+    H: "H",
+    S: "S",
+    Sd: "Sd",
+    _HX_: "HX",
+    _SX_: "SX",
+    _SdX_: "SdX",
+    _HY_: "HY",
+    _HZ_: "HZ",
+    _SH_: "SH",
+    _SdH_: "SdH",
+    _HS_: "HS",
+    _HSd_: "HSd",
+    _HSX_: "HSX",
+    _HRX_: "HRX",
+    _SHY_: "SHY",
+    _SdHY_: "SdHY",
+    _HSH_: "HSH",
+    _HRH_: "HRH",
+    _SdHS_: "SdHS",
+    _SHSd_: "SHSd"
+}

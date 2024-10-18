@@ -124,16 +124,16 @@ class Widget():
         '''
         lib.widget_destroy(self.widget)
 
-    def json(self):
+    def json(self, rz_to_float=False, local_clifford_to_string=True):
         '''
             Returns a dict object of all relevant properties
         '''
         obj = {
                'n_qubits': self.n_qubits,
                'adjacencies': {i: self.get_adjacencies(i).to_list() for i in range(self.n_qubits)},
-               'local_cliffords': self.get_local_cliffords().to_list(),
+               'local_cliffords': self.get_local_cliffords().to_list(to_string=local_clifford_to_string),
                'measurement_schedule': list(iter(self.pauli_tracker)),
-               'measurement_tags': self.get_measurement_tags().to_list(),
+               'measurement_tags': self.get_measurement_tags().to_list(to_float=rz_to_float),
                'IO map': self.get_io_map().to_list()
                }
         return obj

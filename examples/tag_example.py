@@ -44,4 +44,4 @@ wid(ops)
 wid.decompose()
 
 # Map the tags back to angles
-measurement_angles = list(map(tag_to_angle, wid.get_measurement_tags())) 
+print(wid.json(rz_to_float=True))
