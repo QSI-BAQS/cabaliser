@@ -116,8 +116,8 @@ class OperationSequence():
         return seq
 
     def __repr__(self):
-        return '\n'.join(repr(self.ops[i]) for i in range(self.curr_instructions)) 
-    
+        return '\n'.join(repr(self.ops[i]) for i in range(self.curr_instructions))
+
     def __str__(self):
         return self.__repr__()
 
