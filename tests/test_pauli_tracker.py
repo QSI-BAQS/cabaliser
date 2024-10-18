@@ -41,7 +41,7 @@ class ToffoliTest(unittest.TestCase):
 
     @staticmethod
     def toffoli_ops(ctrl_a, ctrl_b, targ):
-        toffoli = ToffoliTest.toffoli_gate(0, 1, 2)
+        toffoli = ToffoliTest.toffoli_gate(ctrl_a, ctrl_b, targ)
         ops = OperationSequence(len(toffoli))
         for opcode, args in toffoli:
             ops.append(opcode, *args)
@@ -55,6 +55,8 @@ class ToffoliTest(unittest.TestCase):
 
         wid = Widget(n_qubits, max_qubits)
         ops = self.toffoli_ops(0, 1, 2) 
+        for op in ops:
+            print(op)
 
         # Apply operation on widget
         wid(ops)

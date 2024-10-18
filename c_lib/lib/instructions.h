@@ -148,5 +148,4 @@ extern const instruction_t CNOT_MAP_TARG_CTRL[N_LOCAL_CLIFFORDS];
  */
 void clifford_queue_local_clifford_right(clifford_queue_t* que, const instruction_t cliff, const size_t target);
 
-
 #endif

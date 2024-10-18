@@ -9,13 +9,15 @@ from cabaliser.structs import AdjacencyType, WidgetType
 from cabaliser.structs import LocalCliffordType, MeasurementTagType, IOMapType
 from cabaliser.io_array_wrappers import MeasurementTags, LocalCliffords, IOMap
 from cabaliser.qubit_array import QubitArray
-from cabaliser.pauli_tracker import PauliTracker 
+from cabaliser.pauli_tracker import PauliTracker
+from cabaliser.utils import deref
 
 from cabaliser.exceptions import WidgetNotDecomposedException, WidgetDecomposedException
 
 from cabaliser.lib_cabaliser import lib
 # Override return type
 lib.widget_create.restype = POINTER(WidgetType)
+
 
 class Widget():
     '''
@@ -34,6 +36,8 @@ class Widget():
 
         if self.teleport_input:
             lib.teleport_input(self.widget)
+        else:
+            lib.pauli_tracker_disable()
 
         self.local_cliffords = None
         self.measurement_tags = None
@@ -49,8 +53,12 @@ class Widget():
         return lib.widget_get_n_qubits(self.widget)
 
     @property
-    def pauli_tracker_ptr(self): 
-        return self.widget[0].pauli_tracker
+    def pauli_tracker_ptr(self):
+        '''
+            Returns the opaque pointer to the pauli
+            tracker object
+        '''
+        return deref(self.widget).pauli_tracker
 
     @property
     def n_qubits(self):
@@ -116,10 +124,9 @@ class Widget():
         '''
         lib.widget_destroy(self.widget)
 
-
     def json(self):
         '''
-            Returns a dict object of all relevant properties 
+            Returns a dict object of all relevant properties
         '''
         obj = {
                'n_qubits': self.n_qubits,
@@ -127,7 +134,7 @@ class Widget():
                'local_cliffords': self.get_local_cliffords().to_list(),
                'measurement_schedule': list(iter(self.pauli_tracker)),
                'measurement_tags': self.get_measurement_tags().to_list(),
-               'IO map': self.get_io_map().to_list() 
+               'IO map': self.get_io_map().to_list()
                }
         return obj
 
@@ -222,7 +229,7 @@ class Widget():
 
         # Set the decomposed flag
         self.__decomposed = True
-        
+
     def __schedule(self):
         '''
             Call through to the pauli tracker for

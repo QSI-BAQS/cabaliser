@@ -20,13 +20,13 @@ class CliffordQueueType(Structure):
     ]
 
 
-class MappedPauliTrackerType(Structure): 
+class MappedPauliTrackerType(Structure):
     '''
         Dummy pointer wrapper
     '''
     _fields_ = [
         ('__', c_int32)
-    ] 
+    ]
 
 
 class WidgetType(Structure):
@@ -40,7 +40,7 @@ class WidgetType(Structure):
         ('__tableau', POINTER(c_size_t)),
         ('queue', POINTER(CliffordQueueType)),
         ('map', POINTER(IOMapType)),
-        ('pauli_tracker', POINTER(MappedPauliTrackerType)) 
+        ('pauli_tracker', POINTER(MappedPauliTrackerType))
     ]
 
 
@@ -54,13 +54,14 @@ class AdjacencyType(Structure):
         ('adjacencies', POINTER(AdjacencyEdgeType))]
 
 
-class PartialOrderGraphType(Structure): 
+class PartialOrderGraphType(Structure):
     '''
         Dummy pointer wrapper
     '''
     _fields_ = [
         ('__', c_int32)
-    ] 
+    ]
+
 
 class ScheduleDependencyType(Structure):
     '''
@@ -68,6 +69,6 @@ class ScheduleDependencyType(Structure):
     '''
     _fields_ = [
         ('len', c_uint32),
-        ('dependent', c_uint32), 
+        ('dependent', c_uint32),
         ('arr', POINTER(c_size_t))
-    ] 
+    ]

@@ -1,10 +1,10 @@
 '''
     Wrapper objects around QubitArray
-    Typing is only for verbosity and any potential 
+    Typing is only for verbosity and any potential
     extensibility that might be required
 '''
 from cabaliser.qubit_array import QubitArray
-from cabaliser.structs import ScheduleDependencyType 
+from cabaliser.structs import ScheduleDependencyType
 
 
 class MeasurementTags(QubitArray):
@@ -26,6 +26,10 @@ class IOMap(QubitArray):
 
 
 class ScheduleDependency(QubitArray):
+    '''
+        ScheduleDependency
+        Wrapper for the rustlib pauli tracker schedule
+    '''
     def __init__(self, n_qubits, qubit_index, arr):
         self.qubit_index = qubit_index
         super().__init__(n_qubits, arr)
@@ -39,6 +43,7 @@ class ScheduleDependency(QubitArray):
         )
 
     def __repr__(self):
-        return f"({self.qubit_index}: {list(iter(self))})" 
+        return f"({self.qubit_index}: {list(iter(self))})"
+
     def __str__(self):
         return self.__repr__()

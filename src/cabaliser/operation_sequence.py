@@ -4,15 +4,20 @@
     Exposes these sequences to the C api
 '''
 from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ
-from cabaliser.operations import OperationType, SingleQubitOperation, TwoQubitOperation, RzOperation
+from cabaliser.operations import (
+    OperationType, SingleQubitOperation,
+    TwoQubitOperation, RzOperation)
 
 
 class OperationSequence():
     '''
         Operation sequence object
-        This is a wrapper for an array of ctypes operations
-        :: n_instructions: int :: Maximum number of instructions for this sequence
-        This object has a pre-allocated maximum number of supported operations
+        This is a wrapper for an array of ctypes
+         operations
+        :: n_instructions: int :: Maximum number of
+         instructions for this sequence
+        This object has a pre-allocated maximum number
+         of supported operations
     '''
     CONSTRUCTOR_MAP = (
           {i: SingleQubitOperation for i in SINGLE_QUBIT_GATES}
@@ -109,6 +114,12 @@ class OperationSequence():
         seq.max_qubit_index = max(self.max_qubit_index, other.max_qubit_index)
         seq.n_rz_operations = self.n_rz_operations + other.n_rz_operations
         return seq
+
+    def __repr__(self):
+        return '\n'.join(repr(self.ops[i]) for i in range(self.curr_instructions)) 
+    
+    def __str__(self):
+        return self.__repr__()
 
     def sequence_params_rz(self, *params):
         '''

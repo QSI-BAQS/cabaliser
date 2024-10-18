@@ -2,6 +2,7 @@
     Corresponding structs and Python Classes
 '''
 from ctypes import Structure, Union, c_int, c_byte
+from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES  
 
 
 class SingleQubitOperationType(Structure):
@@ -12,6 +13,12 @@ class SingleQubitOperationType(Structure):
         ('opcode', c_byte),
         ('arg', c_int),
         ]
+
+    def __repr__(self):
+        return f"Op: {self.arg}"
+
+    def __str__(self):
+        return self.__repr__()
 
 
 def SingleQubitOperation(arr, idx, opcode, arg):
@@ -37,6 +44,12 @@ class TwoQubitOperationType(Structure):
         ('targ', c_int),
         ]
 
+    def __repr__(self):
+        return f"Op: {self.ctrl} {self.targ}"
+
+    def __str__(self):
+        return self.__repr__()
+
 
 def TwoQubitOperation(arr, idx: int, opcode: c_byte, ctrl: int, targ: int):
     '''
@@ -48,9 +61,9 @@ def TwoQubitOperation(arr, idx: int, opcode: c_byte, ctrl: int, targ: int):
         :: targ : uint32_t :: Second qubit argument
         Writes the operation to the index of the array
     '''
-    arr[idx].single.opcode = opcode
-    arr[idx].single.ctrl = ctrl
-    arr[idx].single.targ = targ
+    arr[idx].two_qubits.opcode = opcode
+    arr[idx].two_qubits.ctrl = ctrl
+    arr[idx].two_qubits.targ = targ
 
 
 class RzQubitOperationType(Structure):
@@ -63,6 +76,11 @@ class RzQubitOperationType(Structure):
         ('tag', c_int),
         ]
 
+    def __repr__(self):
+        return f"Rz({self.arg}) : {self.tag}"
+
+    def __str__(self):
+        return self.__repr__()
 
 def RzOperation(arr, i, opcode, arg, tag):
     '''
@@ -88,3 +106,11 @@ class OperationType(Union):
         ('two_qubits', TwoQubitOperationType),
         ('rz', RzQubitOperationType),
         ]
+
+    def __repr__(self):
+        opcode = self.single.opcode
+        if opcode in SINGLE_QUBIT_GATES:
+            return self.single.__repr__()
+        if opcode in TWO_QUBIT_GATES:
+            return self.two_qubits.__repr__()
+        return self.rz.__repr__()

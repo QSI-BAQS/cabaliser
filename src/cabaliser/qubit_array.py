@@ -1,9 +1,10 @@
-from ctypes import Structure, c_void_p
-
 '''
     Wrapper object for Ctype arrays
     Exposes some simple python interfaces
 '''
+
+from ctypes import Structure, c_void_p
+
 
 class QubitArray:
     '''
@@ -21,8 +22,11 @@ class QubitArray:
 
     @staticmethod
     def from_struct(struct: Structure, n_qubits='len', arr='arr'):
-        n_qubits = struct.__getattribute__(n_qubits) 
-        arr = struct.__getattribute__(arr) 
+        '''
+            Constructor from struct objects
+        '''
+        n_qubits = getattr(struct, n_qubits)
+        arr = getattr(struct, arr)
         return QubitArray(n_qubits, arr)
 
     def __iter__(self):
@@ -33,7 +37,7 @@ class QubitArray:
         for i in range(self.n_qubits):
             yield self.arr[i]
 
-    def __getitem__(self, idx : int):
+    def __getitem__(self, idx: int):
         '''
             Returns an item from the array
             :: idx : int :: Index to query

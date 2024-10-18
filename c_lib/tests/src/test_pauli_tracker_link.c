@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #include "lib_pauli_tracker.h"
 #include "input_stream.h"
 #include "widget.h"
@@ -10,11 +9,13 @@ void test_create_destroy()
     lib_pauli_track_x(live, 0, 1);
 
     void* graph = lib_pauli_tracker_partial_order_graph(live);  
-
-
+    
     lib_pauli_tracker_destroy(live);
 }
 
+/*
+ * Coverage for valgrind
+ */
 void test_widget()
 {
     widget_t* wid = widget_create(1, 3);

@@ -67,6 +67,14 @@ void pauli_track_z(
  */
 void pauli_track_I_(MappedPauliTracker* tracker, size_t target);
 
+/*
+ * pauli_tracker_disable
+ * The pauli tracker panics in certain situations
+ * For testing it is sometimes useful to disable it
+ */
+void pauli_tracker_disable();
+
+
 // TODO: Double check these equivalence classes
 #ifdef PAULI_TRACKER_SRC
 const void (*PAULI_TRACKER_LOCAL_TABLE[24])(MappedPauliTracker*, size_t) = {

@@ -6,19 +6,19 @@
 /*
  * pauli_tracker_create
  * Creates a pauli tracker object
- * :: n_qubits : size_t :: Number of qubits to track  
+ * :: n_qubits : size_t :: Number of qubits to track
  * Returns an opaque pointer to a rust object
  */
 void* pauli_tracker_create(size_t n_qubits)
 {
     return lib_pauli_tracker_create(n_qubits);
-}   
+}
 
 /*
  * pauli_tracker_destroy
  * Destroys the pauli tracker object
- * :: tracker : void* :: Opaque pointer to rust object 
- * Wrapper around the rust destructor method 
+ * :: tracker : void* :: Opaque pointer to rust object
+ * Wrapper around the rust destructor method
  */
 void pauli_tracker_destroy(void* tracker)
 {
@@ -27,13 +27,13 @@ void pauli_tracker_destroy(void* tracker)
 
 /*
  * pauli_track_x
- * :: tracker : void* :: Opaque pointer to rust tracker object 
- * :: uintptr_t : measured_qubit :: Qubit that was measured 
+ * :: tracker : void* :: Opaque pointer to rust tracker object
+ * :: uintptr_t : measured_qubit :: Qubit that was measured
  * :: target_qubit : uintptr_t :: Target of the correction operator
- * Adds a tracking term for the target qubit depending on the measurement result 
+ * Adds a tracking term for the target qubit depending on the measurement result
  */
 void pauli_track_x(
-    void* tracker, 
+    void* tracker,
     uintptr_t measured_qubit,
     uintptr_t target_qubit)
 {
@@ -43,13 +43,13 @@ void pauli_track_x(
 
 /*
  * pauli_track_z
- * :: tracker : void* :: Opaque pointer to rust tracker object 
- * :: uintptr_t : measured_qubit :: Qubit that was measured 
+ * :: tracker : void* :: Opaque pointer to rust tracker object
+ * :: uintptr_t : measured_qubit :: Qubit that was measured
  * :: target_qubit : uintptr_t :: Target of the correction operator
- * Adds a tracking term for the target qubit depending on the measurement result 
+ * Adds a tracking term for the target qubit depending on the measurement result
  */
 void pauli_track_z(
-    void* tracker, 
+    void* tracker,
     uintptr_t measured_qubit,
     uintptr_t target_qubit)
 {
@@ -59,10 +59,38 @@ void pauli_track_z(
 
 /*
  * pauli_track_I
- * :: tracker : void* :: Tracker object 
- * :: target : size_t :: Target of operation 
+ * :: tracker : void* :: Tracker object
+ * :: target : size_t :: Target of operation
  */
 void pauli_track_I_(MappedPauliTracker* tracker, size_t target)
 {
     return;
+}
+
+
+/*
+ * pauli_track_II_
+ * :: tracker : void* :: Tracker object
+ * :: target : size_t :: Target of operation
+ */
+void pauli_track_II_(MappedPauliTracker* tracker, size_t ctrl, size_t target)
+{
+    return;
+}
+
+/*
+ * pauli_tracker_disable
+ * The pauli tracker panics in certain situations
+ * For testing it is sometimes useful to disable it
+ */
+void pauli_tracker_disable()
+{
+    for (size_t i = 0; i < N_LOCAL_CLIFFORDS; i++)
+    {
+        PAULI_TRACKER_LOCAL_TABLE[i] = pauli_track_I_;
+    }
+    for (size_t i = 0; i < N_NON_LOCAL_CLIFFORDS; i++)
+    {
+        PAULI_TRACKER_NON_LOCAL_TABLE[i] = pauli_track_II_;
+    }
 }
