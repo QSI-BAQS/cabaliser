@@ -2,7 +2,7 @@
     Corresponding structs and Python Classes
 '''
 from ctypes import Structure, Union, c_int, c_byte
-from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES  
+from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES
 
 
 class SingleQubitOperationType(Structure):
@@ -81,6 +81,7 @@ class RzQubitOperationType(Structure):
 
     def __str__(self):
         return self.__repr__()
+
 
 def RzOperation(arr, i, opcode, arg, tag):
     '''

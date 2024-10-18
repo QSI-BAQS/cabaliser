@@ -14,20 +14,18 @@ class MeasurementTags(QubitArray):
     '''
     def to_list(self, to_float=False):
         if to_float:
-            return list(map(tag_to_angle, self)) 
-        else:
-            return super().to_list()
+            return list(map(tag_to_angle, self))
+        return super().to_list()
 
 class LocalCliffords(QubitArray):
     '''
         Ordered array of local clifford operations
     '''
     def to_list(self, to_string=True):
-        if to_string: 
+        if to_string:
             return list(map(SINGLE_QUBIT_GATE_TABLE.__getitem__, self))
-        else:
-            return super().to_list()
-   
+        return super().to_list()
+
 
 class IOMap(QubitArray):
     '''
