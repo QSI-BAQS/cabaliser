@@ -97,7 +97,7 @@ test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} ${PANDORA_TEST_RUNNERS}
 
 benchmark: benchmarks 
 benchmarks: CFLAGS += ${OMPFLAG} -pg
-benchmarks: ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS} 
+benchmarks: ${TARGET} ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS} 
 
 ${BUILDDIR} :
 	mkdir -p ${BUILDDIR}
@@ -134,7 +134,7 @@ ${TESTDIR}/${TEST_TRANSPOSE}.out : ${OBJFILES} ${TEST_SRCDIR}/${TEST_TRANSPOSE}.
 	${CC} $^ ${CFLAGS} ${TRANSPOSE_CFLAGS} ${LINK_LIBS} ${LIBS} -o $@ 
 
 ${BENCHMARK_DIR}/%.out : ${OBJFILES} ${BENCHMARK_SRCDIR}/%.c 
-	${CC} $^ ${CFLAGS} ${LIBS} -o $@
+	${CC} $^ ${CFLAGS} ${LINK_LIBS} ${LIBS} -o $@
 
 obj:
 	@echo ${OBJFILES}
