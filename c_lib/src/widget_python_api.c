@@ -59,3 +59,16 @@ void widget_get_measurement_tags_api(const widget_t* wid, non_clifford_tag_t** a
 {
     *arr = wid->queue->non_cliffords;
 }
+
+/*
+ * wiget_get_pauli_tracker_api
+ * Gets the pauli tracker pointer from the widget
+ * :: wid : const widget_t* :: Widget pointer
+ * :: tracker  : void** :: Address to write pointer to
+ */
+void widget_get_pauli_tracker_api(
+    const widget_t* wid,
+    void** tracker)
+{
+    *tracker = wid->pauli_tracker; 
+}

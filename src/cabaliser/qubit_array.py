@@ -1,15 +1,16 @@
+from ctypes import Structure, c_void_p
+
 '''
     Wrapper object for Ctype arrays
     Exposes some simple python interfaces
 '''
-
 
 class QubitArray:
     '''
         QubitArray
         Python wrapper for Ctype arrays
     '''
-    def __init__(self, n_qubits : int, arr):
+    def __init__(self, n_qubits: int, arr: c_void_p):
         '''
             Initialiser
             :: n_qubits : int :: Number of elements in the array
@@ -17,6 +18,12 @@ class QubitArray:
         '''
         self.n_qubits = n_qubits
         self.arr = arr
+
+    @staticmethod
+    def from_struct(struct: Structure, n_qubits='len', arr='arr'):
+        n_qubits = struct.__getattribute__(n_qubits) 
+        arr = struct.__getattribute__(arr) 
+        return QubitArray(n_qubits, arr)
 
     def __iter__(self):
         '''

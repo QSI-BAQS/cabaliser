@@ -24,6 +24,15 @@ MappedPauliTracker* lib_pauli_tracker_create(uintptr_t n_qubits);
 void lib_pauli_tracker_destroy(MappedPauliTracker *pauli_tracker);
 
 /*
+ * lib_pauli_tracker_graph_destroy
+ * Destructor for the graph object
+ * :: graph : *mut partial_order_graph::PartialOrderGraph :: Pointer to the graph object to be freed 
+ * Acts in place
+ */
+void lib_pauli_tracker_graph_destroy(void* graph);
+
+
+/*
  * pauli_track_x
  * Add a row to the pauli tracker object with an 'X' at the target qubit  
  * All other locations will be the identity
@@ -54,6 +63,12 @@ void lib_pauli_track_z(MappedPauliTracker *pauli_tracker, uintptr_t measured_qub
  */
 void lib_pauli_tracker_print(const MappedPauliTracker* const mapped_pauli_tracker);
 
+/*
+ *
+ */
+void* lib_pauli_tracker_partial_order_graph(MappedPauliTracker* tracker);
+
+void lib_pauli_tracker_graph_print(void*);
 
 #ifdef __cplusplus
 }

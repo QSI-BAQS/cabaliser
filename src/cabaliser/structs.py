@@ -1,7 +1,7 @@
 '''
     C struct wrappers as type declarations
 '''
-from ctypes import Structure, POINTER, c_int32, c_byte, c_size_t
+from ctypes import Structure, POINTER, c_int32, c_byte, c_size_t, c_uint32
 
 LocalCliffordType = c_byte  # 1 byte
 MeasurementTagType = c_int32  # 4 bytes
@@ -20,6 +20,15 @@ class CliffordQueueType(Structure):
     ]
 
 
+class MappedPauliTrackerType(Structure): 
+    '''
+        Dummy pointer wrapper
+    '''
+    _fields_ = [
+        ('__', c_int32)
+    ] 
+
+
 class WidgetType(Structure):
     '''
        ctypes wrapper for widget structs
@@ -30,7 +39,8 @@ class WidgetType(Structure):
         ('max_qubits', c_size_t),
         ('__tableau', POINTER(c_size_t)),
         ('queue', POINTER(CliffordQueueType)),
-        ('map', POINTER(IOMapType))
+        ('map', POINTER(IOMapType)),
+        ('pauli_tracker', POINTER(MappedPauliTrackerType)) 
     ]
 
 
@@ -42,3 +52,22 @@ class AdjacencyType(Structure):
         ('src', c_int32),
         ('n_adjacent', c_int32),
         ('adjacencies', POINTER(AdjacencyEdgeType))]
+
+
+class PartialOrderGraphType(Structure): 
+    '''
+        Dummy pointer wrapper
+    '''
+    _fields_ = [
+        ('__', c_int32)
+    ] 
+
+class ScheduleDependencyType(Structure):
+    '''
+        Array wrapper type for dependency schedules
+    '''
+    _fields_ = [
+        ('len', c_uint32),
+        ('dependent', c_uint32), 
+        ('arr', POINTER(c_size_t))
+    ] 

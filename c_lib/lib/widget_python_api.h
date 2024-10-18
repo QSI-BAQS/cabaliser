@@ -39,5 +39,14 @@ void widget_get_io_map_api(const widget_t* wid, qubit_map_t** arr);
  */
 void widget_get_measurements_api(const widget_t* wid, non_clifford_tag_t** arr);
 
+/*
+ * wiget_get_pauli_tracker_api
+ * Gets the pauli tracker pointer from the widget
+ * :: wid : const widget_t* :: Widget pointer
+ * :: tracker  : void** :: Address to write pointer to
+ */
+void widget_get_pauli_tracker_api(
+    const widget_t* wid,
+    void** tracker);
 
 #endif

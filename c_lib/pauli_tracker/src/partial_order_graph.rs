@@ -15,7 +15,6 @@ use super::mapped_pauli_tracker::{
 pub struct ConstVec<T> {
     len : u32,
     ptr : *const T,
-    step : u32, 
 }
 
 type Dependents = Vec<usize>;
@@ -28,36 +27,78 @@ pub struct DependentNode {
 
 pub type Layer = Vec<DependentNode>;
 
-//fn into_const_vec<T>(vec_ptr : &Vec<T>) -> ConstVec<T>
-//{
-//    return ConstVec::<T>{
-//        len : vec_ptr.len().try_into().unwrap(), 
-//        ptr : vec_ptr.as_ptr(), 
-//        step : std::mem::size_of::<T>().try_into().unwrap(),
-//    }
-//
-
+/*
+ * Layer operations
+ * Each layer represents a set of simultaneously
+ * schedulable operations 
+ * Each element in the layer is a DependentNode 
+ */
+/*
+ * graph_to_layer
+ * :: graph : &mut PartialOrderGraph :: Partial order graph object
+ * :: index : u32 :: Layer index
+ * Should be unsafe due to aliased reference?
+ */
 #[no_mangle]
-extern "C" fn graph_to_layer(graph: &mut PartialOrderGraph, idx: u32) -> &Vec<(usize, Vec<usize>)> 
+extern "C" fn lib_pauli_graph_to_layer(graph: &mut PartialOrderGraph, index: u32) -> &Vec<(usize, Vec<usize>)> 
 {
-    return &graph[idx as usize];  
+    return &graph[index as usize];  
 }
 
+/*
+ * lib_pauli_n_dependents
+ * Wrapper function due to indeterminate structure of rust objects 
+ * :: layer : *mut Layer :: Layer pointer  
+ * Returns the number of elements in the layer
+ */
 #[no_mangle]
-extern "C" fn layer_to_dependent_node(layer: &mut Layer, idx: u32) -> &DependentNode 
-{
-    return &layer[idx as usize];  
+extern "C" fn lib_pauli_n_dependents(layer: *mut Layer) -> usize {
+    unsafe {
+        return layer.as_ref().expect("REASON").len();
+    }
 }
 
+/*
+ * lib_pauli_dependent_qubit_idx
+ * Returns the qubit index of a dependent node   
+ * :: layer : *mut Layer :: Layer pointer  
+ * :: index : usize :: Index to query 
+ * Returns the number of elements in the layer
+ */
 #[no_mangle]
-extern "C" fn dependent_node_to_dependencies(node: &mut DependentNode) -> *mut ConstVec<usize> 
+extern "C" fn lib_pauli_dependent_qubit_idx(layer: *mut Layer, index: usize) -> usize {
+    unsafe {
+        return layer.as_ref().expect("REASON")[index].index as usize;
+    }
+}
+
+
+
+#[no_mangle]
+extern "C" fn lib_pauli_layer_to_dependent_node(layer: *mut Layer, idx: u32) -> *mut ConstVec<usize> 
+{
+    unsafe {
+        let node = lib_pauli_dependent_node_to_dependencies(
+            &mut (&mut*layer)[idx as usize]
+        );
+        return node;  
+    };
+}
+
+
+/*
+ * dependent_node_to_dependencies
+ * Converts a dependent node into a dependencies object
+ *
+ */
+#[no_mangle]
+extern "C" fn lib_pauli_dependent_node_to_dependencies(node: &mut DependentNode) -> *mut ConstVec<usize> 
 {
     return Box::into_raw( 
             Box::new(
                 ConstVec::<usize>{
             len : node.dependencies.len().try_into().unwrap(), 
             ptr : node.dependencies.as_ptr(), 
-            step : std::mem::size_of::<usize>().try_into().unwrap(),
         }
         ));
 }
@@ -70,14 +111,12 @@ extern "C" fn dependencies_destroy(node: &mut ConstVec<usize>)
     }
 }
 
-
-
 /*
- * pauli_tracker_partial_order_graph
+ * lib_pauli_tracker_partial_order_graph
  * Extracts the partial order graph from the pauli tracker and measurement map   
  */
 #[no_mangle]
-pub extern "C" fn pauli_tracker_partial_order_graph(pauli_tracker: &MappedPauliTracker) -> *mut PartialOrderGraph
+pub extern "C" fn lib_pauli_tracker_partial_order_graph(pauli_tracker: &MappedPauliTracker) -> *mut PartialOrderGraph
 {
     let graph = Box::into_raw(
         Box::new(
@@ -89,8 +128,26 @@ pub extern "C" fn pauli_tracker_partial_order_graph(pauli_tracker: &MappedPauliT
 }
 
 #[no_mangle]
+extern "C" fn lib_pauli_n_layers(graph: *mut PartialOrderGraph) -> usize {
+    unsafe {
+        return graph.as_ref().expect("REASON").len();
+    }
+}
+
+#[no_mangle]
 extern "C" fn lib_pauli_tracker_graph_destroy(graph: *mut PartialOrderGraph) {
     unsafe {
         let _ = Box::from_raw(graph);
+    }
+}
+
+
+/*
+ * Temporary printing function
+ */
+#[no_mangle]
+extern "C" fn lib_pauli_tracker_graph_print(graph: *mut PartialOrderGraph) {
+    unsafe {
+        println!("{:?}", graph.as_ref().expect("REASON"))
     }
 }

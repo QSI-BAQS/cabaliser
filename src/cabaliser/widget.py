@@ -9,12 +9,13 @@ from cabaliser.structs import AdjacencyType, WidgetType
 from cabaliser.structs import LocalCliffordType, MeasurementTagType, IOMapType
 from cabaliser.io_array_wrappers import MeasurementTags, LocalCliffords, IOMap
 from cabaliser.qubit_array import QubitArray
-from cabaliser.lib_cabaliser import lib
+from cabaliser.pauli_tracker import PauliTracker 
+
 from cabaliser.exceptions import WidgetNotDecomposedException, WidgetDecomposedException
 
+from cabaliser.lib_cabaliser import lib
 # Override return type
 lib.widget_create.restype = POINTER(WidgetType)
-
 
 class Widget():
     '''
@@ -37,6 +38,7 @@ class Widget():
         self.local_cliffords = None
         self.measurement_tags = None
         self.io_map = None
+        self.pauli_tracker = PauliTracker(self.widget)
 
     def get_n_qubits(self) -> int:
         '''
@@ -45,6 +47,10 @@ class Widget():
             Returns the current number of allocated qubits on the widget
         '''
         return lib.widget_get_n_qubits(self.widget)
+
+    @property
+    def pauli_tracker_ptr(self): 
+        return self.widget[0].pauli_tracker
 
     @property
     def n_qubits(self):
@@ -119,7 +125,7 @@ class Widget():
                'n_qubits': self.n_qubits,
                'adjacencies': {i: self.get_adjacencies(i).to_list() for i in range(self.n_qubits)},
                'local_cliffords': self.get_local_cliffords().to_list(),
-               'measurement_schedule': None,
+               'measurement_schedule': list(iter(self.pauli_tracker)),
                'measurement_tags': self.get_measurement_tags().to_list(),
                'IO map': self.get_io_map().to_list() 
                }
@@ -210,7 +216,30 @@ class Widget():
         if self.__decomposed:
             raise WidgetDecomposedException("Attempted to decompose twice")
         lib.widget_decompose(self.widget)
+
+        # Create the measurement schedule
+        self.__schedule()
+
+        # Set the decomposed flag
         self.__decomposed = True
+        
+    def __schedule(self):
+        '''
+            Call through to the pauli tracker for
+             scheduling
+        '''
+        self.pauli_tracker.schedule(self.n_qubits)
+
+    def get_schedule(self):
+        '''
+            Gets the schedule from the pauli tracker
+        '''
+        if not self.__decomposed:
+            raise WidgetNotDecomposedException(
+                """Attempted to read out the graph state without decomposing the tableau.
+                 Please call `Widget.decompose()` before extracting the adjacencies"""
+            )
+        return self.pauli_tracker()
 
     def load_pandora(self, db_name: str):
         '''

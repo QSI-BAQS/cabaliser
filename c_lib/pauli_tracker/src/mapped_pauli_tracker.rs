@@ -54,6 +54,7 @@ extern "C" fn lib_pauli_tracker_destroy(pauli_tracker: *mut MappedPauliTracker) 
     }
 }
 
+
 /*
  * pauli_track_x
  * Add a row to the pauli tracker object with an 'X' at the target qubit  
@@ -91,7 +92,7 @@ extern "C" fn lib_pauli_track_z(mapped_pauli_tracker: &mut MappedPauliTracker, m
  */
 #[no_mangle]
 extern "C" fn lib_pauli_tracker_greedy_order(mapped_pauli_tracker: &mut MappedPauliTracker) -> *mut partial_order_graph::PartialOrderGraph {
-     return partial_order_graph::pauli_tracker_partial_order_graph(mapped_pauli_tracker);
+     return partial_order_graph::lib_pauli_tracker_partial_order_graph(mapped_pauli_tracker);
 }
 
 /*
