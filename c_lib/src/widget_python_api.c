@@ -72,3 +72,13 @@ void widget_get_pauli_tracker_api(
 {
     *tracker = wid->pauli_tracker; 
 }
+
+/*
+ * widget_print_tableau
+ * Prints the tableau
+ */
+void widget_print_tableau_api(
+    const widget_t* wid)
+{
+   tableau_print(wid->tableau); 
+}

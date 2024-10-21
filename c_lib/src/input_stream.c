@@ -166,11 +166,13 @@ void teleport_input(widget_t* wid)
     wid->n_qubits *= 2;
     
     // This could be replaced with a different tableau preparation step
-    memset(wid->queue->table, _H_, wid->n_initial_qubits);  
     for (size_t i = 0; i < wid->n_initial_qubits; i++)
     {
+        tableau_H(wid->tableau, i);
+        tableau_H(wid->tableau, i + wid->n_initial_qubits);
+
         // Construct a Bell state
-        tableau_CNOT(wid->tableau, i, wid->n_initial_qubits + i);
+        tableau_CZ(wid->tableau, i, wid->n_initial_qubits + i);
 
         // Fix up the map, we should now be indexing off the target qubit  
         wid->q_map[i] += wid->n_initial_qubits;      

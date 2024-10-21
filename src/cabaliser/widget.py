@@ -259,6 +259,12 @@ class Widget():
 
         lib.pandora_load_db(self.widget, db_name)
 
+    def tableau_print(self):
+        '''
+            Prints the current state of the underlying tableau
+        '''
+        lib.widget_print_tableau_api(self.widget)
+
 class Adjacency(QubitArray):
     '''
         Adjacency
