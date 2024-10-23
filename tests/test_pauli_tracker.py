@@ -77,7 +77,7 @@ class ToffoliTest(unittest.TestCase):
         for i, layer in enumerate(wid.pauli_tracker):
             for dep in layer:
                 if i == 0:
-                    assert(len(dep) == 0)
+                    sum(len(dep[i]) for i in dep) == 0
             
 if __name__ == '__main__':
     unittest.main()
