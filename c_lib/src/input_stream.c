@@ -21,7 +21,6 @@ void __inline_local_clifford_gate(
     return;
 } 
 
-
 /*
  * apply_local_cliffords
  * Empties the local clifford table and applies the local cliffords
@@ -36,7 +35,6 @@ void apply_local_cliffords(widget_t* wid)
         wid->queue->table[i] = _I_; 
     }
 }
-
 
 /*
  * non_local_clifford_gate
@@ -69,7 +67,6 @@ void __inline_non_local_clifford_gate(
 
     return;
 } 
-
 
 /*
  * rz_gate 
@@ -105,14 +102,13 @@ void __inline_rz_gate(
 
     // Propagate tracked Pauli corrections 
     pauli_track_z(wid->pauli_tracker, ctrl, targ);
-    //pauli_tracker_cx(wid->pauli_tracker, ctrl, targ); 
+    pauli_tracker_cx(wid->pauli_tracker, ctrl, targ); 
 
     // Number of qubits increases by one
     wid->n_qubits += 1;  
 
     return;
 }
-
 
 /*
  * parse_instruction_block
@@ -148,7 +144,6 @@ void parse_instruction_block(
     }
     return;
 }
-
 
 /*
  * teleport_input

@@ -1,5 +1,5 @@
 '''
-Pauli Tracker Wrapper
+    Pauli Tracker Wrapper
 '''
 
 from ctypes import POINTER, c_size_t, c_uint32, c_void_p
@@ -35,6 +35,9 @@ class PauliTracker:
 
     def __call__(self):
         self.schedule()
+
+    def to_list(self):
+        return list(iter(self))
 
     def schedule(self, max_qubit=INF):
         '''

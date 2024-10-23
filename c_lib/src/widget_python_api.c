@@ -80,5 +80,8 @@ void widget_get_pauli_tracker_api(
 void widget_print_tableau_api(
     const widget_t* wid)
 {
-   tableau_print(wid->tableau); 
+    size_t tmp = wid->tableau->n_qubits;
+    wid->tableau->n_qubits = wid->n_qubits;
+    tableau_print(wid->tableau); 
+    wid->tableau->n_qubits = tmp;
 }

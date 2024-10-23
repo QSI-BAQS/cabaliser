@@ -135,7 +135,7 @@ class Widget():
                'adjacencies': {i: self.get_adjacencies(i).to_list() for i in range(self.n_qubits)},
                'local_cliffords': self.get_local_cliffords().to_list(
                     to_string=local_clifford_to_string),
-               'consumptionschedule': list(iter(self.pauli_tracker)),
+               'consumptionschedule': self.pauli_tracker.to_list(),
                'measurement_tags': self.get_measurement_tags().to_list(to_float=rz_to_float),
                'outputnodes': self.get_io_map().to_list()
                }
@@ -248,7 +248,7 @@ class Widget():
             Call through to the pauli tracker for
              scheduling
         '''
-        self.pauli_tracker.schedule(self.n_qubits)
+        self.pauli_tracker.schedule(max_qubit=self.n_qubits)
 
     def get_schedule(self):
         '''
@@ -259,7 +259,7 @@ class Widget():
                 """Attempted to read out the graph state without decomposing the tableau.
                  Please call `Widget.decompose()` before extracting the adjacencies"""
             )
-        return self.pauli_tracker()
+        return self.pauli_tracker.to_list()
 
     def load_pandora(self, db_name: str):
         '''
