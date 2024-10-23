@@ -15,7 +15,7 @@ _T_ = 1
 _Tdag_ = 2
 
 n_qubits = 2
-max_qubits = 20
+max_qubits = 40
 
 # Parameterised gate
 def gate(ctrl_a, ctrl_b, angle_a, angle_b, angle_c):

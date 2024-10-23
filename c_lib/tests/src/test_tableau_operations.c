@@ -420,7 +420,6 @@ void test_cz_1()
 
         assert(val_x_nxt == tab->slices_x[i + 1][0]);  
         assert(val_z_nxt == tab->slices_z[i + 1][0]);  
-
         assert(val_r == tab->phases[0]);  
     }
     tableau_destroy(tab);
