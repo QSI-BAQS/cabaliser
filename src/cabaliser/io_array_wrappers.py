@@ -17,6 +17,7 @@ class MeasurementTags(QubitArray):
             return list(map(tag_to_angle, self))
         return super().to_list()
 
+
 class LocalCliffords(QubitArray):
     '''
         Ordered array of local clifford operations
@@ -31,6 +32,7 @@ class IOMap(QubitArray):
     '''
         Ordered array of map of input qubits to output qubits
     '''
+
 
 class ScheduleDependency(QubitArray):
     '''
@@ -48,6 +50,12 @@ class ScheduleDependency(QubitArray):
             struct.dependent,
             struct.arr
         )
+
+    def to_dict(self):
+        '''
+            Returns a dictionary object of the dependencies 
+        '''
+        return {self.qubit_index: self.to_list()}
 
     def __repr__(self):
         return f"({self.qubit_index}: {list(iter(self))})"

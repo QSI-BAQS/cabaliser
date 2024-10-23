@@ -114,7 +114,7 @@ class PauliTracker:
                 for dep_idx in range(n_dependents):
                     dependent = self.layer_get_dependent(layer, dep_idx)
                     if dependent.qubit_index < self.max_qubit:
-                        schedule[-1].append(dependent)
+                        schedule[-1].append(dependent.to_dict())
             self.measurement_schedule = schedule
         return self.measurement_schedule
 

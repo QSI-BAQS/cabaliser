@@ -10,6 +10,7 @@ from cabaliser.structs import LocalCliffordType, MeasurementTagType, IOMapType
 from cabaliser.io_array_wrappers import MeasurementTags, LocalCliffords, IOMap
 from cabaliser.qubit_array import QubitArray
 from cabaliser.pauli_tracker import PauliTracker
+from cabaliser.schedule_footprint import schedule_footprint 
 from cabaliser.utils import deref
 
 from cabaliser.exceptions import WidgetNotDecomposedException, WidgetDecomposedException
@@ -142,8 +143,13 @@ class Widget():
         # Corrections
         # Initialiser - Pretty sure this is all + states
         obj['time'] = len(obj['consumptionschedule'])        
-        obj['space'] = 'Max memory'  # If necessary upper bound 
+        obj['space'] = schedule_footprint(
+            obj['adjacencies'],
+            obj['consumptionschedule'] 
+        )
         return obj
+
+
 
     def get_local_cliffords(self):
         '''
