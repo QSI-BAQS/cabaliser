@@ -7,7 +7,7 @@ from types import GeneratorType
 
 from cabaliser.utils import deref, INF
 
-from cabaliser.structs import ScheduleDependencyType, PauliCorrectionType, PauliOperatorType
+from cabaliser.structs import ScheduleDependencyType, PauliCorrectionType
 from cabaliser.io_array_wrappers import ScheduleDependency, PauliCorrection
 
 from cabaliser.lib_cabaliser import lib
@@ -18,10 +18,15 @@ lib.lib_pauli_tracker_partial_order_graph.restype = c_void_p  # Opaque Pointer
 lib.lib_pauli_layer_to_dependent_node.restype = POINTER(ScheduleDependencyType)
 
 lib.lib_pauli_tracker_create_pauli_corrections.restype = c_void_p  # Opaque Pointer
-lib.lib_pauli_tracker_get_pauli_corrections.restype = POINTER(PauliCorrectionType) 
-lib.lib_pauli_tracker_get_correction_table_len.restype = c_size_t;
+lib.lib_pauli_tracker_get_pauli_corrections.restype = POINTER(PauliCorrectionType)
+lib.lib_pauli_tracker_get_correction_table_len.restype = c_size_t
 
 def get_correction_ptr(fn):
+    '''
+    Decorator for ensuring that the correction pointer has been pulled from the tracker 
+    As there is a timing mismatch between the construction of the tracker and running the scheduler 
+    This can't be performed as part of init 
+    '''
     def _wrap(self, *args, **kwargs):
         if self.corrections_ptr is None:
             self.corrections_ptr = lib.lib_pauli_tracker_create_pauli_corrections(
@@ -53,6 +58,9 @@ class PauliTracker:
         self.schedule()
 
     def to_list(self):
+        '''
+            Copies the array to a Python list
+        '''
         return list(iter(self))
 
     def schedule(self, max_qubit=INF):
@@ -166,31 +174,31 @@ class PauliTracker:
     @get_correction_ptr
     def __getitem__(self, index):
         '''
-            Gets the Pauli corrections for that index 
+            Gets the Pauli corrections for that index
         '''
-        return self.__get_correction(idx)
+        return self.__get_correction(index)
 
     @get_correction_ptr
-    def get_pauli_corrections(self, fmt=lambda x: x.to_dict()): 
+    def get_pauli_corrections(self, fmt=lambda x: x.to_dict()):
         '''
             Returns an iterator of corrections
-            :: fmt : lambda :: Format as to_list, to_dict or to_tuple  
+            :: fmt : lambda :: Format as to_list, to_dict or to_tuple
         '''
         if self.corrections is None:
             self.corrections = list(
                 fmt(self.__get_correction(idx)) for idx in range(self.__get_correction_table_len())
             )
-        return self.corrections 
-  
+        return self.corrections
+
     def __get_correction_table_len(self):
         return lib.lib_pauli_tracker_get_correction_table_len(self.corrections_ptr)
-        
- 
+
+
     def __get_correction(self, index):
         '''
             Gets the set of corrections for a given index
         '''
         return PauliCorrection(
-            index, 
-            lib.lib_pauli_tracker_get_pauli_corrections(self.corrections_ptr, index) 
+            index,
+            lib.lib_pauli_tracker_get_pauli_corrections(self.corrections_ptr, index)
         )

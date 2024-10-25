@@ -1,13 +1,13 @@
 '''
     C struct wrappers as type declarations
 '''
-from ctypes import Structure, POINTER, c_int32, c_byte, c_size_t, c_uint32
+from ctypes import Structure, POINTER, c_int32, c_byte, c_size_t
 
 LocalCliffordType = c_byte  # 1 byte
 MeasurementTagType = c_int32  # 4 bytes
 AdjacencyEdgeType = c_int32  # 4 bytes
 IOMapType = c_size_t  # 8 bytes
-PauliOperatorType = c_byte 
+PauliOperatorType = c_byte
 
 class CliffordQueueType(Structure):
     '''

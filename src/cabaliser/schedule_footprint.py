@@ -19,7 +19,7 @@ def schedule_footprint(
     max_footprint = 0
 
     for layer in schedule:
-        # Allocate elements required for measurement      
+        # Allocate elements required for measurement
         for element in PauliTracker.qubit_indices(layer):
             allocated.add(element)
             for adj in adjacencies[element]:
