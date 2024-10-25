@@ -21,7 +21,7 @@ lib.lib_pauli_tracker_create_pauli_corrections.restype = c_void_p  # Opaque Poin
 lib.lib_pauli_tracker_get_pauli_corrections.restype = POINTER(PauliCorrectionType)
 lib.lib_pauli_tracker_get_correction_table_len.restype = c_size_t
 
-lib.lib_pauli_tracker_get_inv_mapper.restype = c_void_p # Opaque Pointer
+lib.lib_pauli_tracker_get_inv_mapper.restype = c_void_p  # Opaque Pointer
 
 
 class PauliTracker:
@@ -112,7 +112,7 @@ class PauliTracker:
 
         node = deref(node_ptr)
 
-        return ScheduleDependency(node.len, qubit_index, node.arr, node_ptr = node)
+        return ScheduleDependency(node.len, qubit_index, node.arr, node_ptr=node)
 
     def __iter__(self):
         if self.measurement_schedule is None:
@@ -165,7 +165,7 @@ class PauliTracker:
     def get_correction_ptr(fn):
         '''
         Decorator for ensuring that the correction pointer has been pulled from the tracker
-        As there is a timing mismatch between the construction of the tracker and 
+        As there is a timing mismatch between the construction of the tracker and
         running the scheduler this can't be performed as part of init
         '''
         def _wrap(self, *args, **kwargs):

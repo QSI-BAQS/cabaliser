@@ -9,6 +9,7 @@ AdjacencyEdgeType = c_int32  # 4 bytes
 IOMapType = c_size_t  # 8 bytes
 PauliOperatorType = c_byte
 
+
 class CliffordQueueType(Structure):
     '''
       ctypes wrapper for clifford queue structs
@@ -62,9 +63,10 @@ class PartialOrderGraphType(Structure):
         ('__', c_int32)
     ]
 
+
 def const_vec_builder(arr_type):
     '''
-        Parameterised factory for ConstVec objects  
+        Parameterised factory for ConstVec objects
     '''
     class Obj(Structure):
         '''
@@ -76,6 +78,7 @@ def const_vec_builder(arr_type):
             ('cap', c_size_t),
         ]
     return Obj
+
 
 ScheduleDependencyType = const_vec_builder(c_size_t)
 PauliCorrectionType = const_vec_builder(PauliOperatorType)

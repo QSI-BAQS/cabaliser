@@ -16,6 +16,7 @@ from cabaliser.utils import deref
 from cabaliser.lib_cabaliser import lib
 lib.lib_pauli_mapper_to_const_vec.restype = POINTER(InvMapperType)
 
+
 class MeasurementTags(QubitArray):
     '''
         Ordered array of RZ measurement tags
@@ -49,9 +50,9 @@ class ScheduleDependency(QubitArray):
     '''
     def __init__(
             self,
-            n_qubits : int,
-            qubit_index : int,
-            arr : c_void_p,
+            n_qubits: int,
+            qubit_index: int,
+            arr: c_void_p,
             node_ptr: [c_void_p, None]
     ):
         self.qubit_index = qubit_index
@@ -78,6 +79,7 @@ class ScheduleDependency(QubitArray):
 
     def __str__(self):
         return self.__repr__()
+
     def __del__(self):
         pass
         # TODO: This is probably leaking about 16 bytes of memory on python cleanup
@@ -86,7 +88,7 @@ class ScheduleDependency(QubitArray):
 
 class InvMapper(QubitArray):
     '''
-        Map from correction indicies to qubits 
+        Map from correction indicies to qubits
     '''
     def __init__(self, mapper: c_void_p):
         self._vec_ptr = mapper
@@ -98,6 +100,7 @@ class InvMapper(QubitArray):
             self._vec_ptr,
             self._const_vec_ptr
         )
+
 
 class PauliCorrection(QubitArray):
     '''

@@ -6,6 +6,7 @@ Calculates the memory footprint of a measurement schedule and graph state adjace
 from cabaliser.exceptions import ScheduleException
 from cabaliser.pauli_tracker import PauliTracker
 
+
 def schedule_footprint(
         adjacencies: list,
         schedule: list) -> int:

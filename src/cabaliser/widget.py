@@ -20,7 +20,6 @@ from cabaliser.lib_cabaliser import lib
 lib.widget_create.restype = POINTER(WidgetType)
 
 
-
 class Widget():
     '''
         Widget object
@@ -259,7 +258,7 @@ class Widget():
     @require_decomposed
     def get_pauli_corrections(self):
         '''
-            Dispatch method to get pauli corrections from pauli tracker wrapper  
+            Dispatch method to get pauli corrections from pauli tracker wrapper
         '''
         return self.pauli_tracker.get_pauli_corrections()
 
@@ -286,6 +285,7 @@ class Widget():
             Prints the current state of the underlying tableau
         '''
         lib.widget_print_tableau_api(self.widget)
+
 
 class Adjacency(QubitArray):
     '''

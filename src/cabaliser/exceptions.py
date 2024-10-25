@@ -41,6 +41,7 @@ class WidgetQubitIndexException(WidgetException):
         maximum allowable index for this widget
     '''
 
+
 class ScheduleException(WidgetException):
     """
         Schedule does not consume widget
