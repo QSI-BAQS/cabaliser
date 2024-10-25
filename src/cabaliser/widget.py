@@ -20,6 +20,30 @@ from cabaliser.lib_cabaliser import lib
 lib.widget_create.restype = POINTER(WidgetType)
 
 
+def require_decomposed(fn):
+    '''
+        Decorator asserting that the widget has been decomposed before this method is called 
+    '''
+    def _wrap(self, *args, **kwargs):
+        if not self._decomposed:
+            raise WidgetNotDecomposedException(
+                """Attempted to read out the graph state without decomposing the tableau.
+                 Please call `Widget.decompose()` before extracting the adjacencies"""
+            )
+        return fn(self, *args, **kwargs)
+    return _wrap
+
+def require_not_decomposed(fn):
+    '''
+        Decorator asserting that the widget has not been decomposed before this method is called 
+    '''
+    def _wrap(self, *args, **kwargs):
+        if self._decomposed:
+            raise WidgetDecomposedException("Attempted to decompose twice")
+        return fn(self, *args, **kwargs)
+    return _wrap
+
+
 class Widget():
     '''
         Widget object
@@ -31,7 +55,7 @@ class Widget():
             Constructor for the widget
             Allocates a large tableau
         '''
-        self.__decomposed = False
+        self._decomposed = False
         self.widget = lib.widget_create(n_qubits, n_qubits_max)
         self.teleport_input = teleport_input
 
@@ -43,7 +67,7 @@ class Widget():
         self.local_cliffords = None
         self.measurement_tags = None
         self.io_map = None
-        self.pauli_tracker = PauliTracker(self.widget)
+        self.pauli_tracker = PauliTracker(self)
 
     def get_n_qubits(self) -> int:
         '''
@@ -137,6 +161,7 @@ class Widget():
                     to_string=local_clifford_to_string),
                'consumptionschedule': self.pauli_tracker.to_list(),
                'measurement_tags': self.get_measurement_tags().to_list(to_float=rz_to_float),
+               'paulicorrections': self.get_pauli_corrections(),
                'outputnodes': self.get_io_map().to_list()
                }
         # Frames flags
@@ -156,11 +181,6 @@ class Widget():
             get_corrections
             Returns a wrapper around an array of the Pauli corrections
         '''
-        if not self.__decomposed:
-            raise WidgetNotDecomposedException(
-                """Attempted to read out the graph state without decomposing the tableau.
-                 Please call `Widget.decompose()` before extracting the adjacencies"""
-            )
 
         if self.local_cliffords is None:
 
@@ -171,16 +191,12 @@ class Widget():
 
         return self.local_cliffords
 
+    @require_decomposed
     def get_measurement_tags(self):
         '''
             get_measurement_tags
             Returns a wrapper around an array of measurements
         '''
-        if not self.__decomposed:
-            raise WidgetNotDecomposedException(
-                """Attempted to read out the graph state without decomposing the tableau.
-                 Please call `Widget.decompose()` before extracting the adjacencies"""
-            )
         if self.measurement_tags is None:
             measurement_tags = POINTER(MeasurementTagType)()
             ptr = POINTER(MeasurementTagType)(measurement_tags)
@@ -189,16 +205,12 @@ class Widget():
 
         return self.measurement_tags
 
+    @require_decomposed
     def get_io_map(self):
         '''
             get_io_map
             Returns a wrapper around an array of measurements
         '''
-        if not self.__decomposed:
-            raise WidgetNotDecomposedException(
-                """Attempted to read out the graph state without decomposing the tableau.
-                 Please call `Widget.decompose()` before extracting the adjacencies"""
-            )
         if self.io_map is None:
             io_map = POINTER(IOMapType)()
             ptr = POINTER(IOMapType)(io_map)
@@ -207,17 +219,12 @@ class Widget():
 
         return self.io_map
 
+    @require_decomposed
     def get_adjacencies(self, qubit: int) -> AdjacencyType:
         '''
             Given a qubit get the adjacencies on the graph
             Reported qubits are graph state indices
         '''
-        if not self.__decomposed:
-            raise WidgetNotDecomposedException(
-                """Attempted to read out the graph state without decomposing the tableau.
-                 Please call `Widget.decompose()` before extracting the adjacencies"""
-            )
-
         if qubit > self.get_n_qubits():
             raise IndexError("Attempted to access qubit out of range")
 
@@ -229,19 +236,18 @@ class Widget():
 
         return adj
 
+    @require_not_decomposed
     def decompose(self):
         '''
             Decomposes the operation sequence into an algorithmically specific graph (asg)
         '''
-        if self.__decomposed:
-            raise WidgetDecomposedException("Attempted to decompose twice")
         lib.widget_decompose(self.widget)
 
         # Create the measurement schedule
         self.__schedule()
 
         # Set the decomposed flag
-        self.__decomposed = True
+        self._decomposed = True
 
     def __schedule(self):
         '''
@@ -249,18 +255,19 @@ class Widget():
              scheduling
         '''
         self.pauli_tracker.schedule(max_qubit=self.n_qubits)
+    
+    @require_decomposed
+    def get_pauli_corrections(self): 
+       return self.pauli_tracker.get_pauli_corrections() 
 
+    @require_decomposed
     def get_schedule(self):
         '''
             Gets the schedule from the pauli tracker
         '''
-        if not self.__decomposed:
-            raise WidgetNotDecomposedException(
-                """Attempted to read out the graph state without decomposing the tableau.
-                 Please call `Widget.decompose()` before extracting the adjacencies"""
-            )
         return self.pauli_tracker.to_list()
 
+    @require_not_decomposed
     def load_pandora(self, db_name: str):
         '''
             load_pandora

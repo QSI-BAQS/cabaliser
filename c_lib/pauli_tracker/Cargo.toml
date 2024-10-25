@@ -10,5 +10,5 @@ crate-type = ["staticlib"]
 bitvec = "1.0.1"
 
 [dependencies.pauli_tracker]
-version = "0.4.4"
+version = "0.4.5"
 features = ["bitvec"]

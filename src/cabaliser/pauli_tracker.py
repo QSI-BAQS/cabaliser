@@ -3,34 +3,50 @@
 '''
 
 from ctypes import POINTER, c_size_t, c_uint32, c_void_p
+from types import GeneratorType
 
 from cabaliser.utils import deref, INF
 
-from cabaliser.structs import ScheduleDependencyType
-from cabaliser.io_array_wrappers import ScheduleDependency
+from cabaliser.structs import ScheduleDependencyType, PauliCorrectionType, PauliOperatorType
+from cabaliser.io_array_wrappers import ScheduleDependency, PauliCorrection
 
 from cabaliser.lib_cabaliser import lib
 lib.lib_pauli_n_layers.restype = c_size_t
 lib.lib_pauli_n_dependents.restype = c_size_t
-lib.lib_pauli_tracker_partial_order_graph.restype = c_void_p
+
+lib.lib_pauli_tracker_partial_order_graph.restype = c_void_p  # Opaque Pointer
 lib.lib_pauli_layer_to_dependent_node.restype = POINTER(ScheduleDependencyType)
 
+lib.lib_pauli_tracker_create_pauli_corrections.restype = c_void_p  # Opaque Pointer
+lib.lib_pauli_tracker_get_pauli_corrections.restype = POINTER(PauliCorrectionType) 
+lib.lib_pauli_tracker_get_correction_table_len.restype = c_size_t;
+
+def get_correction_ptr(fn):
+    def _wrap(self, *args, **kwargs):
+        if self.corrections_ptr is None:
+            self.corrections_ptr = lib.lib_pauli_tracker_create_pauli_corrections(
+                self.pauli_tracker_ptr
+            )
+        return fn(self, *args, **kwargs)
+    return _wrap
 
 class PauliTracker:
     '''
         PauliTracker
         Wrapper for the rustlib pauli tracker object
     '''
-    def __init__(self, widget_ptr):
+    def __init__(self, widget):
         '''
             PauliTracker
             Wrapper for the rustlib pauli tracker object
         '''
-        self.pauli_tracker_ptr = deref(widget_ptr).pauli_tracker
+        self.pauli_tracker_ptr = widget.pauli_tracker_ptr
+        self.corrections_ptr = None
 
         self.graph_ptr = None
         self.__n_layers = None
         self.measurement_schedule = None
+        self.corrections = None
         self.max_qubit = INF  # Truncates unused qubits
 
     def __call__(self):
@@ -93,9 +109,12 @@ class PauliTracker:
             Returns a wrapped qubit array object
         '''
         qubit_index = int(lib.lib_pauli_dependent_qubit_idx(layer_ptr, index))
+
         node_ptr = lib.lib_pauli_layer_to_dependent_node(layer_ptr, c_uint32(index))
+
         node = deref(node_ptr)
-        return ScheduleDependency(node.len, qubit_index, node.arr)
+
+        return ScheduleDependency(node.len, qubit_index, node.arr, node_ptr = node)
 
     def __iter__(self):
         if self.measurement_schedule is None:
@@ -121,9 +140,57 @@ class PauliTracker:
             self.measurement_schedule = schedule
         return self.measurement_schedule
 
-    def debug_print(self):
+    @staticmethod
+    def qubit_index(sched_obj: dict) -> int:
+        '''
+            Gets the index of a qubit
+        '''
+        return next(iter(sched_obj))
+
+    @staticmethod
+    def qubit_indices(layer: list) -> GeneratorType:
+        '''
+            Call qubit index over each element in the layer
+            Returns a generator of the indices
+        '''
+        return map(PauliTracker.qubit_index, layer)
+
+    def debug_print(self, graph=True):
         '''
             Call through to the rust print functions for the graph and the tracker
         '''
         lib.lib_pauli_tracker_print(self.pauli_tracker_ptr)
-        lib.lib_pauli_tracker_graph_print(self.graph_ptr)
+        if graph:
+            lib.lib_pauli_tracker_graph_print(self.graph_ptr)
+
+    @get_correction_ptr
+    def __getitem__(self, index):
+        '''
+            Gets the Pauli corrections for that index 
+        '''
+        return self.__get_correction(idx)
+
+    @get_correction_ptr
+    def get_pauli_corrections(self, fmt=lambda x: x.to_dict()): 
+        '''
+            Returns an iterator of corrections
+            :: fmt : lambda :: Format as to_list, to_dict or to_tuple  
+        '''
+        if self.corrections is None:
+            self.corrections = list(
+                fmt(self.__get_correction(idx)) for idx in range(self.__get_correction_table_len())
+            )
+        return self.corrections 
+  
+    def __get_correction_table_len(self):
+        return lib.lib_pauli_tracker_get_correction_table_len(self.corrections_ptr)
+        
+ 
+    def __get_correction(self, index):
+        '''
+            Gets the set of corrections for a given index
+        '''
+        return PauliCorrection(
+            index, 
+            lib.lib_pauli_tracker_get_pauli_corrections(self.corrections_ptr, index) 
+        )

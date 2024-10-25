@@ -1,16 +1,17 @@
 ## Cabaliser
 
+A graph state compiler written in C.
+
 (Name is pending review and new suggestions are more than welcome)
 
-Most of what you want is in the `c` directory
+Most of what you want is in the `c_lib` directory
 The Python side of the code provides a thin wrapper around the C code 
-
 
 
 ## Dependencies: ##
 
 - Compiler is assumed to be `gcc`, if you are compiling on a Mac you may discover that Apple has helpfully aliased `gcc` to `clang`.
-- Various operations assume that your CPU supports `bmi2` and `avx2` instructions along with some collection of atomic operations.
+- Various operations assume that your CPU supports `bmi2` and `avx2` instructions along with some collection of atomic operations. M1 family chipsets with rosetta support may not satisfy this.
 - `postgresql-libs, libpqxx` or equivalent packages that provides libqp headers for pandora integration
 - `rustc` is required to compile the Pauli Tracker library  
 

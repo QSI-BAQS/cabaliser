@@ -40,3 +40,8 @@ class WidgetQubitIndexException(WidgetException):
         The targeted index is greater than the
         maximum allowable index for this widget
     '''
+
+class ScheduleException(WidgetException):
+    """
+        Schedule does not consume widget
+    """

@@ -7,7 +7,7 @@ LocalCliffordType = c_byte  # 1 byte
 MeasurementTagType = c_int32  # 4 bytes
 AdjacencyEdgeType = c_int32  # 4 bytes
 IOMapType = c_size_t  # 8 bytes
-
+PauliOperatorType = c_byte 
 
 class CliffordQueueType(Structure):
     '''
@@ -68,7 +68,17 @@ class ScheduleDependencyType(Structure):
         Array wrapper type for dependency schedules
     '''
     _fields_ = [
-        ('len', c_uint32),
-        ('dependent', c_uint32),
-        ('arr', POINTER(c_size_t))
+        ('arr', POINTER(c_size_t)),
+        ('len', c_size_t),
+        ('cap', c_size_t),
+    ]
+
+class PauliCorrectionType(Structure):
+    '''
+        Array wrapper type for dependency schedules
+    '''
+    _fields_ = [
+        ('arr', POINTER(PauliOperatorType)),
+        ('len', c_size_t),
+        ('cap', c_size_t),
     ]

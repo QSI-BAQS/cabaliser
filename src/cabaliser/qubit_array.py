@@ -20,6 +20,8 @@ class QubitArray:
         self.n_qubits = n_qubits
         self.arr = arr
 
+        self.__list = None
+
     @staticmethod
     def from_struct(struct: Structure, n_qubits='len', arr='arr'):
         '''
@@ -52,8 +54,12 @@ class QubitArray:
         '''
         return self.n_qubits
 
-    def to_list(self):
+    def to_list(self, cache=True):
         '''
             Converts the underlying array to a Python list
         '''
-        return list(iter(self))
+        if cache and self.__list is None:
+            self.__list = list(iter(self))
+        elif not cache:
+            return list(iter(self))
+        return self.__list

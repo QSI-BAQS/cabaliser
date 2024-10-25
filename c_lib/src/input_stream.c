@@ -91,7 +91,6 @@ void __inline_rz_gate(
     wid->queue->non_cliffords[ctrl] = inst->tag;
     wid->q_map[inst->arg] = wid->n_qubits;
 
-
     SINGLE_QUBIT_OPERATIONS[wid->queue->table[ctrl] & INSTRUCTION_OPERATOR_MASK](wid->tableau, ctrl);
     wid->queue->table[ctrl] = _I_;
 
@@ -102,7 +101,6 @@ void __inline_rz_gate(
 
     // Propagate tracked Pauli corrections 
     pauli_track_z(wid->pauli_tracker, ctrl, targ);
-    pauli_tracker_cx(wid->pauli_tracker, ctrl, targ); 
 
     // Number of qubits increases by one
     wid->n_qubits += 1;  
@@ -172,9 +170,8 @@ void teleport_input(widget_t* wid)
         // Fix up the map, we should now be indexing off the target qubit  
         wid->q_map[i] += wid->n_initial_qubits;      
         // TODO: Stop proxying the input qubits like this 
-        pauli_track_z(wid->pauli_tracker, i, wid->n_initial_qubits + i);
+        // pauli_track_z(wid->pauli_tracker, i, wid->n_initial_qubits + i);
     
-        // This correction is fine
         pauli_track_x(wid->pauli_tracker, i, wid->n_initial_qubits + i);
     }
 
