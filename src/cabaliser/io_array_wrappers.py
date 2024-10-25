@@ -8,11 +8,13 @@ from ctypes import POINTER
 
 from ctypes import c_void_p
 from cabaliser.qubit_array import QubitArray
-from cabaliser.structs import ScheduleDependencyType, PauliCorrectionType
+from cabaliser.structs import ScheduleDependencyType, PauliCorrectionType, InvMapperType
 from cabaliser.gates import SINGLE_QUBIT_GATE_TABLE
 from cabaliser.gate_constructors import tag_to_angle
 from cabaliser.utils import deref
 
+from cabaliser.lib_cabaliser import lib
+lib.lib_pauli_mapper_to_const_vec.restype = POINTER(InvMapperType)
 
 class MeasurementTags(QubitArray):
     '''
@@ -81,6 +83,22 @@ class ScheduleDependency(QubitArray):
         # TODO: This is probably leaking about 16 bytes of memory on python cleanup
         # lib.lib_pauli_tracker_const_vec_destroy(self.__ptr)
 
+
+class InvMapper(QubitArray):
+    '''
+        Map from correction indicies to qubits 
+    '''
+    def __init__(self, mapper: c_void_p):
+        self._vec_ptr = mapper
+        self._const_vec_ptr = lib.lib_pauli_mapper_to_const_vec(self._vec_ptr)
+        super().__init__(deref(self._const_vec_ptr).len, deref(self._const_vec_ptr).arr)
+
+    def __del__(self):
+        lib.lib_pauli_tracker_destroy_inv_map(
+            self._vec_ptr,
+            self._const_vec_ptr
+        )
+
 class PauliCorrection(QubitArray):
     '''
         PauliCorrection
@@ -93,21 +111,15 @@ class PauliCorrection(QubitArray):
         3: 'Y'
     }
 
-    def __init__(self, index, correction: POINTER(PauliCorrectionType)):
+    def __init__(self, index, correction: POINTER(PauliCorrectionType), n_qubits):
         self._ptr = correction
         self.cap = deref(correction).cap
-        self.qubit_index = index
+        self._len = deref(correction).len
+        self.index = index
 
         self.__list = None
 
-        super().__init__(deref(correction).len, deref(correction).arr)
-
-    def __del__(self):
-        '''
-            TODO:
-            The underlying array object is a shared pointer
-            Capacity and len should be set to zero to ensure that the array is not freed by rust
-        '''
+        super().__init__(n_qubits, deref(correction).arr)
 
     def to_list(self, cache: bool = True):
         '''
@@ -132,17 +144,22 @@ class PauliCorrection(QubitArray):
             :: cache : bool :: Whether to cache the underlying list
         '''
 
-        return {self.qubit_index: self.to_list(cache=cache)}
+        return {self.index: self.to_list(cache=cache)}
 
     def to_tuple(self, cache=True):
         '''
             Converts the array to a Python tuple
             :: cache : bool :: Whether to cache the underlying list
         '''
-        return (self.qubit_index, self.to_list(cache=cache))
+        return (self.index, self.to_list(cache=cache))
 
     def __repr__(self):
         return self.to_dict().__repr__()
 
     def __str__(self):
         return self.__repr__()
+
+    def __del__(self):
+        lib.lib_pauli_tracker_destroy_corrections(
+            self._ptr
+        )

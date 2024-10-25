@@ -62,23 +62,18 @@ class PartialOrderGraphType(Structure):
         ('__', c_int32)
     ]
 
+def const_vec_builder(arr_type):
+    class Obj(Structure):
+        '''
+            Array wrapper type for dependency schedules
+        '''
+        _fields_ = [
+            ('arr', POINTER(arr_type)),
+            ('len', c_size_t),
+            ('cap', c_size_t),
+        ]
+    return Obj
 
-class ScheduleDependencyType(Structure):
-    '''
-        Array wrapper type for dependency schedules
-    '''
-    _fields_ = [
-        ('arr', POINTER(c_size_t)),
-        ('len', c_size_t),
-        ('cap', c_size_t),
-    ]
-
-class PauliCorrectionType(Structure):
-    '''
-        Array wrapper type for dependency schedules
-    '''
-    _fields_ = [
-        ('arr', POINTER(PauliOperatorType)),
-        ('len', c_size_t),
-        ('cap', c_size_t),
-    ]
+ScheduleDependencyType = const_vec_builder(c_size_t)
+PauliCorrectionType = const_vec_builder(PauliOperatorType)
+InvMapperType = const_vec_builder(c_size_t)

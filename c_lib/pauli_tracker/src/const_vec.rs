@@ -24,10 +24,7 @@ pub fn vec_to_const_vec<T>(vec: &Vec<T>) -> *mut ConstVec<T>
 
 pub fn const_vec_destroy<T>(vec: *mut ConstVec<T>)
 {
-unsafe {
-    let _ = Vec::from_raw_parts(
-        (*vec).ptr as *mut T,  // Cast to mut is fine here as we're deallocating the memory
-        (*vec).len,
-        (*vec).cap);
+    unsafe {
+        let _ = Box::from_raw(vec);
     }
 }

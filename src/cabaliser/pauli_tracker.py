@@ -8,7 +8,7 @@ from types import GeneratorType
 from cabaliser.utils import deref, INF
 
 from cabaliser.structs import ScheduleDependencyType, PauliCorrectionType
-from cabaliser.io_array_wrappers import ScheduleDependency, PauliCorrection
+from cabaliser.io_array_wrappers import ScheduleDependency, PauliCorrection, InvMapper
 
 from cabaliser.lib_cabaliser import lib
 lib.lib_pauli_n_layers.restype = c_size_t
@@ -21,6 +21,8 @@ lib.lib_pauli_tracker_create_pauli_corrections.restype = c_void_p  # Opaque Poin
 lib.lib_pauli_tracker_get_pauli_corrections.restype = POINTER(PauliCorrectionType)
 lib.lib_pauli_tracker_get_correction_table_len.restype = c_size_t
 
+lib.lib_pauli_tracker_get_inv_mapper.restype = c_void_p # Opaque Pointer
+
 def get_correction_ptr(fn):
     '''
     Decorator for ensuring that the correction pointer has been pulled from the tracker 
@@ -28,10 +30,17 @@ def get_correction_ptr(fn):
     This can't be performed as part of init 
     '''
     def _wrap(self, *args, **kwargs):
-        if self.corrections_ptr is None:
-            self.corrections_ptr = lib.lib_pauli_tracker_create_pauli_corrections(
-                self.pauli_tracker_ptr
+        if self._corrections_ptr is None:
+            self._corrections_ptr = lib.lib_pauli_tracker_create_pauli_corrections(
+                self._pauli_tracker_ptr
             )
+        if self._inv_mapper is None:
+            table_len = self._get_correction_table_len()
+            mapper_ptr = lib.lib_pauli_tracker_get_inv_mapper(
+                self._pauli_tracker_ptr,
+                self.max_qubit
+            )
+            self._inv_mapper = InvMapper(mapper_ptr) 
         return fn(self, *args, **kwargs)
     return _wrap
 
@@ -45,8 +54,9 @@ class PauliTracker:
             PauliTracker
             Wrapper for the rustlib pauli tracker object
         '''
-        self.pauli_tracker_ptr = widget.pauli_tracker_ptr
-        self.corrections_ptr = None
+        self._pauli_tracker_ptr = widget.pauli_tracker_ptr
+        self._corrections_ptr = None
+        self._inv_mapper = None
 
         self.graph_ptr = None
         self.__n_layers = None
@@ -76,7 +86,7 @@ class PauliTracker:
             Gets a graph pointer from a widget pointer
         '''
         graph_ptr = lib.lib_pauli_tracker_partial_order_graph(
-            self.pauli_tracker_ptr
+            self._pauli_tracker_ptr
             )
         return graph_ptr
 
@@ -167,7 +177,7 @@ class PauliTracker:
         '''
             Call through to the rust print functions for the graph and the tracker
         '''
-        lib.lib_pauli_tracker_print(self.pauli_tracker_ptr)
+        lib.lib_pauli_tracker_print(self._pauli_tracker_ptr)
         if graph:
             lib.lib_pauli_tracker_graph_print(self.graph_ptr)
 
@@ -186,19 +196,20 @@ class PauliTracker:
         '''
         if self.corrections is None:
             self.corrections = list(
-                fmt(self.__get_correction(idx)) for idx in range(self.__get_correction_table_len())
+                fmt(self.__get_correction(idx)) for idx in range(self._get_correction_table_len())
             )
         return self.corrections
 
-    def __get_correction_table_len(self):
-        return lib.lib_pauli_tracker_get_correction_table_len(self.corrections_ptr)
-
+    def _get_correction_table_len(self):
+        return lib.lib_pauli_tracker_get_correction_table_len(self._corrections_ptr)
 
     def __get_correction(self, index):
         '''
             Gets the set of corrections for a given index
         '''
+        mapper_index = self._inv_mapper[index] 
         return PauliCorrection(
-            index,
-            lib.lib_pauli_tracker_get_pauli_corrections(self.corrections_ptr, index)
+            mapper_index,
+            lib.lib_pauli_tracker_get_pauli_corrections(self._corrections_ptr, index),
+            self.max_qubit
         )

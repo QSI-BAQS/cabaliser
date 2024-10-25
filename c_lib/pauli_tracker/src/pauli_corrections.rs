@@ -7,7 +7,7 @@ use pauli_tracker::{
 use crate::const_vec::{
     ConstVec,
     vec_to_const_vec, 
-//    const_vec_destroy, 
+    const_vec_destroy, 
 };
 
 use crate::{
@@ -62,10 +62,10 @@ extern "C" fn lib_pauli_tracker_get_pauli_corrections(
     }
 }
 
-//#[no_mangle]
-//extern "C" fn lib_pauli_tracker_destroy_corrections(
-//    vec: *mut ConstVec<PauliDense>
-//)
-//{
-//    const_vec_destroy::<PauliDense>(vec);
-//}
+#[no_mangle]
+extern "C" fn lib_pauli_tracker_destroy_corrections(
+    vec: *mut ConstVec<PauliDense>
+)
+{
+    const_vec_destroy::<PauliDense>(vec);
+}

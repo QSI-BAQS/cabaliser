@@ -3,8 +3,10 @@ use pauli_tracker::{
     pauli::{self},
     tracker::{Tracker, frames::Frames},
 };
+
 use crate::{
-    partial_order_graph
+    partial_order_graph,
+    const_vec,
 };
 
 // Intermediate type wrappers 
@@ -42,6 +44,66 @@ pub extern "C" fn lib_pauli_tracker_create(n_qubits: usize) -> *mut MappedPauliT
 }
 
 /*
+ * get_mapper 
+ * Returns the inverse of the mapper 
+ */
+#[no_mangle]
+pub extern "C" fn lib_pauli_tracker_get_inv_mapper(
+    mapped_tracker: *mut MappedPauliTracker,
+    n_qubits: usize
+) -> *mut Vec<usize> {
+
+    let mapping = Box::into_raw(
+        Box::new(
+            vec![usize::MAX; n_qubits]
+        )
+    );
+
+    unsafe {
+        for (index, value) in mapped_tracker
+            .as_ref()
+            .unwrap()
+            .mapper
+            .iter()
+            .enumerate()
+        {
+            (*mapping)[index] = *value; 
+        }
+    }
+
+    return mapping;
+}
+
+/*
+ * Constructs a const vec from the mapper
+ * This is needed to ensure that the original function doesn't drop the underlying vector
+ */
+#[no_mangle]
+pub extern "C" fn lib_pauli_mapper_to_const_vec(vec: *mut Vec<usize>) -> *mut const_vec::ConstVec<usize>
+{
+    unsafe{
+        return const_vec::vec_to_const_vec::<usize>(vec.as_ref().unwrap()); 
+    }
+}
+
+/*
+ * lib_pauli_tracker_destroy_inv_map
+ * Destructor for the inverse mapper object
+ */
+#[no_mangle]
+extern "C" fn lib_pauli_tracker_destroy_inv_map(
+    vec: *mut Vec<usize>,
+    inv_map: *mut const_vec::ConstVec<usize>) 
+{
+    unsafe {
+        let _ = Box::from_raw(inv_map);
+    }
+    unsafe {
+        let _ = Box::from_raw(vec);
+    }
+}
+
+/*
  * pauli_tracker_destroy
  * Destructor for the pauli tracker object
  * :: pauli_tracker : *mut MappedPauliTracker :: Pointer to the pauli tracker object to be freed 
@@ -70,6 +132,7 @@ extern "C" fn lib_pauli_track_x(mapped_pauli_tracker: &mut MappedPauliTracker, m
     mapped_pauli_tracker.pauli_tracker.track_x(measurement_target);
 }
 
+
 /*
  * pauli_track_z
  * Add a row to the pauli tracker object with an 'X' at the target qubit  
@@ -94,6 +157,19 @@ extern "C" fn lib_pauli_track_z(mapped_pauli_tracker: &mut MappedPauliTracker, m
 extern "C" fn lib_pauli_tracker_greedy_order(mapped_pauli_tracker: &mut MappedPauliTracker) -> *mut partial_order_graph::PartialOrderGraph {
      return partial_order_graph::lib_pauli_tracker_partial_order_graph(mapped_pauli_tracker);
 }
+
+/*
+ * Simple wrapper around the mapper 
+ */
+#[no_mangle]
+extern "C" fn lib_pauli_tracker_index_to_qubit(
+    mapped_pauli_tracker: &MappedPauliTracker,
+    index: usize
+) -> usize 
+{
+        return (*mapped_pauli_tracker).mapper[index];
+}
+
 
 /*
  * pauli_tracker_print
