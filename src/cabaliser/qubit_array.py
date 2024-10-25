@@ -48,6 +48,9 @@ class QubitArray:
             raise IndexError("Qubit index is out of range")
         return self.arr[idx]
 
+    def __setitem__(self, idx: int, val):
+        raise TypeError("Cannot write to array object")
+
     def __len__(self):
         '''
             Returns the length of the array

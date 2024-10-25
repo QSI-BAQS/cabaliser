@@ -10,7 +10,7 @@ from cabaliser.structs import LocalCliffordType, MeasurementTagType, IOMapType
 from cabaliser.io_array_wrappers import MeasurementTags, LocalCliffords, IOMap
 from cabaliser.qubit_array import QubitArray
 from cabaliser.pauli_tracker import PauliTracker
-from cabaliser.schedule_footprint import schedule_footprint 
+from cabaliser.schedule_footprint import schedule_footprint
 from cabaliser.utils import deref
 
 from cabaliser.exceptions import WidgetNotDecomposedException, WidgetDecomposedException
@@ -19,29 +19,6 @@ from cabaliser.lib_cabaliser import lib
 # Override return type
 lib.widget_create.restype = POINTER(WidgetType)
 
-
-def require_decomposed(fn):
-    '''
-        Decorator asserting that the widget has been decomposed before this method is called 
-    '''
-    def _wrap(self, *args, **kwargs):
-        if not self._decomposed:
-            raise WidgetNotDecomposedException(
-                """Attempted to read out the graph state without decomposing the tableau.
-                 Please call `Widget.decompose()` before extracting the adjacencies"""
-            )
-        return fn(self, *args, **kwargs)
-    return _wrap
-
-def require_not_decomposed(fn):
-    '''
-        Decorator asserting that the widget has not been decomposed before this method is called 
-    '''
-    def _wrap(self, *args, **kwargs):
-        if self._decomposed:
-            raise WidgetDecomposedException("Attempted to decompose twice")
-        return fn(self, *args, **kwargs)
-    return _wrap
 
 
 class Widget():
@@ -55,7 +32,7 @@ class Widget():
             Constructor for the widget
             Allocates a large tableau
         '''
-        self._decomposed = False
+        self.decomposed = False
         self.widget = lib.widget_create(n_qubits, n_qubits_max)
         self.teleport_input = teleport_input
 
@@ -155,7 +132,7 @@ class Widget():
         '''
         obj = {
                'n_qubits': self.n_qubits,
-               'statenodes': list(range(self.n_qubits)),  
+               'statenodes': list(range(self.n_qubits)),
                'adjacencies': {i: self.get_adjacencies(i).to_list() for i in range(self.n_qubits)},
                'local_cliffords': self.get_local_cliffords().to_list(
                     to_string=local_clifford_to_string),
@@ -167,14 +144,37 @@ class Widget():
         # Frames flags
         # Corrections
         # Initialiser - Pretty sure this is all + states
-        obj['time'] = len(obj['consumptionschedule'])        
+        obj['time'] = len(obj['consumptionschedule'])
         obj['space'] = schedule_footprint(
             obj['adjacencies'],
-            obj['consumptionschedule'] 
+            obj['consumptionschedule']
         )
         return obj
 
+    @staticmethod
+    def require_decomposed(fn):
+        '''
+            Decorator asserting that the widget has been decomposed before this method is called
+        '''
+        def _wrap(self, *args, **kwargs):
+            if not self.decomposed:
+                raise WidgetNotDecomposedException(
+                    """Attempted to read out the graph state without decomposing the tableau.
+                     Please call `Widget.decompose()` before extracting the adjacencies"""
+                )
+            return fn(self, *args, **kwargs)
+        return _wrap
 
+    @staticmethod
+    def require_not_decomposed(fn):
+        '''
+            Decorator asserting that the widget has not been decomposed before this method is called
+        '''
+        def _wrap(self, *args, **kwargs):
+            if self.decomposed:
+                raise WidgetDecomposedException("Attempted to decompose twice")
+            return fn(self, *args, **kwargs)
+        return _wrap
 
     def get_local_cliffords(self):
         '''
@@ -247,7 +247,7 @@ class Widget():
         self.__schedule()
 
         # Set the decomposed flag
-        self._decomposed = True
+        self.decomposed = True
 
     def __schedule(self):
         '''
@@ -255,10 +255,13 @@ class Widget():
              scheduling
         '''
         self.pauli_tracker.schedule(max_qubit=self.n_qubits)
-    
+
     @require_decomposed
-    def get_pauli_corrections(self): 
-       return self.pauli_tracker.get_pauli_corrections() 
+    def get_pauli_corrections(self):
+        '''
+            Dispatch method to get pauli corrections from pauli tracker wrapper  
+        '''
+        return self.pauli_tracker.get_pauli_corrections()
 
     @require_decomposed
     def get_schedule(self):

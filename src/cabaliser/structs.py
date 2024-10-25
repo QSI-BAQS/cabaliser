@@ -63,6 +63,9 @@ class PartialOrderGraphType(Structure):
     ]
 
 def const_vec_builder(arr_type):
+    '''
+        Parameterised factory for ConstVec objects  
+    '''
     class Obj(Structure):
         '''
             Array wrapper type for dependency schedules
