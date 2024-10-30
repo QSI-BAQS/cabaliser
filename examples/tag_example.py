@@ -40,8 +40,6 @@ wid = Widget(n_qubits, max_qubits)
 # Apply operation on widget
 wid(ops)
 
-wid.pauli_tracker.debug_print(graph=False)
-
 # Decompose widget
 wid.decompose()
 
