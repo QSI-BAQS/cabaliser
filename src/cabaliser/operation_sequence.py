@@ -3,6 +3,8 @@
     Wrapper for sequences of operations
     Exposes these sequences to the C api
 '''
+from itertools import chain, repeat
+
 from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ
 from cabaliser.operations import (
     OperationType, SingleQubitOperation,
@@ -19,10 +21,18 @@ class OperationSequence():
         This object has a pre-allocated maximum number
          of supported operations
     '''
-    CONSTRUCTOR_MAP = (
-          {i: SingleQubitOperation for i in SINGLE_QUBIT_GATES}
-        | {i: TwoQubitOperation for i in TWO_QUBIT_GATES}
-        | {RZ: RzOperation})
+    try:  # Python 3.8 and below will fail on this 
+        CONSTRUCTOR_MAP = (
+              {i: SingleQubitOperation for i in SINGLE_QUBIT_GATES}
+            | {i: TwoQubitOperation for i in TWO_QUBIT_GATES}
+            | {RZ: RzOperation})
+    except TypeError:  # Python 3.8 and lower friendly method
+        CONSTRUCTOR_MAP = {i: op for i, op in chain(
+                zip(SINGLE_QUBIT_GATES, repeat(SingleQubitOperation)),
+                zip(TWO_QUBIT_GATES, repeat(TwoQubitOperation)),
+                zip([RZ], [RzOperation])
+            )
+       } 
 
     def __init__(self, n_instructions: int):
         '''
