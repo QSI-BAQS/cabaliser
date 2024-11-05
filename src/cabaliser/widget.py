@@ -131,7 +131,7 @@ class Widget():
         '''
         obj = {
                'n_qubits': self.n_qubits,
-               'statenodes': list(range(self.n_qubits)),
+               'statenodes': list(range(self.n_initial_qubits)),
                'adjacencies': {i: self.get_adjacencies(i).to_list() for i in range(self.n_qubits)},
                'local_cliffords': self.get_local_cliffords().to_list(
                     to_string=local_clifford_to_string),
