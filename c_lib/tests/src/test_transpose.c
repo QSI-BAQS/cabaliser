@@ -17,10 +17,12 @@ void test_2x16()
     const size_t n_bytes = sizeof(uint64_t) * stride * n_channels;
 
     // Set up aligned memory
-    posix_memalign((void**)&arr_a, 64, n_bytes);  
-    posix_memalign((void**)&arr_b_naive, 64, n_bytes);  
-    posix_memalign((void**)&arr_b_chunk, 64, n_bytes);  
-    posix_memalign((void**)&arr_b_simd, 64, n_bytes);  
+    int ret_val = posix_memalign((void**)&arr_a, 64, n_bytes);  
+    ret_val |= posix_memalign((void**)&arr_b_naive, 64, n_bytes);  
+    ret_val |= posix_memalign((void**)&arr_b_chunk, 64, n_bytes);  
+    ret_val |= posix_memalign((void**)&arr_b_simd, 64, n_bytes);  
+
+    assert(0 == ret_val);
 
     // Flush the memory 
     memset(arr_a, 0, n_bytes); 

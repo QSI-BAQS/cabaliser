@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 CC := gcc 
 OMPFLAG := -fopenmp
-CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable ${OMPFLAG}
+CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG}
 
 # Optimisation Flags
 CFLAGS += -Ofast -fPIC
@@ -52,10 +52,6 @@ LINK_LIBS := -L${PAULI_TRACKER_LIB} -Wl,-Bstatic -l${PAULI_TRACKER_CLIB} -Wl,-Bd
 
 LIBS += -I${PAULI_TRACKER_HEADERS} 
 
-MBQC_SCHEDULER_DIR := mbqc_scheduling
-MBQC_SCHEDULER_RUSTLIB_DIR := ${MBQC_SCHEDULER_DIR}/mbqc_scheduling 
-MBQC_SCHEDULER_LIB := ${MBQC_SCHEDULER_RUSTLIB_DIR}/target/release/libmbqc_scheduling.rlib
-
 # Benchmark Files
 BENCHMARK_SRCFILES := $(wildcard ${BENCHMARK_SRCDIR}/*.c)
 BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out, ${BENCHMARK_SRCFILES})
@@ -66,7 +62,6 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 .PHONY: benchmark benchmarks
 .PHONY: pandora_api
 .PHONY: ${PAULI_TRACKER}
-.PHONY: ${MBQC_SCHEDULER}
 
 
 # Build Rules
@@ -90,8 +85,10 @@ debug_L1: test
 debug: CFLAGS += -fopt-info -fopt-info-loop -fopt-info-loop-missed -fopt-info-vec -fopt-info-vec-missed
 debug: test 
 
+tests: test
+test: all
 test : CFLAGS += -g
-tests : test pandora_test ${PAULI_TRACKER_LIB}
+#tests : test pandora_test ${PAULI_TRACKER_LIB}
 test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} ${PANDORA_TEST_RUNNERS} 
 
 
@@ -102,7 +99,7 @@ benchmarks: ${TARGET} ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS}
 ${BUILDDIR} :
 	mkdir -p ${BUILDDIR}
 
-${TARGET} : ${BUILDDIR} ${OBJFILES} ${COND_OBJFILES} ${PAULI_TRACKER_LIB} ${MBQC_SCHEDULER_LIB} 
+${TARGET} : ${BUILDDIR} ${OBJFILES} ${COND_OBJFILES} ${PAULI_TRACKER_LIB}
 	${CC} ${CFLAGS} ${TARGET_FLAGS} -o $@ ${COND_OBJFILES} ${LINK_LIBS} ${LIBS}  
 
 # Compilation of the transpose operation
@@ -115,14 +112,9 @@ endif
 
 # Dependent libraries
 pauli_tracker: ${PAULI_TRACKER_LIB}
-mbqc_scheduling: ${MBQC_SCHEDULER_LIB}
 
 ${PAULI_TRACKER_LIB}: 
 	cd ${PAULI_TRACKER_DIR}; make all
-
-${MBQC_SCHEDULER_LIB}:
-	@echo PASS
-	#cd ${MBQC_SCHEDULER_RUSTLIB_DIR}; cargo build --release
 
 ${BUILDDIR}/%.o : ${SRCDIR}/%.c
 	${CC} $^ ${CFLAGS} ${LINK_LIBS} ${LIBS} -c -o $@ 
@@ -145,4 +137,3 @@ clean:
 	rm -rf ${TESTDIR}/*.out
 	rm -rf ${BENCHMARK_DIR}/*.out
 	cd ${PAULI_TRACKER_DIR}; make clean
-	cd ${MBQC_SCHEDULER_RUSTLIB_DIR}; cargo clean
