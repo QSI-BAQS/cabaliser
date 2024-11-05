@@ -76,6 +76,7 @@ void test_tableau_copy()
 
 void test_identity(void)
 {
+    // 8 Qubit tableau
     widget_t* wid = widget_create(sizeof(size_t), sizeof(size_t));
     tableau_destroy(wid->tableau);
     wid->tableau = tableau_random_create(); 
@@ -83,6 +84,7 @@ void test_identity(void)
 
     instruction_stream_u inst;
     inst.single.opcode = _I_; 
+    inst.single.arg = 0;
 
     // Random starting opcode
     for (size_t i = 0; i < sizeof(size_t); i++)
@@ -92,7 +94,8 @@ void test_identity(void)
 
         parse_instruction_block(wid, &inst, 1);
         assert(wid->queue->table[i] == _I_);
-
+        
+        // Force application of local cliffords
         apply_local_cliffords(wid);
 
         ASSERT_SLICES_EQUAL(wid->tableau, tab, i);
