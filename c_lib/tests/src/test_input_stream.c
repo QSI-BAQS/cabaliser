@@ -70,6 +70,7 @@ void test_tableau_copy()
     {
         assert(tab->phases[j] == wid->tableau->phases[j]); 
     }
+    widget_destroy(wid);
     return;
 }
 
@@ -259,7 +260,6 @@ int main()
     test_single_qubit_stream();
     test_cnot_stream();
     test_cz_stream();
-
 
 
     return 0;
