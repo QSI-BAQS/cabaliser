@@ -26,8 +26,19 @@ def widget_to_cz(widget):
                  ) @ op 
     return op
 
+def non_clifford_rotations(widget, table=None): 
+    if table is None:
+        table = {0: I, 1: T} 
+
+    ops = kr(
+            *list(
+                table[tag] for tag in widget.get_measurement_tags()
+            )
+    )
+    return ops
+
 def local_cliffords(widget):
-    cliffords = {'I': I, 'H': H, 'S': S, 'R': Sdag}
+    cliffords = {'I': I, 'H': H, 'S': S, 'Sd': Sdag}
     op = kr(*list( 
         cliffords[i] for i in widget.get_local_cliffords().to_list()
         ))
