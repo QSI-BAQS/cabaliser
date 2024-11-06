@@ -114,8 +114,8 @@ void test_64x64()
     ret_val |= posix_memalign((void**)&arr_a_chunk, 64, n_bytes);  
     ret_val |= posix_memalign((void**)&arr_a_simd, 64, n_bytes);  
 
-    ret_val |= osix_memalign((void**)&arr_b_chunk, 64, n_bytes);  
-    ret_val |= osix_memalign((void**)&arr_b_simd, 64, n_bytes);  
+    ret_val |= posix_memalign((void**)&arr_b_chunk, 64, n_bytes);  
+    ret_val |= posix_memalign((void**)&arr_b_simd, 64, n_bytes);  
     assert(0 == ret_val);
 
     // Flush the memory 
