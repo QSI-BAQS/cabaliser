@@ -98,6 +98,7 @@ struct adjacency_obj widget_get_adjacencies(const widget_t* wid, const size_t ta
     else
     {
         free(adj.adjacencies);
+        adj.adjacencies = NULL;
     }
     return adj;
 }
