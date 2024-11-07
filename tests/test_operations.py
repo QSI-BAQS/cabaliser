@@ -1,63 +1,16 @@
 import unittest
 import numpy as np
 
-import local_simulator
-
 from cabaliser import gates
 from cabaliser.operation_sequence import OperationSequence 
 from cabaliser.widget import Widget
+from cabaliser import local_simulator 
 
 EPS = 1e-8
 N_REPETITIONS = 100
 class OperationTest(unittest.TestCase):
 
-    @staticmethod
-    def state_prep(alpha, beta):
-        state = alpha * local_simulator.zero_state + beta * local_simulator.one_state
-        state = local_simulator.norm(state)
-        return state 
-
-    @staticmethod
-    def simulate_widget(widget, *input_states):
-        cz_operations, local_cliffords, non_cliffords, measurements = OperationTest.widget_to_operations(widget) 
-        n_inputs = len(input_states) 
-        if n_inputs > widget.n_initial_qubits: 
-            raise Exception("More input states than inputs")
-
-        graph_state = local_simulator.kr(
-            *[local_simulator.plus_state] * widget.n_qubits,
-            *input_states)
-        higher_hilbert_space = local_simulator.kr(*[local_simulator.I] * len(input_states)) 
-
-        cz_operations = local_simulator.kr(cz_operations, higher_hilbert_space) 
-        local_cliffords = local_simulator.kr(local_cliffords, higher_hilbert_space)
-        non_cliffords = local_simulator.kr(non_cliffords, higher_hilbert_space) 
-        measurements = local_simulator.kr(measurements, higher_hilbert_space)
-
-        input_operations = local_simulator.inject_inputs(widget.n_qubits, n_inputs)
-
-        return local_simulator.norm(
-                measurements
-                @ non_cliffords
-                @ local_cliffords
-                @ input_operations
-                @ cz_operations
-                @ graph_state
-            )
-
-    @staticmethod
-    def widget_to_operations(widget):
-
-        initial_state = local_simulator.kr(*[local_simulator.plus_state] * widget.n_qubits) 
-        cz_operations = local_simulator.widget_to_cz(widget) 
-        local_cliffords = local_simulator.local_cliffords(widget)  
-        non_cliffords = local_simulator.non_clifford_rotations(widget)
-
-        measurements = local_simulator.measurement_schedule(widget) 
-
-        return cz_operations, local_cliffords, non_cliffords, measurements 
-
-
+    
     def test_hadamard(self):  
         '''
             Teleport one qubit then perform a Hadamard
@@ -83,8 +36,8 @@ class OperationTest(unittest.TestCase):
         assert json['local_cliffords'][1] == 'H'
 
         for _ in range(N_REPETITIONS):
-            input_state = self.state_prep(*list(np.random.random(2)))
-            widget_state = self.simulate_widget(wid, input_state)
+            input_state = local_simulator.state_prep(*list(np.random.random(2)))
+            widget_state = local_simulator.simulate_widget(wid, input_state)
        
             # Output should be the Hadamard of the input state on qubit 2
 
@@ -115,8 +68,8 @@ class OperationTest(unittest.TestCase):
 
         # Test state
         for _ in range(N_REPETITIONS):
-            input_state = self.state_prep(*list(np.random.random(2)))
-            widget_state = self.simulate_widget(wid, input_state)
+            input_state = local_simulator.state_prep(*list(np.random.random(2)))
+            widget_state = local_simulator.simulate_widget(wid, input_state)
        
             # Output should be the CNOT of the input state on qubits 2 and 3 
             zero_state = local_simulator.zero_state 
@@ -147,8 +100,8 @@ class OperationTest(unittest.TestCase):
 
         # Test state
         for _ in range(N_REPETITIONS):
-            input_state = self.state_prep(*list(np.random.random(2)))
-            widget_state = self.simulate_widget(wid, input_state)
+            input_state = local_simulator.state_prep(*list(np.random.random(2)))
+            widget_state = local_simulator.simulate_widget(wid, input_state)
        
             # Output should be the CNOT of the input state on qubits 2 and 3 
             zero_state = local_simulator.zero_state 
@@ -179,8 +132,8 @@ class OperationTest(unittest.TestCase):
 
         # Test state
         for _ in range(N_REPETITIONS):
-            input_state = self.state_prep(*list(np.random.random(2)))
-            widget_state = self.simulate_widget(wid, input_state)
+            input_state = local_simulator.state_prep(*list(np.random.random(2)))
+            widget_state = local_simulator.simulate_widget(wid, input_state)
        
             # Output should be the CNOT of the input state on qubits 2 and 3 
             zero_state = local_simulator.zero_state 
@@ -211,8 +164,8 @@ class OperationTest(unittest.TestCase):
 
         # Test state
         for _ in range(N_REPETITIONS):
-            input_state = self.state_prep(*list(np.random.random(2)))
-            widget_state = self.simulate_widget(wid, input_state)
+            input_state = local_simulator.state_prep(*list(np.random.random(2)))
+            widget_state = local_simulator.simulate_widget(wid, input_state)
        
             # Output should be the CNOT of the input state on qubits 2 and 3 
             zero_state = local_simulator.zero_state 
@@ -244,8 +197,8 @@ class OperationTest(unittest.TestCase):
 
         # Test state
         for _ in range(N_REPETITIONS):
-            input_state = self.state_prep(*list(np.random.random(2)))
-            widget_state = self.simulate_widget(wid, input_state)
+            input_state = local_simulator.state_prep(*list(np.random.random(2)))
+            widget_state = local_simulator.simulate_widget(wid, input_state)
        
             # Output should be a T gate acting on qubit 2  
             zero_state = local_simulator.zero_state 
@@ -277,8 +230,8 @@ class OperationTest(unittest.TestCase):
 
         # Test state
         for _ in range(N_REPETITIONS):
-            input_state = self.state_prep(*list(np.random.random(2)))
-            widget_state = self.simulate_widget(wid, input_state)
+            input_state = local_simulator.state_prep(*list(np.random.random(2)))
+            widget_state = local_simulator.simulate_widget(wid, input_state)
        
             # Output should be a T gate acting on qubit 2  
             zero_state = local_simulator.zero_state 

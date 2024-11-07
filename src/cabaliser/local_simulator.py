@@ -3,6 +3,55 @@ from numpy import array
 from functools import reduce, partial
 from itertools import chain
 
+def widget_to_operations(widget) -> tuple:
+    '''
+        Convertsa widget into a sequence of unitaries
+    '''
+    initial_state = kr(*[plus_state] * widget.n_qubits) 
+    cz_operations = widget_to_cz(widget) 
+    local_clifford_operations = local_cliffords(widget)  
+    non_clifford_operations = non_clifford_rotations(widget)
+
+    measurements = measurement_schedule(widget) 
+
+    return cz_operations, local_clifford_operations, non_clifford_operations, measurements
+
+def simulate_widget(widget, *input_states) -> np.array:
+    if len(input_states) == 0:
+        input_states = [state_prep(1, 0) for _ in widget.n_initial_qubits]            
+
+    cz_operations, local_cliffords, non_cliffords, measurements = widget_to_operations(widget) 
+    n_inputs = len(input_states) 
+    if n_inputs > widget.n_initial_qubits: 
+        raise Exception("More input states than inputs")
+
+    graph_state = kr(
+        *[plus_state] * widget.n_qubits,
+        *input_states)
+    higher_hilbert_space = kr(*[I] * len(input_states)) 
+
+    cz_operations = kr(cz_operations, higher_hilbert_space) 
+    local_cliffords = kr(local_cliffords, higher_hilbert_space)
+    non_cliffords = kr(non_cliffords, higher_hilbert_space) 
+    measurements = kr(measurements, higher_hilbert_space)
+
+    input_operations = inject_inputs(widget.n_qubits, n_inputs)
+
+    return norm(
+            measurements
+            @ non_cliffords
+            @ local_cliffords
+            @ input_operations
+            @ cz_operations
+            @ graph_state
+        )
+
+def state_prep(alpha, beta):
+    state = alpha * zero_state + beta * one_state
+    state = norm(state)
+    return state 
+
+
 def widget_to_cz(widget): 
     '''
         Turns an adjacencies object into a sequence of CZ operations
@@ -27,6 +76,9 @@ def widget_to_cz(widget):
     return op
 
 def non_clifford_rotations(widget, table=None): 
+    '''
+        Calculates the non-clifford rotations of a widget
+    '''
     if table is None:
         table = {0: I, 1: T} 
 
@@ -38,6 +90,9 @@ def non_clifford_rotations(widget, table=None):
     return ops
 
 def local_cliffords(widget):
+    '''
+        Calculates the local Clifford operations of a Widget
+    '''
     cliffords = {'I': I, 'H': H, 'S': S, 'Sd': Sdag}
     op = kr(*list( 
         cliffords[i] for i in widget.get_local_cliffords().to_list()
@@ -45,6 +100,9 @@ def local_cliffords(widget):
     return op 
 
 def measurement_schedule(widget):
+    '''
+        Implements the measurement schedule of a widget
+    '''
     op = kr(*[I] * widget.n_qubits)
     qubit_index = lambda i: next(iter(i))
     io = widget.get_io_map().to_list()
@@ -56,6 +114,9 @@ def measurement_schedule(widget):
     return op
 
 def inject_inputs(n_graph_qubits: int, n_inputs: int):
+    '''
+        Injects inputs into the widget
+    '''
     return (
         cleanup_inputs(n_graph_qubits, n_inputs)
         @ measure_inputs(n_graph_qubits, n_inputs)
@@ -63,6 +124,9 @@ def inject_inputs(n_graph_qubits: int, n_inputs: int):
         )
 
 def cz_inputs(n_graph_qubits: int, n_inputs: int):
+    '''
+        Performs a sequence of CZs to inject inputs
+    '''
     n_qubits = n_graph_qubits + n_inputs 
     return reduce(
         lambda a, b: a @ b,
@@ -71,6 +135,9 @@ def cz_inputs(n_graph_qubits: int, n_inputs: int):
         )
 
 def cleanup_inputs(n_graph_qubits: int, n_inputs: int):
+    '''
+        Hadamards the input qubits to return them to the 0 state
+    '''
     return kr(*[I] * n_graph_qubits, *[H] * n_inputs)
 
 def measure_inputs(n_graph_qubits: int, n_inputs: int):
@@ -82,25 +149,35 @@ def measure_inputs(n_graph_qubits: int, n_inputs: int):
     return reduce(lambda a, b: a @ b, (measure_x([i], n_qubits) for i in range(n_graph_qubits, n_qubits)), kr(*[I] * n_qubits)) 
 
 def kr(*args):
-     return reduce(np.kron, filter(lambda x: len(x) > 0, args))
+    '''
+        Kronnecker product
+    '''
+    return reduce(np.kron, filter(lambda x: len(x) > 0, args))
 
 def dop(x):
-     return np.kron(x, x.conjugate().transpose())
+    '''
+        Density Operator
+    '''
+    return np.kron(x, x.conjugate().transpose())
 
-def vec(x, non_zero=False, eps=5):
-     n_bits = int(np.ceil(np.log2(x.shape[0
+def vec(x, non_zero=False, eps=3):
+    n_bits = int(np.ceil(np.log2(x.shape[0
  ])))
-     for i, val in enumerate(x):
-         if non_zero or np.abs(val[0]) >= 10**(-1 * eps):
-             idx = bin(i)[2:].zfill(n_bits)
-             print("{}|{}>".format(np.round(val
+    for i, val in enumerate(x):
+        if non_zero or np.abs(val[0]) >= 10**(-1 * eps):
+            idx = bin(i)[2:].zfill(n_bits)
+            print("{}|{}>".format(np.round(val
  , 3), idx))
 
 def norm(x, eps=15):
-     return np.round(x * sum(map(lambda i: np.abs(i ** 2), x)) ** -0.5, eps)
+    '''
+        Normalises a vector
+    '''
+    return np.round(x * sum(map(lambda i: np.abs(i ** 2), x)) ** -0.5, eps)
 
-def consume(*args):
-    return reduce(lambda a, b: a @ b, args[::-1]) 
+'''
+    Begin Operator and State definitions 
+'''
 
 I = np.eye(2)
 
@@ -111,7 +188,6 @@ Y = array([[ 0.+0.j, -0.-1.j],
 Z = array([[ 1,  0],
       [ 0, -1]])
 
-
 PAULIS = [I, X, Y, Z]
 
 H = 2 ** -0.5 * array([[ 1,  1],
@@ -120,7 +196,6 @@ H = 2 ** -0.5 * array([[ 1,  1],
 S = array([[ 1,  0],
       [ 0, 1j]])
 Sdag = Z @ S
-
 
 T = np.eye(2, dtype=np.complex64)
 T[1][1] = 2 ** -0.5 *(1 + 1j) 
@@ -169,6 +244,7 @@ states = {
     '|1>':d,
     '|+>':p,
     '|->':m,
+    '|Y>':S @ p,
     '|S>':S @ p,
     '|T>':T @ p
 }
@@ -189,10 +265,8 @@ def state_string(*args):
         ))
     ))) 
 
-
 def _CNOT(n_qubits=2, ctrl=0, targ=1):
   return two_qubit_gate(CNOT_mat, n_qubits, ctrl, targ)      
-
 
 def commuting_gate(gate, ctrl, *args, n_qubits=3):
     return reduce(lambda x, y: x @ y, map(partial(gate, n_qubits, ctrl), args))
@@ -204,7 +278,6 @@ def CS(n_qubits=2, ctrl=0, targ=1):
   CS_mat = np.eye(4, dtype=np.complex128)
   CS_mat[2:, 2:] = S
   return two_qubit_gate(CS_mat, n_qubits, ctrl, targ)      
-
 
 def CXX(n_qubits, ctrl, *targs):
     return commuting_gate(_CNOT, ctrl, *targs, n_qubits=n_qubits)
@@ -235,6 +308,9 @@ def n_qubit_gate(gate, n_qubits, n_qubits_gate, *args):
     return swap_mat.transpose() @ mat @ swap_mat
 
 def two_qubit_gate(gate, n_qubits, ctrl, targ):
+    '''
+        Constructs an arbitrary two qubit gate via swaps
+    '''
     mat = kr(gate, *([I] * (n_qubits - 2)))
     targ_curr = targ 
     swap_mat = kr(*([I] * n_qubits))
@@ -262,6 +338,9 @@ def two_qubit_gate(gate, n_qubits, ctrl, targ):
 
 CNOT_r = _CNOT(ctrl=1, targ=0)
 
+'''
+    Measurement operations
+'''
 _MEASUREMENT = lambda measurement_operator: lambda measurement_targets, n_qubits: kr(*([I, measurement_operator][i in measurement_targets] for i in range(n_qubits)))
 
 measure_x = _MEASUREMENT(dop(x_u))
