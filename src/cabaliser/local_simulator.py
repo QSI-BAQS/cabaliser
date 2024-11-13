@@ -299,8 +299,6 @@ def CXX(n_qubits, ctrl, *targs):
 
 # CNOT is equivalent to CXX 
 CNOT = CXX
-# Reverse CNOT
-CNOT_r = _CNOT(ctrl=1, targ=0)
 
 def CZ(n_qubits, ctrl, *targs):
     '''
@@ -369,6 +367,9 @@ def two_qubit_gate(gate, n_qubits, ctrl, targ):
                          *([I] * (n_qubits - swap_idx[1] - 1))
                     ) @ swap_mat)
     return swap_mat.transpose() @ mat @ swap_mat
+
+# Reverse CNOT
+CNOT_r = _CNOT(ctrl=1, targ=0)
 
 
 '''
