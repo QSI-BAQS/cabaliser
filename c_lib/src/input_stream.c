@@ -108,7 +108,6 @@ void __inline_rz_gate(
     return;
 }
 
-
 // Table of indirections  
 void (*instruction_switch[N_INSTRUCTION_TYPES])(widget_t*, void*) = {
         (void (*)(widget_t*, void*))NULL, // 0x00
@@ -143,6 +142,50 @@ void parse_instruction_block(
     }
     return;
 }
+
+
+/*
+ * conditional_pauli 
+ * Implements an rz gate as a terminating operation
+ * :: wid : widget_t* :: The widget in question 
+ * :: inst : rz_instruction* :: The rz instruction indicating an angle 
+ * Teleports an RZ operation, allocating a new qubit in the process
+ * Compilation fails if the number of qubits exceeds some maximum 
+ */
+static inline
+void __inline_conditional_pauli(
+    widget_t* wid,
+    struct conditional_pauli* inst) 
+{
+    
+    // This could be handled with a better return
+    assert(wid->n_qubits < wid->max_qubits);
+
+    const size_t ctrl = WMAP_LOOKUP(wid, inst->arg);
+    const size_t targ = wid->n_qubits; 
+
+    wid->queue->non_cliffords[ctrl] = inst->tag;
+    wid->q_map[inst->arg] = wid->n_qubits;
+
+    SINGLE_QUBIT_OPERATIONS[wid->queue->table[ctrl] & INSTRUCTION_OPERATOR_MASK](wid->tableau, ctrl);
+    wid->queue->table[ctrl] = _I_;
+
+    SINGLE_QUBIT_OPERATIONS[wid->queue->table[targ] & INSTRUCTION_OPERATOR_MASK](wid->tableau, targ);
+    wid->queue->table[targ] = _I_;
+
+    tableau_CNOT(wid->tableau, ctrl, targ);
+
+    // Propagate tracked Pauli corrections 
+    pauli_track_z(wid->pauli_tracker, ctrl, targ);
+
+    // Number of qubits increases by one
+    wid->n_qubits += 1;  
+
+    return;
+}
+
+
+
 
 /*
  * teleport_input
