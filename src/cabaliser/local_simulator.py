@@ -6,14 +6,27 @@ from numpy import array
 
 def widget_to_operations(widget, table=None) -> tuple:
     '''
-        Convertsa widget into a sequence of unitaries
+        Converts a widget into a sequence of unitaries
     '''
     initial_state = kr(*[plus_state] * widget.n_qubits)
     cz_operations = widget_to_cz(widget)
-    local_clifford_operations = local_cliffords(widget)
-    non_clifford_operations = non_clifford_rotations(widget, table=table)
+    local_clifford_operations = widget_to_local_cliffords(widget)
+    non_clifford_operations = widget_to_non_clifford_rotations(widget, table=table)
 
-    measurements = measurement_schedule(widget)
+    measurements = widget_to_measurement_schedule(widget)
+
+    return cz_operations, local_clifford_operations, non_clifford_operations, measurements
+
+def dict_to_operations(obj, table=None) -> tuple:
+    '''
+        Converts a dictionary into a sequence of unitaries
+    '''
+    initial_state = kr(*[plus_state] * obj['n_qubits'])
+    cz_operations = dict_to_cz(obj)
+    local_clifford_operations = dict_to_local_cliffords(obj)
+    non_clifford_operations = dict_to_non_clifford_rotations(obj, table=table)
+
+    measurements = dict_to_measurement_schedule(obj)
 
     return cz_operations, local_clifford_operations, non_clifford_operations, measurements
 
@@ -47,6 +60,40 @@ def simulate_widget(widget, *input_states, table=None) -> np.array:
             @ graph_state
         )
 
+def simulate_dict_as_widget(obj, *input_states, table=None) -> np.array:
+    if len(input_states) == 0:
+        input_states = [state_prep(1, 0) for _ in range(len(obj['statenodes']))]
+
+    n_qubits = obj['n_qubits']
+
+    cz_operations, local_cliffords, non_cliffords, measurements = dict_to_operations(obj, table=table)
+    n_inputs = len(input_states)
+    if n_inputs > len(input_states):
+        raise Exception("More input states than inputs")
+
+    graph_state = kr(
+        *[plus_state] * n_qubits,
+        *input_states)
+    higher_hilbert_space = kr(*[I] * len(input_states))
+
+    cz_operations = kr(cz_operations, higher_hilbert_space)
+    local_cliffords = kr(local_cliffords, higher_hilbert_space)
+    non_cliffords = kr(non_cliffords, higher_hilbert_space)
+    measurements = kr(measurements, higher_hilbert_space)
+
+    input_operations = inject_inputs(n_qubits, n_inputs)
+
+    return norm(
+            measurements
+            @ non_cliffords
+            @ local_cliffords
+            @ input_operations
+            @ cz_operations
+            @ graph_state
+        )
+
+
+
 def state_prep(alpha, beta):
     '''
         Simple state prep helper function
@@ -79,7 +126,25 @@ def widget_to_cz(widget):
                  ) @ op
     return op
 
-def non_clifford_rotations(widget, table=None):
+def dict_to_cz(obj):
+    '''
+        Turns a dictionary object into a sequence of CZ operations
+    '''
+    n_qubits = obj['n_qubits']
+    op = kr(*[I] * n_qubits)
+
+    for qubit_index, adjacencies in obj['adjacencies'].items():  
+        targets = list(filter(lambda x: x > qubit_index, adjacencies))
+        if len(targets) > 0:
+            op = CZZ(
+                    n_qubits,
+                    qubit_index,
+                    *targets
+                 ) @ op
+    return op
+
+
+def widget_to_non_clifford_rotations(widget, table=None):
     '''
         Calculates the non-clifford rotations of a widget
     '''
@@ -93,7 +158,22 @@ def non_clifford_rotations(widget, table=None):
     )
     return ops
 
-def local_cliffords(widget):
+def dict_to_non_clifford_rotations(obj, table=None):
+    '''
+        Calculates the non-clifford rotations of a widget
+    '''
+    if table is None:
+        table = {0: I, 1: T}
+
+    ops = kr(
+            *list(
+                table[tag] for tag in obj['measurement_tags']
+            )
+    )
+    return ops
+
+
+def widget_to_local_cliffords(widget):
     '''
         Calculates the local Clifford operations of a Widget
     '''
@@ -103,7 +183,18 @@ def local_cliffords(widget):
         ))
     return op
 
-def measurement_schedule(widget):
+def dict_to_local_cliffords(obj):
+    '''
+        Calculates the local Clifford operations of a Widget
+    '''
+    cliffords = {'I': I, 'H': H, 'S': S, 'Sd': Sdag}
+    op = kr(*list(
+        cliffords[i] for i in obj['local_cliffords']
+        ))
+    return op
+
+
+def widget_to_measurement_schedule(widget):
     '''
         Implements the measurement schedule of a widget
     '''
@@ -116,6 +207,19 @@ def measurement_schedule(widget):
                 op = measure_x([targ], widget.n_qubits) @ op
                 op = kr(*[I] * targ, H, *[I] * (widget.n_qubits - 1 - targ)) @ op
     return op
+
+def dict_to_measurement_schedule(obj):
+    n_qubits = obj['n_qubits']
+    op = kr(*[I] * n_qubits)
+    qubit_index = lambda i: next(iter(i))
+    io = obj['outputnodes'] 
+    for layer in obj['consumptionschedule']:
+        for targ in map(qubit_index, layer):
+            if targ not in io: # Don't measure outputs
+                op = measure_x([targ], n_qubits) @ op
+                op = kr(*[I] * targ, H, *[I] * (n_qubits - 1 - targ)) @ op
+    return op
+
 
 def inject_inputs(n_graph_qubits: int, n_inputs: int):
     '''
