@@ -338,7 +338,6 @@ class OperationTest(unittest.TestCase):
             assert (np.abs(effective_state - widget_state) < EPS).all()
 
 
-
 if __name__ == '__main__':
     #tst = OperationTest() 
     #tst.test_output_only()
