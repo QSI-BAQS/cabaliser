@@ -30,19 +30,52 @@ def dict_to_operations(obj, table=None) -> tuple:
 
     return cz_operations, local_clifford_operations, non_clifford_operations, measurements
 
-def simulate_widget(widget, *input_states, table=None) -> np.array:
-    if len(input_states) == 0:
-        input_states = [state_prep(1, 0) for _ in range(widget.n_initial_qubits)]
+
+def trace_indices(wid): 
+    '''
+        Gets the indicies to trace over given a widget
+    '''
+    widget_qubits = wid.n_qubits
+    io = tuple(map(
+            lambda x: wid.n_qubits - x ,
+            wid.get_io_map().to_list()[::-1]
+        ))
+    return io
+
+def dict_to_trace_indices(self, obj): 
+    '''
+        Gets the indicies to trace over given a widget
+    '''
+    n_qubits = obj['n_qubits']
+    io = tuple(map(
+            lambda x: n_qubits - x ,
+            obj['outputnodes'][::-1]
+        ))
+    return io
+
+def simulate_widget(widget, *input_states, input_state=None, table=None, output_only=False) -> np.array:
+
+    if input_state is None:
+        n_inputs = len(input_states)
+
+        if n_inputs > widget.n_initial_qubits:
+            raise Exception("More input states than inputs")
+
+        if n_inputs == 0:
+            n_inputs = widget.n_initial_qubits
+            input_states = [state_prep(1, 0) for _ in range(widget.n_initial_qubits)]
+        graph_state = kr(
+            *[plus_state] * widget.n_qubits,
+            *input_states)
+    else:
+        n_inputs = widget.n_initial_qubits
+        graph_state = kr(
+            *[plus_state] * widget.n_qubits,
+            input_state)
+
+    higher_hilbert_space = kr(*[I] * n_inputs)
 
     cz_operations, local_cliffords, non_cliffords, measurements = widget_to_operations(widget, table=table)
-    n_inputs = len(input_states)
-    if n_inputs > widget.n_initial_qubits:
-        raise Exception("More input states than inputs")
-
-    graph_state = kr(
-        *[plus_state] * widget.n_qubits,
-        *input_states)
-    higher_hilbert_space = kr(*[I] * len(input_states))
 
     cz_operations = kr(cz_operations, higher_hilbert_space)
     local_cliffords = kr(local_cliffords, higher_hilbert_space)
@@ -51,14 +84,20 @@ def simulate_widget(widget, *input_states, table=None) -> np.array:
 
     input_operations = inject_inputs(widget.n_qubits, n_inputs)
 
-    return norm(
-            measurements
-            @ non_cliffords
-            @ local_cliffords
-            @ input_operations
-            @ cz_operations
-            @ graph_state
-        )
+    state = norm(
+                measurements
+                @ non_cliffords
+                @ local_cliffords
+                @ input_operations
+                @ cz_operations
+                @ graph_state
+            )
+
+    if not output_only:
+        return state 
+    else: # Trace out unneeded qubits 
+        state = ptrace(state, *trace_indices(widget)) 
+        return state
 
 def simulate_dict_as_widget(obj, *input_states, table=None) -> np.array:
     if len(input_states) == 0:
@@ -262,6 +301,43 @@ def kr(*args):
     '''
     return reduce(np.kron, filter(lambda x: len(x) > 0, args))
 
+
+def ptrace(vec, *args):
+    '''
+        Traces out elements except those listed
+        As the rest of the widget decomposition sets all other states to |0> 
+        This is the trivial case of the function and we shouldn't need to normalise 
+    '''
+    n_qubits = int(np.log2(vec.shape[0]))
+    target_vec = np.zeros((2 ** len(args), 1), dtype=np.complex128)
+
+    # Index ordering is reversed 
+    mask = reduce(
+        lambda x, y: 1 << y | x,
+        args,
+        0)
+
+    def idx_transform(index):  
+        masked = index & mask        
+        target = 0
+        for position, elem in enumerate(args):
+            target |= (
+                    int(
+                        not not(1 << elem) 
+                        & masked
+                    ) << position
+                )
+        return target
+
+    for idx, val in zip(
+            map(
+                idx_transform,
+                range(len(vec))
+            ),
+            vec): 
+        target_vec[idx] += val
+    return target_vec
+
 def dop(x):
     '''
         Density Operator
@@ -334,7 +410,7 @@ toff_mat = np.eye(8)
 toff_mat[6:,6:] = X
 
 u = array([[1],
-       [0]])
+       [0]], dtype=np.complex128)
 zero_state = u
 d = X @ u
 one_state = d

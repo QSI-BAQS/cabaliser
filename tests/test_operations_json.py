@@ -6,10 +6,17 @@ from cabaliser.operation_sequence import OperationSequence
 from cabaliser.widget import Widget
 from cabaliser import local_simulator 
 
-EPS = 1e-8
+EPS = 1e-7
 N_REPETITIONS = 100
 class OperationTest(unittest.TestCase):
 
+    def trace_indices(self, wid): 
+        widget_qubits = wid.n_qubits
+        io = tuple(map(
+                lambda x: wid.n_qubits - x ,
+                wid.get_io_map().to_list()[::-1]
+            ))
+        return io
     
     def test_hadamard(self):  
         '''
@@ -46,8 +53,10 @@ class OperationTest(unittest.TestCase):
                 local_simulator.H @ input_state
             )
             embedded_state = local_simulator.kr(zero_state, effective_state, zero_state) 
-        
-            assert (embedded_state - widget_state < EPS).all()
+            traced_state = local_simulator.ptrace(widget_state, *local_simulator.trace_indices(wid))
+                                                                                              
+            assert (np.abs(embedded_state - widget_state) < EPS).all()
+            assert (np.abs(traced_state - effective_state) < EPS).all()                              
 
     def test_cnot(self):  
         '''
@@ -80,8 +89,11 @@ class OperationTest(unittest.TestCase):
                 @ local_simulator.kr(input_state, zero_state) 
             )
             embedded_state = local_simulator.kr(zero_state, zero_state, effective_state, zero_state) 
-           
-            assert ((embedded_state - widget_state) < EPS).all()
+            traced_state = local_simulator.ptrace(widget_state, *local_simulator.trace_indices(wid))
+
+            assert (np.abs(embedded_state - widget_state) < EPS).all()
+            assert (np.abs(traced_state - effective_state) < EPS).all()
+
 
     def test_cz(self):  
         '''
@@ -106,16 +118,17 @@ class OperationTest(unittest.TestCase):
             input_state = local_simulator.state_prep(*list(np.random.random(2)))
             widget_state = local_simulator.simulate_dict_as_widget(json, input_state)
        
-            # Output should be the CNOT of the input state on qubits 2 and 3 
             zero_state = local_simulator.zero_state 
             effective_state = (
                 local_simulator.CZ(n_qubits, 0, 1)
                 @ local_simulator.kr(input_state, zero_state) 
             )
             embedded_state = local_simulator.kr(zero_state, zero_state, effective_state, zero_state) 
-           
-            assert ((embedded_state - widget_state) < EPS).all()
+            traced_state = local_simulator.ptrace(widget_state, *local_simulator.trace_indices(wid))
 
+            assert (np.abs(embedded_state - widget_state) < EPS).all()
+            assert (np.abs(traced_state - effective_state) < EPS).all()
+ 
     def test_phase(self):  
         '''
             Teleport one qubit then perform a Hadamard
@@ -146,19 +159,22 @@ class OperationTest(unittest.TestCase):
                 @ local_simulator.kr(input_state, zero_state) 
             )
             embedded_state = local_simulator.kr(zero_state, zero_state, effective_state, zero_state) 
-            assert ((embedded_state - widget_state) < EPS).all()
+            traced_state = local_simulator.ptrace(widget_state, *local_simulator.trace_indices(wid))
+
+            assert (np.abs(embedded_state - widget_state) < EPS).all()
+            assert (np.abs(traced_state - effective_state) < EPS).all()
    
 
     def test_phase_dag(self):  
         '''
-            Teleport one qubit then perform a Hadamard
+            Phase gate on one qubit            
         '''
 
         n_qubits = 2
         max_qubits = 10
         wid = Widget(n_qubits, max_qubits)
     
-        operations = [(gates.S, [0])] 
+        operations = [(gates.Sd, [0])] 
         ops = OperationSequence(len(operations))
         for opcode, args in operations: 
             ops.append(opcode, *args)
@@ -179,7 +195,10 @@ class OperationTest(unittest.TestCase):
                 @ local_simulator.kr(input_state, zero_state) 
             )
             embedded_state = local_simulator.kr(zero_state, zero_state, effective_state, zero_state) 
-            assert ((embedded_state - widget_state) < EPS).all()
+            traced_state = local_simulator.ptrace(widget_state, *local_simulator.trace_indices(wid))
+
+            assert (np.abs(embedded_state - widget_state) < EPS).all()
+            assert (np.abs(traced_state - effective_state) < EPS).all()
 
 
     def test_rz_no_rotation(self):  
@@ -211,8 +230,10 @@ class OperationTest(unittest.TestCase):
                 local_simulator.kr(local_simulator.zero_state, input_state) 
             )
             embedded_state = local_simulator.kr(zero_state, effective_state, zero_state) 
+            traced_state = local_simulator.ptrace(widget_state, *local_simulator.trace_indices(wid))
 
-            assert ((embedded_state - widget_state) < EPS).all()
+            assert (np.abs(embedded_state - widget_state) < EPS).all()
+            assert (np.abs(traced_state - local_simulator.ptrace(effective_state, 0)) < EPS).all()
 
 
     def test_rz(self):  
@@ -245,9 +266,80 @@ class OperationTest(unittest.TestCase):
                 @ local_simulator.kr(local_simulator.zero_state, input_state) 
             )
             embedded_state = local_simulator.kr(zero_state, effective_state, zero_state) 
+            traced_state = local_simulator.ptrace(widget_state, *local_simulator.trace_indices(wid))
 
-            assert ((embedded_state - widget_state) < EPS).all()
+            assert (np.abs(embedded_state - widget_state) < EPS).all()
+            assert (np.abs(traced_state - local_simulator.ptrace(effective_state, 0)) < EPS).all()
+
+
+    def test_output_only(self):  
+        '''
+            RZ gate triggering a teleport
+        '''
+
+        n_qubits = 1
+        T = 1
+        max_qubits = 10
+        wid = Widget(n_qubits, max_qubits)
+    
+        operations = [(gates.RZ, [0, T])] 
+        ops = OperationSequence(len(operations))
+        for opcode, args in operations: 
+            ops.append(opcode, *args)
+
+        wid(ops) 
+        wid.decompose()
+
+        # Test state
+        for _ in range(N_REPETITIONS):
+            input_state = local_simulator.state_prep(*list(np.random.random(2)))
+            widget_state = local_simulator.simulate_widget(wid, input_state, output_only=True)
+       
+            # Output should be a T gate acting on a qubit  
+            effective_state = (
+                local_simulator.T @ input_state
+            )
+            assert (np.abs(effective_state - widget_state) < EPS).all()
+
+    def test_feed_forward(self):  
+        '''
+            Apply the widget to the output of another widget
+        '''
+
+        n_qubits = 1
+        T = 1
+        max_qubits = 10
+        wid = Widget(n_qubits, max_qubits)
+    
+        operations = [(gates.RZ, [0, T])] 
+        ops = OperationSequence(len(operations))
+        for opcode, args in operations: 
+            ops.append(opcode, *args)
+
+        wid(ops) 
+        wid.decompose()
+
+        # Test state
+        for _ in range(N_REPETITIONS):
+            input_state = local_simulator.state_prep(*list(np.random.random(2)))
+            widget_state = local_simulator.simulate_widget(wid, input_state, output_only=True)
+       
+            # Output should be a T gate acting on a qubit  
+            effective_state = (
+                local_simulator.T @ input_state
+            )
+            assert (np.abs(effective_state - widget_state) < EPS).all()
+
+            widget_state = local_simulator.simulate_widget(wid, input_state=widget_state, output_only=True)
+            # Output should be a S gate acting on a qubit  
+            effective_state = (
+                local_simulator.S @ input_state
+            )
+            assert (np.abs(effective_state - widget_state) < EPS).all()
+
 
 
 if __name__ == '__main__':
+    #tst = OperationTest() 
+    #tst.test_output_only()
     unittest.main()
