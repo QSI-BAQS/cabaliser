@@ -31,16 +31,30 @@ def dict_to_operations(obj, table=None) -> tuple:
     return cz_operations, local_clifford_operations, non_clifford_operations, measurements
 
 
-def trace_indices(wid): 
+def trace_out_graph(wid, widget_state): 
     '''
         Gets the indicies to trace over given a widget
     '''
-    widget_qubits = wid.n_qubits
+    n_input_qubits = wid.get_n_initial_qubits() 
+    n_qubits = n_input_qubits + wid.n_qubits
     io = tuple(map(
-            lambda x: wid.n_qubits - x ,
+            lambda x: n_qubits - 1 - (x + n_input_qubits),
             wid.get_io_map().to_list()[::-1]
         ))
-    return io
+    return ptrace(widget_state, *io) 
+
+
+def trace_out_graph_from_dict(obj, widget_state): 
+    '''
+        Gets the indicies to trace over given a widget
+    '''
+    n_input_qubits = len(obj['statenodes']) 
+    n_qubits = n_input_qubits + obj['n_qubits'] 
+    io = tuple(map(
+            lambda x: n_qubits - 1 - (x + n_input_qubits),
+            obj['outputnodes'][::-1]
+        ))
+    return ptrace(widget_state, *io) 
 
 def dict_to_trace_indices(self, obj): 
     '''
@@ -53,7 +67,7 @@ def dict_to_trace_indices(self, obj):
         ))
     return io
 
-def simulate_widget(widget, *input_states, input_state=None, table=None, output_only=False) -> np.array:
+def simulate_widget(widget, *input_states, input_state=None, table=None, trace_graph=True) -> np.array:
 
     if input_state is None:
         n_inputs = len(input_states)
@@ -65,22 +79,24 @@ def simulate_widget(widget, *input_states, input_state=None, table=None, output_
             n_inputs = widget.n_initial_qubits
             input_states = [state_prep(1, 0) for _ in range(widget.n_initial_qubits)]
         graph_state = kr(
-            *[plus_state] * widget.n_qubits,
-            *input_states)
+            *input_states,
+            *[plus_state] * widget.n_qubits
+        )
     else:
         n_inputs = widget.n_initial_qubits
         graph_state = kr(
-            *[plus_state] * widget.n_qubits,
-            input_state)
+            input_state,
+            *[plus_state] * widget.n_qubits
+        )
 
     higher_hilbert_space = kr(*[I] * n_inputs)
 
     cz_operations, local_cliffords, non_cliffords, measurements = widget_to_operations(widget, table=table)
 
-    cz_operations = kr(cz_operations, higher_hilbert_space)
-    local_cliffords = kr(local_cliffords, higher_hilbert_space)
-    non_cliffords = kr(non_cliffords, higher_hilbert_space)
-    measurements = kr(measurements, higher_hilbert_space)
+    cz_operations = kr(higher_hilbert_space, cz_operations)
+    local_cliffords = kr(higher_hilbert_space, local_cliffords)
+    non_cliffords = kr(higher_hilbert_space, non_cliffords)
+    measurements = kr(higher_hilbert_space, measurements)
 
     input_operations = inject_inputs(widget.n_qubits, n_inputs)
 
@@ -93,45 +109,62 @@ def simulate_widget(widget, *input_states, input_state=None, table=None, output_
                 @ graph_state
             )
 
-    if not output_only:
+    if not trace_graph:
         return state 
     else: # Trace out unneeded qubits 
-        state = ptrace(state, *trace_indices(widget)) 
+        state = trace_out_graph(widget, state) 
         return state
 
-def simulate_dict_as_widget(obj, *input_states, table=None) -> np.array:
-    if len(input_states) == 0:
-        input_states = [state_prep(1, 0) for _ in range(len(obj['statenodes']))]
 
+
+def simulate_dict_as_widget(obj,
+        *input_states,
+        input_state=None,
+        table=None,
+        trace_graph=True) -> np.array:
+
+    n_inputs = len(obj['statenodes'])  
     n_qubits = obj['n_qubits']
+    if input_state is None:
+        if len(input_states) > n_inputs:
+            raise Exception("More input states than inputs")
+        if len(input_states) == 0:
+            input_states = [state_prep(1, 0) for _ in range(widget.n_initial_qubits)]
+        graph_state = kr(
+            *input_states,
+            *[plus_state] * n_qubits
+        )
+    else:
+        graph_state = kr(
+            input_state,
+            *[plus_state] * n_qubits
+        )
+
+    higher_hilbert_space = kr(*[I] * n_inputs)
 
     cz_operations, local_cliffords, non_cliffords, measurements = dict_to_operations(obj, table=table)
-    n_inputs = len(input_states)
-    if n_inputs > len(input_states):
-        raise Exception("More input states than inputs")
 
-    graph_state = kr(
-        *[plus_state] * n_qubits,
-        *input_states)
-    higher_hilbert_space = kr(*[I] * len(input_states))
-
-    cz_operations = kr(cz_operations, higher_hilbert_space)
-    local_cliffords = kr(local_cliffords, higher_hilbert_space)
-    non_cliffords = kr(non_cliffords, higher_hilbert_space)
-    measurements = kr(measurements, higher_hilbert_space)
+    cz_operations = kr(higher_hilbert_space, cz_operations)
+    local_cliffords = kr(higher_hilbert_space, local_cliffords)
+    non_cliffords = kr(higher_hilbert_space, non_cliffords)
+    measurements = kr(higher_hilbert_space, measurements)
 
     input_operations = inject_inputs(n_qubits, n_inputs)
 
-    return norm(
-            measurements
-            @ non_cliffords
-            @ local_cliffords
-            @ input_operations
-            @ cz_operations
-            @ graph_state
-        )
+    state = norm(
+                measurements
+                @ non_cliffords
+                @ local_cliffords
+                @ input_operations
+                @ cz_operations
+                @ graph_state
+            )
 
-
+    if not trace_graph:
+        return state 
+    else: # Trace out unneeded qubits 
+        state = trace_out_graph_from_dict(obj, state) 
+        return state
 
 def state_prep(alpha, beta):
     '''
@@ -277,7 +310,7 @@ def cz_inputs(n_graph_qubits: int, n_inputs: int):
     n_qubits = n_graph_qubits + n_inputs
     return reduce(
         lambda a, b: a @ b,
-        (CZ(n_qubits, i, i + n_graph_qubits) for i in range(n_inputs)),
+        (CZ(n_qubits, i, i + n_inputs) for i in range(n_inputs)),
         kr(*[I] * n_qubits)
         )
 
@@ -285,7 +318,7 @@ def cleanup_inputs(n_graph_qubits: int, n_inputs: int):
     '''
         Hadamards the input qubits to return them to the 0 state
     '''
-    return kr(*[I] * n_graph_qubits, *[H] * n_inputs)
+    return kr(*[H] * n_inputs, *[I] * n_graph_qubits)
 
 def measure_inputs(n_graph_qubits: int, n_inputs: int):
     '''
@@ -293,7 +326,11 @@ def measure_inputs(n_graph_qubits: int, n_inputs: int):
     '''
     n_qubits = n_graph_qubits + n_inputs
 
-    return reduce(lambda a, b: a @ b, (measure_x([i], n_qubits) for i in range(n_graph_qubits, n_qubits)), kr(*[I] * n_qubits))
+    return reduce(
+        lambda a, b: a @ b, 
+        (measure_x([i], n_qubits) for i in range(n_inputs)),
+        kr(*[I] * n_qubits)
+    )
 
 def kr(*args):
     '''
@@ -313,7 +350,7 @@ def ptrace(vec, *args):
 
     # Index ordering is reversed 
     mask = reduce(
-        lambda x, y: 1 << y | x,
+        lambda x, y: (1 << y) | x,
         args,
         0)
 
