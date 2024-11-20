@@ -65,10 +65,9 @@ json_widget_state = local_simulator.simulate_dict_as_widget(
     input_state=input_state,
     table=table)
 
-print("Simulated state from circuit")
 ctrl_a = 0
 ctrl_b = 1
-local_simulator.vec(
+operation = (
     local_simulator.kr(
         local_simulator.I, 
         local_simulator.H)
@@ -80,11 +79,38 @@ local_simulator.vec(
     @ local_simulator.kr(
         local_simulator.I,
         local_simulator.Tdag)
-    @ input_state
 )
+
+
+print("Simulated state from circuit")
+local_simulator.vec(operation @ input_state)
 
 print("Simulated state from widget")
 local_simulator.vec(widget_state)
 
 print("Simulated state from json")
 local_simulator.vec(json_widget_state)
+
+
+print("Second operation of widget") 
+
+widget_state = local_simulator.simulate_widget(
+    wid,
+    input_state=widget_state,
+    table=table)
+
+json_widget_state = local_simulator.simulate_dict_as_widget(
+    json,
+    input_state=json_widget_state,
+    table=table)
+
+print("Simulated state from circuit")
+local_simulator.vec(operation @ operation @ input_state)
+
+print("Simulated state from widget")
+local_simulator.vec(widget_state)
+
+print("Simulated state from json")
+local_simulator.vec(json_widget_state)
+
+
