@@ -31,32 +31,32 @@ def dict_to_operations(obj, table=None) -> tuple:
     return cz_operations, local_clifford_operations, non_clifford_operations, measurements
 
 
-def trace_out_graph(wid, widget_state): 
+def trace_out_graph(wid, widget_state):
     '''
         Gets the indicies to trace over given a widget
     '''
-    n_input_qubits = wid.get_n_initial_qubits() 
+    n_input_qubits = wid.get_n_initial_qubits()
     n_qubits = n_input_qubits + wid.n_qubits
     io = tuple(map(
             lambda x: n_qubits - 1 - (x + n_input_qubits),
             wid.get_io_map().to_list()[::-1]
         ))
-    return ptrace(widget_state, *io) 
+    return ptrace(widget_state, *io)
 
 
-def trace_out_graph_from_dict(obj, widget_state): 
+def trace_out_graph_from_dict(obj, widget_state):
     '''
         Gets the indicies to trace over given a widget
     '''
-    n_input_qubits = len(obj['statenodes']) 
-    n_qubits = n_input_qubits + obj['n_qubits'] 
+    n_input_qubits = len(obj['statenodes'])
+    n_qubits = n_input_qubits + obj['n_qubits']
     io = tuple(map(
             lambda x: n_qubits - 1 - (x + n_input_qubits),
             obj['outputnodes'][::-1]
         ))
-    return ptrace(widget_state, *io) 
+    return ptrace(widget_state, *io)
 
-def dict_to_trace_indices(self, obj): 
+def dict_to_trace_indices(self, obj):
     '''
         Gets the indicies to trace over given a widget
     '''
@@ -110,9 +110,9 @@ def simulate_widget(widget, *input_states, input_state=None, table=None, trace_g
             )
 
     if not trace_graph:
-        return state 
-    else: # Trace out unneeded qubits 
-        state = trace_out_graph(widget, state) 
+        return state
+    else: # Trace out unneeded qubits
+        state = trace_out_graph(widget, state)
         return state
 
 
@@ -123,7 +123,7 @@ def simulate_dict_as_widget(obj,
         table=None,
         trace_graph=True) -> np.array:
 
-    n_inputs = len(obj['statenodes'])  
+    n_inputs = len(obj['statenodes'])
     n_qubits = obj['n_qubits']
     if input_state is None:
         if len(input_states) > n_inputs:
@@ -161,9 +161,9 @@ def simulate_dict_as_widget(obj,
             )
 
     if not trace_graph:
-        return state 
-    else: # Trace out unneeded qubits 
-        state = trace_out_graph_from_dict(obj, state) 
+        return state
+    else: # Trace out unneeded qubits
+        state = trace_out_graph_from_dict(obj, state)
         return state
 
 def state_prep(alpha, beta):
@@ -205,7 +205,7 @@ def dict_to_cz(obj):
     n_qubits = obj['n_qubits']
     op = kr(*[I] * n_qubits)
 
-    for qubit_index, adjacencies in obj['adjacencies'].items():  
+    for qubit_index, adjacencies in obj['adjacencies'].items():
         targets = list(filter(lambda x: x > qubit_index, adjacencies))
         if len(targets) > 0:
             op = CZZ(
@@ -284,7 +284,7 @@ def dict_to_measurement_schedule(obj):
     n_qubits = obj['n_qubits']
     op = kr(*[I] * n_qubits)
     qubit_index = lambda i: next(iter(i))
-    io = obj['outputnodes'] 
+    io = obj['outputnodes']
     for layer in obj['consumptionschedule']:
         for targ in map(qubit_index, layer):
             if targ not in io: # Don't measure outputs
@@ -327,7 +327,7 @@ def measure_inputs(n_graph_qubits: int, n_inputs: int):
     n_qubits = n_graph_qubits + n_inputs
 
     return reduce(
-        lambda a, b: a @ b, 
+        lambda a, b: a @ b,
         (measure_x([i], n_qubits) for i in range(n_inputs)),
         kr(*[I] * n_qubits)
     )
@@ -342,25 +342,25 @@ def kr(*args):
 def ptrace(vec, *args):
     '''
         Traces out elements except those listed
-        As the rest of the widget decomposition sets all other states to |0> 
-        This is the trivial case of the function and we shouldn't need to normalise 
+        As the rest of the widget decomposition sets all other states to |0>
+        This is the trivial case of the function and we shouldn't need to normalise
     '''
     n_qubits = int(np.log2(vec.shape[0]))
     target_vec = np.zeros((2 ** len(args), 1), dtype=np.complex128)
 
-    # Index ordering is reversed 
+    # Index ordering is reversed
     mask = reduce(
         lambda x, y: (1 << y) | x,
         args,
         0)
 
-    def idx_transform(index):  
-        masked = index & mask        
+    def idx_transform(index):
+        masked = index & mask
         target = 0
         for position, elem in enumerate(args):
             target |= (
                     int(
-                        not not(1 << elem) 
+                        not not(1 << elem)
                         & masked
                     ) << position
                 )
@@ -371,7 +371,7 @@ def ptrace(vec, *args):
                 idx_transform,
                 range(len(vec))
             ),
-            vec): 
+            vec):
         target_vec[idx] += val
     return target_vec
 
@@ -383,7 +383,7 @@ def dop(x):
 
 def vec(x, non_zero=False, eps=3):
     '''
-        Prints the non-zero elements of the statevector  
+        Prints the non-zero elements of the statevector
     '''
     n_bits = int(np.ceil(np.log2(x.shape[0
  ])))
@@ -472,10 +472,12 @@ states = {
     '|T>':T @ p
 }
 states_dressed = {}
+
 for key in states:
     states_dressed[key[1]] = states[key]
 states |= states_dressed
 del states_dressed
+
 def state_string(*args):
     '''
         Niceness of notation
@@ -514,7 +516,7 @@ def CXX(n_qubits, ctrl, *targs):
     '''
     return commuting_gate(_CNOT, ctrl, *targs, n_qubits=n_qubits)
 
-# CNOT is equivalent to CXX 
+# CNOT is equivalent to CXX
 CNOT = CXX
 
 def CZ(n_qubits, ctrl, *targs):
@@ -541,7 +543,7 @@ def Toffoli(n_qubits=3, ctrl_0=0, ctrl_1=1, targ=2):
 
 def n_qubit_gate(gate, n_qubits, n_qubits_gate, *args):
     '''
-        Composes an n qubit gate over an arbitrary set of targets using swaps 
+        Composes an n qubit gate over an arbitrary set of targets using swaps
     '''
     mat = kr(gate, *([I] * (n_qubits - n_qubits_gate)))
 

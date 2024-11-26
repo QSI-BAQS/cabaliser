@@ -21,7 +21,7 @@ class OperationSequence():
         This object has a pre-allocated maximum number
          of supported operations
     '''
-    try:  # Python 3.8 and below will fail on this 
+    try:  # Python 3.8 and below will fail on this
         CONSTRUCTOR_MAP = (
               {i: SingleQubitOperation for i in SINGLE_QUBIT_GATES}
             | {i: TwoQubitOperation for i in TWO_QUBIT_GATES}
@@ -32,7 +32,7 @@ class OperationSequence():
                 zip(TWO_QUBIT_GATES, repeat(TwoQubitOperation)),
                 zip([RZ], [RzOperation])
             )
-       } 
+       }
 
     def __init__(self, n_instructions: int):
         '''
