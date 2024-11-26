@@ -14,6 +14,8 @@ from cabaliser.lib_cabaliser import lib
 lib.lib_pauli_n_layers.restype = c_size_t
 lib.lib_pauli_n_dependents.restype = c_size_t
 
+lib.lib_pauli_graph_to_layer.restype = void_p
+
 lib.lib_pauli_tracker_partial_order_graph.restype = void_p  # Opaque Pointer
 lib.lib_pauli_layer_to_dependent_node.restype = POINTER(ScheduleDependencyType)
 
