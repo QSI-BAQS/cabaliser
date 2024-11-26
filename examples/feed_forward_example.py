@@ -113,4 +113,3 @@ local_simulator.vec(widget_state)
 print("Simulated state from json")
 local_simulator.vec(json_widget_state)
 
-
