@@ -8,7 +8,7 @@ import sys
 from cabaliser import gates
 from cabaliser.operation_sequence import OperationSequence 
 from cabaliser.widget import Widget
-
+import time
 # Rz tags
 _I_ = 0
 _T_ = 1
@@ -39,6 +39,7 @@ def qft(n_qubits):
 
 
 def main(n_qubits=100, max_qubits=16000):
+    start_time = time.time()
 
     # Create operation sequence
     qft_seq = qft(n_qubits)
@@ -46,17 +47,30 @@ def main(n_qubits=100, max_qubits=16000):
     for opcode, args in qft_seq:
         ops.append(opcode, *args)
 
-    
+
+    seq_time = time.time()    
     # Create widget, do not teleport input
     wid = Widget(n_qubits, max_qubits)#, teleport_input=False)
 
     # Apply operation on widget
     wid(ops)
 
+    widget_io_time = time.time()
     ## Decompose widget
     wid.decompose()
+    
+    decomposition_time = time.time()
 
-    return wid.json()
+    json = wid.json()
+
+    json_time = time.time()
+
+    print(f"Python operation creation time: {seq_time - start_time:.4f}")
+    print(f"Widget Input Time: {widget_io_time - seq_time:.4f}")
+    print(f"Widget Decomposition Time: {decomposition_time - widget_io_time:.4f}")
+    print(f"Json Creation Time: {json_time - decomposition_time:.4f}")
+
+    return json 
 
 if __name__ == '__main__':
     n_qubits = 100 
