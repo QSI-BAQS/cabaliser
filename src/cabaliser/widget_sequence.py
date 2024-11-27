@@ -33,16 +33,20 @@ class WidgetSequence:
         self.max_qubits = max_qubits
 
     def __call__(
-        self, 
-        ops: OperationSequence, 
-        progress: bool = True, 
-        store_output: bool = True
+        self,
+        ops: OperationSequence,
+        progress: bool = True,
+        store_output: bool = True,
+        **widget_args
     ):
         """
         Processes an operations sequence
         :: ops : OperationSequence :: Sequence of operations to split and process
         :: progress : bool :: Simple progress printer
         :: store_output : bool :: Whether to save json objects
+        :: **widget_args :: Args for the widget
+            - rz_to_float=False
+            - local_clifford_to_string=True 
         """
         ops_sequence = ops.split(self.rz_threshold)
         for i, seq in enumerate(ops_sequence):
@@ -54,8 +58,8 @@ class WidgetSequence:
             wid.decompose()
 
             if store_output:
-                self._json.append(wid.json())
-            
+                self._json.append(wid.json(**widget_args))
+
             # Widget objects are large, clear memory!
             del wid
 
