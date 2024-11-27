@@ -37,7 +37,7 @@ def qft(n_qubits):
     return ops 
 
 
-def main(n_qubits=50, max_qubits=1000):
+def main(n_qubits=50, max_qubits=1000, store_output=False):
 
     # Create operation sequence
     qft_seq = qft(n_qubits)
@@ -46,8 +46,9 @@ def main(n_qubits=50, max_qubits=1000):
         ops.append(opcode, *args)
 
     widget_seq = WidgetSequence(n_qubits, max_qubits)    
-    widget_seq(ops)
-    return widget_seq.json()
+    widget_seq(ops, store_output=store_output)
+    if store_output:
+        return widget_seq.json()
    
 
 if __name__ == '__main__':

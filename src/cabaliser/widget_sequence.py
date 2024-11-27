@@ -18,7 +18,7 @@ class WidgetSequence():
         self.max_qubits = max_qubits
         assert qubit_width < max_qubits 
 
-    def __call__(self, ops: OperationSequence, progress=True): 
+    def __call__(self, ops: OperationSequence, progress=True, store_output=True): 
         '''
         '''
         ops_sequence = ops.split(self.rz_threshold)
@@ -28,9 +28,9 @@ class WidgetSequence():
             wid = Widget(self.qubit_width, self.max_qubits) 
             wid(seq)
             wid.decompose()
-            self._json.append(wid.json())
+            if store_output:
+                self._json.append(wid.json())
             del wid
 
     def json(self):
         return self._json
-    
