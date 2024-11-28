@@ -21,7 +21,7 @@ class OperationSequence():
         This object has a pre-allocated maximum number
          of supported operations
     '''
-    try:  # Python 3.8 and below will fail on this 
+    try:  # Python 3.8 and below will fail on this
         CONSTRUCTOR_MAP = (
               {i: SingleQubitOperation for i in SINGLE_QUBIT_GATES}
             | {i: TwoQubitOperation for i in TWO_QUBIT_GATES}
@@ -32,7 +32,7 @@ class OperationSequence():
                 zip(TWO_QUBIT_GATES, repeat(TwoQubitOperation)),
                 zip([RZ], [RzOperation])
             )
-       } 
+       }
 
     def __init__(self, n_instructions: int):
         '''
@@ -68,7 +68,7 @@ class OperationSequence():
             they will NOT index from the end of the array
         '''
         self.ops[idx] = value
-        self.max_qubit_index = max(self.max_qubit_index, value.max_qubit_index)
+        #self.max_qubit_index = max(self.max_qubit_index, value.max_qubit_index)
 
     def __iter__(self):
         '''
@@ -144,3 +144,45 @@ class OperationSequence():
             Updates the maximum qubit index in use
         '''
         self.max_qubit_index = max(self.max_qubit_index, *params)
+
+    def split(self, rz_threshold):     
+        if self.n_rz_operations < rz_threshold:
+            return [self,]
+
+        sequences = list()
+
+
+        rz_instructions = 0
+        start_ops = 0
+        for i in range(self.n_instructions): 
+            if self.ops[i].is_rz():
+                if rz_instructions < rz_threshold:
+                    rz_instructions += 1
+                else:
+                    sequences.append(self._subsequence(start_ops, i)) 
+                    rz_instructions = 1
+                    start_ops = i
+
+        # Final Sequence
+        sequences.append(self._subsequence(start_ops, i)) 
+        return sequences
+
+         
+       
+    def _subsequence(self, start, end): 
+        '''
+            Copies a subsequence from self to a new sequence
+        '''
+        sequence_length = end - start
+        seq = OperationSequence(sequence_length)  
+        seq.curr_instructions = sequence_length
+        seq.n_instructions = sequence_length
+        seq.max_qubits_index = self.max_qubit_index
+        for j in range(sequence_length):
+            if self[start + j].is_rz(): 
+                seq.n_rz_operations += 1
+            seq[j] = self[start + j]
+        return seq
+
+
+    

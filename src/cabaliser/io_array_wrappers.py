@@ -6,15 +6,17 @@
 
 from ctypes import POINTER
 
-from ctypes import c_void_p
+from ctypes import c_void_p, string_at, create_string_buffer, c_char_p, c_size_t
 from cabaliser.qubit_array import QubitArray
-from cabaliser.structs import ScheduleDependencyType, PauliCorrectionType, InvMapperType
+from cabaliser.structs import (ScheduleDependencyType, PauliCorrectionType,
+ InvMapperType, PauliOperatorType)
 from cabaliser.gates import SINGLE_QUBIT_GATE_TABLE
 from cabaliser.gate_constructors import tag_to_angle
 from cabaliser.utils import deref
 
 from cabaliser.lib_cabaliser import lib
 lib.lib_pauli_mapper_to_const_vec.restype = POINTER(InvMapperType)
+lib.pauli_string_conv.argtypes = [POINTER(PauliOperatorType), c_char_p, c_size_t]
 
 
 class MeasurementTags(QubitArray):
@@ -81,9 +83,9 @@ class ScheduleDependency(QubitArray):
         return self.__repr__()
 
     def __del__(self):
-        pass
         # TODO: This is probably leaking about 16 bytes of memory on python cleanup
-        # lib.lib_pauli_tracker_const_vec_destroy(self.__ptr)
+        # lib.lib_pauli_tracker_const_vec_destroy(self._ptr)
+        pass
 
 
 class InvMapper(QubitArray):
@@ -129,16 +131,14 @@ class PauliCorrection(QubitArray):
             Converts the array to a Python list
             :: cache : bool :: Whether to cache the list
         '''
-        if cache and self.__list is None:
-            self.__list = list(map(
-                self.pauli_to_str.get,
-                super().to_list(cache=cache)
-            ))
-        elif not cache:
-            return list(map(
-                self.pauli_to_str.get,
-                super().to_list()
-            ))
+        dst = create_string_buffer(self.n_qubits) 
+        lib.pauli_string_conv(self.arr, dst, self.n_qubits)
+        self.__list = dst.value.decode('ascii', errors='ignore')
+ 
+        #if cache and self.__list is None:
+        #    self.__list = str(string_at(self.arr, self.n_qubits).translate(b'IZXY' + b'\x00'*(256-4)))
+        #elif not cache:
+        #    return str(string_at(self.arr, self.n_qubits).translate(b'IZXY' + b'\x00'*(256-4)))
         return self.__list
 
     def to_dict(self, cache=True):
