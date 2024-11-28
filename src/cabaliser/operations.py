@@ -1,18 +1,18 @@
 '''
     Corresponding structs and Python Classes
 '''
-from ctypes import Structure, Union, c_uint32_t, c_uint8_t
-from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES
+from ctypes import Structure, Union, c_uint32, c_uint8
+from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, LOCAL_CLIFFORD_MASK, NON_LOCAL_CLIFFORD_MASK, RZ_MASK, OPCODE_TYPE_MASK
 
-OpcodeType = c_uint8_t
+OpcodeType = c_uint8
 
-class SingleQubitOperationType(Structure):
+class SingleQubitOperationType(Structure): 
     '''
         ctypes wrapper for single qubit operation
     '''
     _fields_ = [
         ('opcode', OpcodeType),
-        ('arg', c_uint32_t),
+        ('arg', c_uint32),
         ]
 
     def __repr__(self):
@@ -30,22 +30,22 @@ def SingleQubitOperation(arr, idx, opcode, arg):
        Constructor for single qubit operations
         :: arr : array :: Array to write to
         :: idx : int :: Index to write to
-        :: opcode : uint8_t :: Opcode for single qubit operation
-        :: arg : uint32_t :: Target qubit
+        :: opcode : uint8 :: Opcode for single qubit operation
+        :: arg : uint32 :: Target qubit
         Writes the operation to the index of the array
     '''
     arr[idx].single.opcode = opcode
     arr[idx].single.arg = arg
 
-
+SINGLE_QUBIT_OPERATION_HEADER = (1 << 6) 
 class TwoQubitOperationType(Structure):
     '''
         ctypes wrapper for two qubit operation
     '''
     _fields_ = [
         ('opcode', OpcodeType),
-        ('ctrl', c_uint32_t),
-        ('targ', c_uint32_t),
+        ('ctrl', c_uint32),
+        ('targ', c_uint32),
         ]
 
     def __repr__(self):
@@ -63,9 +63,9 @@ def TwoQubitOperation(arr, idx: int, opcode: c_byte, ctrl: int, targ: int):
        Constructor for two qubit operations
         :: arr : array :: Array to write to
         :: idx : int :: Index to write to
-        :: opcode : uint8_t :: Opcode for single qubit operation
-        :: ctrl : uint32_t :: First qubit argument
-        :: targ : uint32_t :: Second qubit argument
+        :: opcode : uint8 :: Opcode for single qubit operation
+        :: ctrl : uint32 :: First qubit argument
+        :: targ : uint32 :: Second qubit argument
         Writes the operation to the index of the array
     '''
     arr[idx].two_qubits.opcode = opcode
@@ -79,8 +79,8 @@ class RzQubitOperationType(Structure):
     '''
     _fields_ = [
         ('opcode', OpcodeType),
-        ('arg', c_uint32_t),
-        ('tag', c_uint32_t),
+        ('arg', c_uint32),
+        ('tag', c_uint32),
         ]
 
     def __repr__(self):
@@ -98,9 +98,9 @@ def RzOperation(arr, i, opcode, arg, tag):
        Constructor for two qubit operations
         :: arr : array :: Array to write to
         :: idx : int :: Index to write to
-        :: opcode : uint8_t :: RZ opcode
-        :: arg : uint32_t :: Qubit argument
-        :: tag : uint32_t :: Tag for the rz angle
+        :: opcode : uint8 :: RZ opcode
+        :: arg : uint32 :: Qubit argument
+        :: tag : uint32 :: Tag for the rz angle
         Writes the operation to the index of the array
     '''
     arr[i].rz.opcode = opcode
@@ -117,8 +117,8 @@ class ConditionalOperationType(Structure):
     '''
     _fields_ = [
         ('opcode', OpcodeType),
-        ('ctrl', c_uint32_t),
-        ('targ', c_uint32_t),
+        ('ctrl', c_uint32),
+        ('targ', c_uint32),
         ]
 
     def __repr__(self):
@@ -133,7 +133,7 @@ def ConditionalOperation(arr, i, opcode, ctrl, targ):
     Constructor for conditional operations
     :: arr : array :: Array to write to
     :: idx : int :: Index
-    :: opcode : uint8_t :: Opcode
+    :: opcode : uint8 :: Opcode
     :: ctrl : uin32_t :: Control Qubit 
     :: targ : uin32_t :: Target Qubit
     '''
@@ -155,7 +155,8 @@ class OperationType(Union):
         ]
 
     def __repr__(self):
-        opcode = self.single.opcode
+        opcode = self.opcode
+        [] 
         if opcode in SINGLE_QUBIT_GATES:
             return self.single.__repr__()
         if opcode in TWO_QUBIT_GATES:
@@ -163,5 +164,4 @@ class OperationType(Union):
         return self.rz.__repr__()
 
     def is_rz(self):
-        return self.single.opcode < 0
-
+        return RZ_MASK == (self.opcode & OPCODE_TYPE_MASK)  

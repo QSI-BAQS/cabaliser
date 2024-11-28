@@ -6,9 +6,11 @@ from typing import Final
 from ctypes import c_int8
 
 # Gate constants
+OPCODE_TYPE_MASK = 0xe0 
 LOCAL_CLIFFORD_MASK: Final[c_int8] = 1 << 5
 NON_LOCAL_CLIFFORD_MASK: Final[c_int8] = 1 << 6
 RZ_MASK: Final[c_int8] = 1 << 7
+CONDITIONAL_OPERATION_MASK = (1 << 6) | (1 << 7) 
 
 # Set of legal gates
 I: Final[c_int8] = 0x00 | LOCAL_CLIFFORD_MASK

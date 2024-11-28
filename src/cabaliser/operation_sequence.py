@@ -151,7 +151,6 @@ class OperationSequence():
 
         sequences = list()
 
-
         rz_instructions = 0
         start_ops = 0
         for i in range(self.n_instructions): 
@@ -166,8 +165,6 @@ class OperationSequence():
         # Final Sequence
         sequences.append(self._subsequence(start_ops, i)) 
         return sequences
-
-         
        
     def _subsequence(self, start, end): 
         '''
@@ -183,6 +180,3 @@ class OperationSequence():
                 seq.n_rz_operations += 1
             seq[j] = self[start + j]
         return seq
-
-
-    
