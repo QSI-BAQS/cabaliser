@@ -6,7 +6,7 @@
 
 from ctypes import POINTER
 
-from ctypes import c_void_p
+from ctypes import c_void_p, string_at
 from cabaliser.qubit_array import QubitArray
 from cabaliser.structs import ScheduleDependencyType, PauliCorrectionType, InvMapperType
 from cabaliser.gates import SINGLE_QUBIT_GATE_TABLE
@@ -130,15 +130,9 @@ class PauliCorrection(QubitArray):
             :: cache : bool :: Whether to cache the list
         '''
         if cache and self.__list is None:
-            self.__list = list(map(
-                self.pauli_to_str.get,
-                super().to_list(cache=cache)
-            ))
+            self.__list = list(str(string_at(self.arr, self.n_qubits).translate(b'IZXY' + b'\x00'*(256-4))))
         elif not cache:
-            return list(map(
-                self.pauli_to_str.get,
-                super().to_list()
-            ))
+            return list(str(string_at(self.arr, self.n_qubits).translate(b'IZXY' + b'\x00'*(256-4))))
         return self.__list
 
     def to_dict(self, cache=True):
