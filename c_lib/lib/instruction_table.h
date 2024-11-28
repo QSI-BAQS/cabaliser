@@ -92,7 +92,7 @@ struct rz_instruction
 };
 
 
-struct measurement_conditioned_instruction
+struct conditional_instruction
 {
     instruction_t opcode; // Type of operation is encoded in opcode 
     uint32_t ctrl;  

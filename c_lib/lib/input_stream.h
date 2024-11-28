@@ -4,7 +4,9 @@
 
 #include "instructions.h"
 #include "tableau_operations.h"
+#include "conditional_operations.h"
 #include "widget.h"
+
 
 /*
  * parse_instruction_block

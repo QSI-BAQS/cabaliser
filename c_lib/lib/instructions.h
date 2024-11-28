@@ -30,7 +30,7 @@ typedef struct clifford_queue_t clifford_queue_t;
 #define NON_LOCAL_CNOT_MAP_TARG_CTRL(clifford) (CNOT_MAP_TARG_CTRL[clifford & INSTRUCTION_OPERATOR_MASK]) 
 
 
-
+#define INSTRUCTION_OP_MASK (0x1f)
 
 /*
  * clifford_queue

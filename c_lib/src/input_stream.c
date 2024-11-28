@@ -144,47 +144,39 @@ void parse_instruction_block(
 }
 
 
+
+void (*conditional_instruction_switch[N_INSTRUCTION_TYPES])(widget_t*, size_t, size_t) = {
+        NULL, // 0x00
+        conditional_x, // 0x01
+        conditional_y, // 0x02
+        conditional_z, // 0x03
+        NULL, // 0x04
+        NULL, // 0x05
+        NULL, // 0x06
+        NULL, // 0x07
+};
+
 /*
  * conditional_pauli 
- * Implements an rz gate as a terminating operation
+ * Applies a conditional Pauli operation
  * :: wid : widget_t* :: The widget in question 
- * :: inst : rz_instruction* :: The rz instruction indicating an angle 
- * Teleports an RZ operation, allocating a new qubit in the process
+ * :: inst : cond_pauli_instruction* :: Conditional Pauli gate 
  * Compilation fails if the number of qubits exceeds some maximum 
  */
 static inline
-void __inline_conditional_pauli(
+void __inline_conditional_instruction(
     widget_t* wid,
-    struct conditional_pauli* inst) 
+    struct conditional_instruction* inst) 
 {
     
-    // This could be handled with a better return
-    assert(wid->n_qubits < wid->max_qubits);
-
-    const size_t ctrl = WMAP_LOOKUP(wid, inst->arg);
-    const size_t targ = wid->n_qubits; 
-
-    wid->queue->non_cliffords[ctrl] = inst->tag;
-    wid->q_map[inst->arg] = wid->n_qubits;
-
-    SINGLE_QUBIT_OPERATIONS[wid->queue->table[ctrl] & INSTRUCTION_OPERATOR_MASK](wid->tableau, ctrl);
-    wid->queue->table[ctrl] = _I_;
-
-    SINGLE_QUBIT_OPERATIONS[wid->queue->table[targ] & INSTRUCTION_OPERATOR_MASK](wid->tableau, targ);
-    wid->queue->table[targ] = _I_;
-
-    tableau_CNOT(wid->tableau, ctrl, targ);
-
-    // Propagate tracked Pauli corrections 
-    pauli_track_z(wid->pauli_tracker, ctrl, targ);
-
-    // Number of qubits increases by one
-    wid->n_qubits += 1;  
+    const size_t ctrl = WMAP_LOOKUP(wid, inst->ctrl);
+    const size_t targ = WMAP_LOOKUP(wid, inst->targ);
+    conditional_instruction_switch[
+       INSTRUCTION_OP_MASK & inst->opcode
+    ](wid, ctrl, targ); 
 
     return;
 }
-
-
 
 
 /*
