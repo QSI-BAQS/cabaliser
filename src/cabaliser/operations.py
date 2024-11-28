@@ -1,17 +1,18 @@
 '''
     Corresponding structs and Python Classes
 '''
-from ctypes import Structure, Union, c_int, c_byte
+from ctypes import Structure, Union, c_uint32_t, c_uint8_t
 from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES
 
+OpcodeType = c_uint8_t
 
 class SingleQubitOperationType(Structure):
     '''
         ctypes wrapper for single qubit operation
     '''
     _fields_ = [
-        ('opcode', c_byte),
-        ('arg', c_int),
+        ('opcode', OpcodeType),
+        ('arg', c_uint32_t),
         ]
 
     def __repr__(self):
@@ -39,9 +40,9 @@ class TwoQubitOperationType(Structure):
         ctypes wrapper for two qubit operation
     '''
     _fields_ = [
-        ('opcode', c_byte),
-        ('ctrl', c_int),
-        ('targ', c_int),
+        ('opcode', OpcodeType),
+        ('ctrl', c_uint32_t),
+        ('targ', c_uint32_t),
         ]
 
     def __repr__(self):
@@ -71,9 +72,9 @@ class RzQubitOperationType(Structure):
         ctypes wrapper for rz operations
     '''
     _fields_ = [
-        ('opcode', c_byte),
-        ('arg', c_int),
-        ('tag', c_int),
+        ('opcode', OpcodeType),
+        ('arg', c_uint32_t),
+        ('tag', c_uint32_t),
         ]
 
     def __repr__(self):
@@ -98,14 +99,50 @@ def RzOperation(arr, i, opcode, arg, tag):
     arr[i].rz.tag = tag
 
 
+
+# This is identical to the two qubit operation 
+# But we provide a different class for clarity
+class ConditionalOperationType(Structure):
+    '''
+        ctypes wrapper for two qubit operation
+    '''
+    _fields_ = [
+        ('opcode', OpcodeType),
+        ('ctrl', c_uint32_t),
+        ('targ', c_uint32_t),
+        ]
+
+    def __repr__(self):
+        return f"Cond Op: {self.ctrl} {self.targ}"
+
+    def __str__(self):
+        return self.__repr__()
+
+
+def ConditionalOperation(arr, i, opcode, ctrl, targ):
+    '''
+    Constructor for conditional operations
+    :: arr : array :: Array to write to
+    :: idx : int :: Index
+    :: opcode : uint8_t :: Opcode
+    :: ctrl : uin32_t :: Control Qubit 
+    :: targ : uin32_t :: Target Qubit
+    '''
+    arr[idx].two_qubits.opcode = opcode
+    arr[idx].two_qubits.ctrl = ctrl
+    arr[idx].two_qubits.targ = targ
+
+
 class OperationType(Union):
     '''
         ctypes wrapper for general operation
     '''
     _fields_ = [
+        ('opcode', OpcodeType),
         ('single', SingleQubitOperationType),
         ('two_qubits', TwoQubitOperationType),
         ('rz', RzQubitOperationType),
+        ('cond_op', ConditionalOperationType), 
         ]
 
     def __repr__(self):
