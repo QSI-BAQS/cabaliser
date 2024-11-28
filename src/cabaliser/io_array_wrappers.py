@@ -133,7 +133,7 @@ class PauliCorrection(QubitArray):
         '''
         dst = create_string_buffer(self.n_qubits) 
         lib.pauli_string_conv(self.arr, dst, self.n_qubits)
-        self.__list = dst.value
+        self.__list = str(dst.value)
  
         #if cache and self.__list is None:
         #    self.__list = str(string_at(self.arr, self.n_qubits).translate(b'IZXY' + b'\x00'*(256-4)))
