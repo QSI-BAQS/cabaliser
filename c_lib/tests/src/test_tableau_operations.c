@@ -500,8 +500,6 @@ void test_cz_3()
 }
 
 
-
-
 void test_non_local()
 {
     test_cnot_1();
