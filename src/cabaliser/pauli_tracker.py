@@ -216,3 +216,7 @@ class PauliTracker:
             lib.lib_pauli_tracker_get_pauli_corrections(self.corrections_ptr, index),
             self.max_qubit
         )
+
+    def __del__(self):
+        if self.graph_ptr is not None:
+            lib.lib_pauli_tracker_graph_destroy(self.graph_ptr)
