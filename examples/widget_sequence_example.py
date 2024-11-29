@@ -1,3 +1,4 @@
+import gc
 '''
     Test of Toffoli gate decomposition
     Compare to figures in https://arxiv.org/abs/2209.07345
@@ -50,12 +51,16 @@ def main(n_qubits=50, max_qubits=1000, store_output=False):
 
     del qft_seq
     print("Constructing Widget Sequence")
+
     widget_seq = WidgetSequence(n_qubits, max_qubits)    
     print("Executing...")
     widget_seq(ops, store_output=store_output)
     if store_output:
         return widget_seq.json()
-   
+    
+    del widget_seq 
+    del ops
+    gc.collect()
 
 if __name__ == '__main__':
     n_qubits = 250 

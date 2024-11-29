@@ -114,7 +114,7 @@ class PauliTracker:
 
         node = deref(node_ptr)
 
-        return ScheduleDependency(node.len, qubit_index, node.arr, node_ptr=node)
+        return ScheduleDependency(node.len, qubit_index, node.arr, node_ptr=node_ptr)
 
     def __iter__(self):
         if self.measurement_schedule is None:
@@ -216,3 +216,7 @@ class PauliTracker:
             lib.lib_pauli_tracker_get_pauli_corrections(self.corrections_ptr, index),
             self.max_qubit
         )
+
+    def __del__(self):
+        if self.graph_ptr is not None:
+            lib.lib_pauli_tracker_graph_destroy(self.graph_ptr)
