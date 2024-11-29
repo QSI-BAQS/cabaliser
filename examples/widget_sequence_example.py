@@ -40,12 +40,18 @@ def qft(n_qubits):
 def main(n_qubits=50, max_qubits=1000, store_output=False):
 
     # Create operation sequence
+    print("Generating QFT Circuit")
     qft_seq = qft(n_qubits)
+
+    print("Constructing Operation Sequence")
     ops = OperationSequence(len(qft_seq))
     for opcode, args in qft_seq:
         ops.append(opcode, *args)
 
+    del qft_seq
+    print("Constructing Widget Sequence")
     widget_seq = WidgetSequence(n_qubits, max_qubits)    
+    print("Executing...")
     widget_seq(ops, store_output=store_output)
     if store_output:
         return widget_seq.json()
