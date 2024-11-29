@@ -114,7 +114,7 @@ class PauliTracker:
 
         node = deref(node_ptr)
 
-        return ScheduleDependency(node.len, qubit_index, node.arr, node_ptr=node)
+        return ScheduleDependency(node.len, qubit_index, node.arr, node_ptr=node_ptr)
 
     def __iter__(self):
         if self.measurement_schedule is None:

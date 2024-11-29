@@ -84,7 +84,7 @@ class ScheduleDependency(QubitArray):
 
     def __del__(self):
         # TODO: This is probably leaking about 16 bytes of memory on python cleanup
-        # lib.lib_pauli_tracker_const_vec_destroy(self._ptr)
+        lib.lib_pauli_tracker_const_vec_destroy(self._ptr)
         pass
 
 
