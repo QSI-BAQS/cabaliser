@@ -1,8 +1,11 @@
 '''
     Corresponding structs and Python Classes
 '''
+from itertools import chain, repeat
+
 from ctypes import Structure, Union, c_uint32, c_uint8
-from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, LOCAL_CLIFFORD_MASK, NON_LOCAL_CLIFFORD_MASK, RZ_MASK, OPCODE_TYPE_MASK
+from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, LOCAL_CLIFFORD_MASK, NON_LOCAL_CLIFFORD_MASK, RZ_MASK, OPCODE_TYPE_MASK, RZ_GATES, CONDITIONAL_OPERATION_GATES
+from cabaliser.utils import unbound_table_element
 
 OpcodeType = c_uint8
 
@@ -58,7 +61,7 @@ class TwoQubitOperationType(Structure):
         return max(int(self.arg), int(self.targ))
 
 
-def TwoQubitOperation(arr, idx: int, opcode: c_byte, ctrl: int, targ: int):
+def TwoQubitOperation(arr, idx: int, opcode: OpcodeType, ctrl: int, targ: int):
     '''
        Constructor for two qubit operations
         :: arr : array :: Array to write to
@@ -128,7 +131,7 @@ class ConditionalOperationType(Structure):
         return self.__repr__()
 
 
-def ConditionalOperation(arr, i, opcode, ctrl, targ):
+def ConditionalOperation(arr, idx, opcode, ctrl, targ):
     '''
     Constructor for conditional operations
     :: arr : array :: Array to write to
@@ -140,6 +143,16 @@ def ConditionalOperation(arr, i, opcode, ctrl, targ):
     arr[idx].two_qubits.opcode = opcode
     arr[idx].two_qubits.ctrl = ctrl
     arr[idx].two_qubits.targ = targ
+
+# Lookup table for Operation types to underlying union members 
+opcode_map = [unbound_table_element for _ in range(256)]
+for idx, fn in chain(
+    zip(SINGLE_QUBIT_GATES, repeat(lambda x: x.single)),
+    zip(TWO_QUBIT_GATES, repeat(lambda x: x.two_qubits)),
+    zip(RZ_GATES, repeat(lambda x: x.rz)),
+    zip(CONDITIONAL_OPERATION_GATES, repeat(lambda x: x.cond_op))
+    ):
+    opcode_map[idx] = fn 
 
 
 class OperationType(Union):
@@ -155,13 +168,7 @@ class OperationType(Union):
         ]
 
     def __repr__(self):
-        opcode = self.opcode
-        [] 
-        if opcode in SINGLE_QUBIT_GATES:
-            return self.single.__repr__()
-        if opcode in TWO_QUBIT_GATES:
-            return self.two_qubits.__repr__()
-        return self.rz.__repr__()
+        return opcode_map[self.opcode](self).__repr__()
 
     def is_rz(self):
         return RZ_MASK == (self.opcode & OPCODE_TYPE_MASK)  

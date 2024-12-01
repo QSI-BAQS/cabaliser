@@ -4,6 +4,8 @@
 #include "widget.h"
 #include "lib_pauli_tracker.h" 
 
+#define BARE_MEASUREMENT_TAG ((size_t) 0x0fffffff)
+
 /*
  * conditional_x
  * Implements a measurement conditioned X operation
@@ -34,7 +36,5 @@ void conditional_z(widget_t* wid, size_t ctrl, size_t targ);
  * Acts by calling the Pauli tracker
  */
 void conditional_y(widget_t* wid, size_t ctrl, size_t targ);
-
-
 
 #endif

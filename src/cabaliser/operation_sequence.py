@@ -5,10 +5,13 @@
 '''
 from itertools import chain, repeat
 
-from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ
+from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ_GATES, CONDITIONAL_OPERATION_GATES, RZ 
 from cabaliser.operations import (
     OperationType, SingleQubitOperation,
-    TwoQubitOperation, RzOperation)
+    TwoQubitOperation, RzOperation,
+    ConditionalOperation)
+
+from cabaliser.utils import unbound_table_element
 
 
 class OperationSequence():
@@ -21,18 +24,14 @@ class OperationSequence():
         This object has a pre-allocated maximum number
          of supported operations
     '''
-    try:  # Python 3.8 and below will fail on this
-        CONSTRUCTOR_MAP = (
-              {i: SingleQubitOperation for i in SINGLE_QUBIT_GATES}
-            | {i: TwoQubitOperation for i in TWO_QUBIT_GATES}
-            | {RZ: RzOperation})
-    except TypeError:  # Python 3.8 and lower friendly method
-        CONSTRUCTOR_MAP = {i: op for i, op in chain(
-                zip(SINGLE_QUBIT_GATES, repeat(SingleQubitOperation)),
-                zip(TWO_QUBIT_GATES, repeat(TwoQubitOperation)),
-                zip([RZ], [RzOperation])
-            )
-       }
+    CONSTRUCTOR_MAP = [unbound_table_element for _ in range(256)]
+    for idx, fn in chain(
+        zip(SINGLE_QUBIT_GATES, repeat(SingleQubitOperation)),
+        zip(TWO_QUBIT_GATES, repeat(TwoQubitOperation)),
+        zip(RZ_GATES, repeat(RzOperation)),
+        zip(CONDITIONAL_OPERATION_GATES, repeat(ConditionalOperation))
+        ):
+        CONSTRUCTOR_MAP[idx] = fn 
 
     def __init__(self, n_instructions: int):
         '''
@@ -126,6 +125,7 @@ class OperationSequence():
         return seq
 
     def __repr__(self):
+        print(self.ops[0])
         return '\n'.join(repr(self.ops[i]) for i in range(self.curr_instructions))
 
     def __str__(self):

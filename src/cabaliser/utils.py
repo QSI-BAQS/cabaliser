@@ -25,3 +25,7 @@ def deref(obj: c_void_p) -> object:
         Verbose dereference for pointer objects
     '''
     return obj[0]
+
+def unbound_table_element(opcode, *args, **kwargs):
+    raise Exception(f"Invalid Opcode") 
+

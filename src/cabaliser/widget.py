@@ -26,18 +26,30 @@ class Widget():
         Widget object
         Exposes an API to the cabaliser c_lib's widget object
     '''
-    def __init__(self, n_qubits: int, n_qubits_max: int, teleport_input: bool = True):
+    def __init__(self, n_qubits: int, n_qubits_max: int, teleport_input: bool = True, n_inputs: int=None):
         '''
             __init__
             Constructor for the widget
             Allocates a large tableau
+            :: n_qubits : int :: Initial number of qubits, "width" of the widget  
+            :: n_qubits_max : int :: Maximum size of the widget 
+            :: teleport_input : bool :: Whether the inputs should be teleported
+            :: n_inputs : int :: Optional, If the number of inputs differs from the size of the register   
         '''
         self.decomposed = False
+
+        if n_inputs is None:
+            n_inputs = n_qubits
+        elif not (n_inputs <= n_qubits):
+            raise IndexError("More inputs than qubits")
+
+        self.n_inputs = n_inputs
+
         self.widget = lib.widget_create(n_qubits, n_qubits_max)
         self.teleport_input = teleport_input
 
         if self.teleport_input:
-            lib.teleport_input(self.widget)
+            lib.teleport_input(self.widget, self.n_inputs)
         else:
             lib.pauli_tracker_disable()
 
@@ -215,8 +227,11 @@ class Widget():
             io_map = POINTER(IOMapType)()
             ptr = POINTER(IOMapType)(io_map)
             lib.widget_get_io_map_api(self.widget, ptr)
-            self.io_map = IOMap(self.get_n_initial_qubits(), io_map)
 
+            # In case any of these objects have been measured out
+            measurement_tags = self.get_measurement_tags()
+            self.io_map = IOMap(self.get_n_initial_qubits(), io_map)#, measurement_tags)
+         
         return self.io_map
 
     @require_decomposed
