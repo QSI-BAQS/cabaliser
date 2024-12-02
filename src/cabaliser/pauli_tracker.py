@@ -192,7 +192,7 @@ class PauliTracker:
         return self.__get_correction(index)
 
     @get_correction_ptr
-    def get_pauli_corrections(self, fmt=lambda x: x.to_dict()):
+    def get_pauli_corrections(self, idx=None, fmt=lambda x: x.to_dict()):
         '''
             Returns an iterator of corrections
             :: fmt : lambda :: Format as to_list, to_dict or to_tuple
@@ -201,7 +201,9 @@ class PauliTracker:
             self.corrections = list(
                 fmt(self.__get_correction(idx)) for idx in range(self._get_correction_table_len())
             )
-        return self.corrections
+        if idx is None:
+            return self.corrections
+        return self.corrections[idx][idx]
 
     def _get_correction_table_len(self):
         return lib.lib_pauli_tracker_get_correction_table_len(self.corrections_ptr)

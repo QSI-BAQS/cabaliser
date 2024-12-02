@@ -218,7 +218,7 @@ class Widget():
         return self.measurement_tags
 
     @require_decomposed
-    def get_io_map(self):
+    def get_io_map(self, idx=None):
         '''
             get_io_map
             Returns a wrapper around an array of measurements
@@ -231,8 +231,9 @@ class Widget():
             # In case any of these objects have been measured out
             measurement_tags = self.get_measurement_tags()
             self.io_map = IOMap(self.get_n_initial_qubits(), io_map, measurement_tags)
-         
-        return self.io_map
+        if idx is None: 
+            return self.io_map
+        return self.io_map[idx]
 
     @require_decomposed
     def get_adjacencies(self, qubit: int) -> AdjacencyType:
@@ -272,11 +273,11 @@ class Widget():
         self.pauli_tracker.schedule(max_qubit=self.n_qubits)
 
     @require_decomposed
-    def get_pauli_corrections(self):
+    def get_pauli_corrections(self, idx=None):
         '''
             Dispatch method to get pauli corrections from pauli tracker wrapper
         '''
-        return self.pauli_tracker.get_pauli_corrections()
+        return self.pauli_tracker.get_pauli_corrections(idx=idx)
 
     @require_decomposed
     def get_schedule(self):

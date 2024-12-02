@@ -92,6 +92,19 @@ class IOMap(QubitArray):
             ]      
         return super()._get_list()
 
+    def __getitem__(self, idx: int):
+        '''
+            Returns an item from the array
+            :: idx : int :: Index to query
+        '''
+        if idx > self.n_qubits:
+            raise IndexError("Qubit index is out of range")
+        arr_idx = self.arr[idx]
+        if self.__measurement_tags[arr_idx] == IOMap.COND_MEASUREMENT_TAG:
+            return None
+        return arr_idx
+
+
 class ScheduleDependency(QubitArray):
     '''
         ScheduleDependency
