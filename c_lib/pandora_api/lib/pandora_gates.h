@@ -113,7 +113,7 @@ size_t (*const PANDORA_GATE_TRANSLATION[32])(struct pandora_gate_t*, instruction
     pandora_Pauli, // _Pauli{X, Y, Z} 
 }; 
 
-#define PANDORA_PAULI_STR_OFFSET 7
+#define PANDORA_PAULI_STR_OFFSET 6
 #define PANDORA_PAULI_OFFSET 'X' 
 
 #else 

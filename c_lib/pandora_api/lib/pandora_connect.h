@@ -12,12 +12,12 @@
 #include "postgres_result_casts.h"
 
 #define PANDORA_DB_STR "dbname = %s"
-#define PANDORA_COUNT_N_QUBITS  "SELECT COUNT(*) FROM linked_circuit_qubit WHERE type = 'In'"
+#define PANDORA_COUNT_N_QUBITS  "SELECT COUNT(*) FROM linked_circuit WHERE type = 'In'"
 
 #define PANDORA_DECORATION "CALL decorate_circuit()" 
 
-#define PANDORA_INITIAL  "SELECT type, qub_1 FROM linked_circuit_qubit WHERE type = 'In'"
-#define PANDORA_GET_LAYER  "SELECT type, param, qub_1, qub_2, qub_3 FROM linked_circuit_qubit WHERE id = (SELECT decorated_circuit.id FROM decorated_circuit WHERE decorated_circuit.id = linked_circuit_qubit.id AND layer = $1)"
+#define PANDORA_INITIAL  "SELECT type, qub_1 FROM linked_circuit WHERE type = 'In'"
+#define PANDORA_GET_LAYER  "SELECT type, param, next_q1, next_q2, next_q3 FROM linked_circuit WHERE id = (SELECT decorated_circuit.id FROM decorated_circuit WHERE decorated_circuit.id = linked_circuit.id AND layer = $1)"
 
 
 struct pandora_t {
