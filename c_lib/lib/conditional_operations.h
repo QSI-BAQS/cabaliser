@@ -6,6 +6,18 @@
 
 #define BARE_MEASUREMENT_TAG ((size_t) 0x0fffffff)
 
+
+/*
+ * conditional_I
+ * Implements a measurement conditioned I operation
+ * :: wid : widget_t* :: Widget to implement on
+ * :: ctrl : size_t :: Control Qubit - This qubit is measured 
+ * :: targ : size_t :: Target Qubit - Unused but retained for signature matching 
+ * Acts by calling the Pauli tracker
+ */
+void conditional_I(widget_t* wid, size_t ctrl, size_t targ);
+
+
 /*
  * conditional_x
  * Implements a measurement conditioned X operation

@@ -109,7 +109,7 @@ void __inline_rz_gate(
 }
 
 void (*conditional_instruction_switch[N_INSTRUCTION_TYPES])(widget_t*, size_t, size_t) = {
-        NULL, // 0x00
+        conditional_I, // 0x00
         conditional_x, // 0x01
         conditional_y, // 0x02
         conditional_z, // 0x03

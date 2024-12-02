@@ -813,7 +813,11 @@ void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-            __atomic_fetch_xor(slice_r + i, ctrl_slice_x[i] & targ_slice_z[i] & ~(targ_slice_x[i] ^ ctrl_slice_z[i]), __ATOMIC_RELAXED);
+            __atomic_fetch_xor(
+                slice_r + i,
+                (ctrl_slice_x[i] & targ_slice_z[i] & ~(targ_slice_x[i] ^ ctrl_slice_z[i])),
+                 __ATOMIC_RELAXED
+            );
             targ_slice_x[i] ^= ctrl_slice_x[i];
             ctrl_slice_z[i] ^= targ_slice_z[i];
         }  
@@ -871,11 +875,6 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
         #pragma omp for simd
         for (i = 0; i < tab->slice_len; i++)
         {
-//            __atomic_fetch_xor(slice_r + i, (
-//                  (targ_slice_x[i] & targ_slice_z[i]) 
-//                ^ (ctrl_slice_x[i] & targ_slice_x[i] & ~(targ_slice_z[i] ^ ctrl_slice_z[i]))
-//                ^ ((targ_slice_z[i] ^ ctrl_slice_x[i]) & targ_slice_x[i])
-//                ), __ATOMIC_RELAXED);
             __atomic_fetch_xor(slice_r + i, (
                 (ctrl_slice_x[i] & targ_slice_x[i] & ctrl_slice_z[i]) 
                 ^ (ctrl_slice_x[i] & targ_slice_x[i] & targ_slice_z[i]) 

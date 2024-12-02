@@ -1,5 +1,10 @@
 #include "conditional_operations.h"
 
+void conditional_I(widget_t* wid, size_t ctrl, size_t targ)
+{
+    // No operation
+}
+
 void conditional_x(widget_t* wid, size_t ctrl, size_t targ)
 {
     pauli_track_x(wid->pauli_tracker, ctrl, targ);

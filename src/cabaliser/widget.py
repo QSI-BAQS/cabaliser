@@ -230,7 +230,7 @@ class Widget():
 
             # In case any of these objects have been measured out
             measurement_tags = self.get_measurement_tags()
-            self.io_map = IOMap(self.get_n_initial_qubits(), io_map)#, measurement_tags)
+            self.io_map = IOMap(self.get_n_initial_qubits(), io_map, measurement_tags)
          
         return self.io_map
 
