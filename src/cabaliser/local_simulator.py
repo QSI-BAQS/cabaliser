@@ -3,6 +3,7 @@ from itertools import chain
 
 import numpy as np
 from numpy import array
+from cabaliser import gates
 
 
 def widget_to_operations(widget, table=None) -> tuple:
@@ -83,7 +84,6 @@ def simulate_widget(
 
     if input_state is None:
         n_inputs = len(input_states)
-
         if n_inputs > widget.n_initial_qubits:
             raise Exception("More input states than inputs")
 
@@ -232,8 +232,7 @@ def widget_to_local_cliffords(widget):
     """
     Calculates the local Clifford operations of a Widget
     """
-    cliffords = {"I": I, "H": H, "S": S, "Sd": Sdag}
-    op = kr(*list(cliffords[i] for i in widget.get_local_cliffords().to_list()))
+    op = kr(*list(LOCAL_CLIFFORD_TABLE[i] for i in widget.get_local_cliffords().to_list()))
     return op
 
 
@@ -241,8 +240,7 @@ def dict_to_local_cliffords(obj):
     """
     Calculates the local Clifford operations of a Widget
     """
-    cliffords = {"I": I, "H": H, "S": S, "Sd": Sdag}
-    op = kr(*list(cliffords[i] for i in obj["local_cliffords"]))
+    op = kr(*list(LOCAL_CLIFFORD_TABLE[i] for i in obj["local_cliffords"]))
     return op
 
 
@@ -395,6 +393,61 @@ Tdag = S @ T
 
 SINGLE_QUBIT_CLIFFORDS = [H, S, Sdag]
 
+LOCAL_CLIFFORD_TABLE = {
+    "I": I,
+    "H": H,
+    "S": S,
+    "Sd": Sdag,
+    "Sdag": Sdag,
+    "R": Sdag,
+    "X": X,
+    "Y": Y,
+    "Z": Z,
+    "HX": H @ X,
+    "SX": S @ X,
+    "SdX": Sdag @ X,
+    "HY": H @ Y,
+    "HZ": H @ Z,
+    "SH": S @ H,
+    "SdH": Sdag @ H,
+    "HS": H @ S,
+    "HSd": H @ Sdag,
+    "HSX": H @ S @ X,
+    "HSdX": H @ Sdag @ X,
+    "SHY": S @ H @ Y,
+    "SdHY": Sdag @ H @ Y,
+    "HSH": H @ S @ H,
+    "HSdH": H @ Sdag @ H,
+    "SdHS": Sdag @ H @ S,
+    "SHSd": S @ H @ Sdag
+}
+
+LOCAL_CLIFFORD_OP_TABLE = {
+    gates.I: I,
+    gates.H: H,
+    gates.S: S,
+    gates.Sd: Sdag,
+    gates.X: X,
+    gates.Y: Y,
+    gates.Z: Z,
+    gates._HX_: H @ X,
+    gates._SX_: S @ X,
+    gates._SdX_: Sdag @ X,
+    gates._HY_: H @ Y,
+    gates._HZ_: H @ Z,
+    gates._SH_: S @ H,
+    gates._SdH_: Sdag @ H,
+    gates._HS_: H @ S,
+    gates._HSd_: H @ Sdag,
+    gates._HSX_: H @ S @ X,
+    gates._HSdX_: H @ Sdag @ X,
+    gates._SHY_: S @ H @ Y,
+    gates._SdHY_: Sdag @ H @ Y,
+    gates._HSH_: H @ S @ H,
+    gates._HSdH_: H @ Sdag @ H,
+    gates._SdHS_: Sdag @ H @ S,
+    gates._SHSd_: S @ H @ Sdag
+}
 
 CNOT_mat = array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CZ_mat = array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])

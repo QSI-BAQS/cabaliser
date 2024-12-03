@@ -19,9 +19,15 @@ Y: Final[c_int8] = 0x02 | LOCAL_CLIFFORD_MASK
 Z: Final[c_int8] = 0x03 | LOCAL_CLIFFORD_MASK
 H: Final[c_int8] = 0x04 | LOCAL_CLIFFORD_MASK
 S: Final[c_int8] = 0x05 | LOCAL_CLIFFORD_MASK
+
+# Three Equivalent names for the same operation
 Sd: Final[c_int8] = 0x06 | LOCAL_CLIFFORD_MASK
+Sdag: Final[c_int8] = 0x06 | LOCAL_CLIFFORD_MASK
+R: Final[c_int8] = 0x06 | LOCAL_CLIFFORD_MASK
+
 
 # These are expected output values and may not be used as gates
+# Some of these gates have multiple equivalent symbolic bindings
 _HX_: Final[c_int8] = 0x07 | LOCAL_CLIFFORD_MASK
 _SX_: Final[c_int8] = 0x08 | LOCAL_CLIFFORD_MASK
 _SdX_: Final[c_int8] = 0x09 | LOCAL_CLIFFORD_MASK
@@ -32,24 +38,30 @@ _SdH_: Final[c_int8] = 0x0d | LOCAL_CLIFFORD_MASK
 _HS_: Final[c_int8] = 0x0e | LOCAL_CLIFFORD_MASK
 _HSd_: Final[c_int8] = 0x0f | LOCAL_CLIFFORD_MASK
 _HSX_: Final[c_int8] = 0x10 | LOCAL_CLIFFORD_MASK
+_HSdX_: Final[c_int8] = 0x11 | LOCAL_CLIFFORD_MASK
 _HRX_: Final[c_int8] = 0x11 | LOCAL_CLIFFORD_MASK
 _SHY_: Final[c_int8] = 0x12 | LOCAL_CLIFFORD_MASK
 _SdHY_: Final[c_int8] = 0x13 | LOCAL_CLIFFORD_MASK
 _HSH_: Final[c_int8] = 0x14 | LOCAL_CLIFFORD_MASK
+_HSdH_: Final[c_int8] = 0x15 | LOCAL_CLIFFORD_MASK
 _HRH_: Final[c_int8] = 0x15 | LOCAL_CLIFFORD_MASK
 _SdHS_: Final[c_int8] = 0x16 | LOCAL_CLIFFORD_MASK
+_RHS_: Final[c_int8] = 0x16 | LOCAL_CLIFFORD_MASK
 _SHSd_: Final[c_int8] = 0x17 | LOCAL_CLIFFORD_MASK
+_SHR_: Final[c_int8] = 0x17 | LOCAL_CLIFFORD_MASK
 
+# Two qubit gates
 CNOT: Final[c_int8] = 0x00 | NON_LOCAL_CLIFFORD_MASK
 CZ: Final[c_int8] = 0x01 | NON_LOCAL_CLIFFORD_MASK
 
+# Arbitrary rotation gate 
 RZ: Final[c_int8] = RZ_MASK
 
+# Measurement Gates
 MEAS: Final[c_int8] = 0x00 | CONDITIONAL_OPERATION_MASK  # Simple qubit measurement
 MCX: Final[c_int8] = 0x01 | CONDITIONAL_OPERATION_MASK 
 MCY: Final[c_int8] = 0x02 | CONDITIONAL_OPERATION_MASK 
 MCZ: Final[c_int8] = 0x03 | CONDITIONAL_OPERATION_MASK 
-
 
 SINGLE_QUBIT_GATES = {
     I,
@@ -84,11 +96,11 @@ SINGLE_QUBIT_GATE_TABLE = {
     _HS_: "HS",
     _HSd_: "HSd",
     _HSX_: "HSX",
-    _HRX_: "HRX",
+    _HSdX_: "HSdX",
     _SHY_: "SHY",
     _SdHY_: "SdHY",
     _HSH_: "HSH",
-    _HRH_: "HRH",
+    _HSdH_: "HSdH",
     _SdHS_: "SdHS",
     _SHSd_: "SHSd"
 }
@@ -111,11 +123,11 @@ SINGLE_QUBIT_GATE_ARR = [None] * LOCAL_CLIFFORD_MASK  + [
 "HS",
 "HSd",
 "HSX",
-"HRX",
+"HSdX",
 "SHY",
 "SdHY",
 "HSH",
-"HRH",
+"HSdH",
 "SdHS",
 "SHSd"
 ]
