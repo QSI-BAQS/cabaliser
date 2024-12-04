@@ -1,6 +1,6 @@
 -- Create the table
 CREATE TABLE IF NOT EXISTS decorated_circuit(
-    id INT PRIMARY KEY REFERENCES linked_circuit_qubit,
+    id INT PRIMARY KEY REFERENCES linked_circuit,
     layer INT
 );
 
@@ -13,7 +13,7 @@ CREATE OR REPLACE PROCEDURE unvisit_circuit()
 LANGUAGE plpgsql
 AS $$
 BEGIN
-UPDATE linked_circuit_qubit 
+UPDATE linked_circuit 
     SET visited = FALSE; 
 COMMIT;
 END;$$;
@@ -29,16 +29,16 @@ BEGIN
 -- Initial decorated circuit 
 INSERT INTO decorated_circuit (
     SELECT id, 0 
-    FROM linked_circuit_qubit 
+    FROM linked_circuit 
     WHERE type = 'In'
         AND visited = FALSE);
 
-UPDATE linked_circuit_qubit 
+UPDATE linked_circuit 
     SET visited = TRUE 
-    WHERE linked_circuit_qubit.id = (
+    WHERE linked_circuit.id = (
         SELECT decorated_circuit.id
         FROM decorated_circuit
-        WHERE linked_circuit_qubit.id = decorated_circuit.id
+        WHERE linked_circuit.id = decorated_circuit.id
     );
 
 COMMIT;
@@ -55,33 +55,33 @@ AS $$
 BEGIN
 -- Decorate the next layer
 INSERT INTO decorated_circuit (
-    SELECT id, layer_num FROM linked_circuit_qubit 
+    SELECT id, layer_num FROM linked_circuit 
     WHERE visited = FALSE 
         AND (prev_q1  / 10 = ( 
             SELECT id 
                 FROM decorated_circuit 
-                WHERE linked_circuit_qubit.prev_q1 / 10 = decorated_circuit.id))
+                WHERE linked_circuit.prev_q1 / 10 = decorated_circuit.id))
         AND (prev_q2 IS NULL OR
             prev_q2 / 10 = (
             SELECT id 
                 FROM decorated_circuit 
-                WHERE linked_circuit_qubit.prev_q2 / 10 = decorated_circuit.id))
+                WHERE linked_circuit.prev_q2 / 10 = decorated_circuit.id))
         AND (prev_q3 IS NULL OR
             prev_q3 / 10 = (
             SELECT id 
                 FROM decorated_circuit 
-                WHERE linked_circuit_qubit.prev_q3 / 10 = decorated_circuit.id))
+                WHERE linked_circuit.prev_q3 / 10 = decorated_circuit.id))
     );
 COMMIT;
 
 -- Set the decorated nodes to visited 
-UPDATE linked_circuit_qubit 
+UPDATE linked_circuit 
     SET visited = TRUE 
-    WHERE linked_circuit_qubit.id = (
+    WHERE linked_circuit.id = (
         SELECT decorated_circuit.id
         FROM decorated_circuit
         WHERE layer = layer_num
-            AND linked_circuit_qubit.id = decorated_circuit.id
+            AND linked_circuit.id = decorated_circuit.id
     );
 
 -- Commit the changes
@@ -104,7 +104,7 @@ CALL unvisit_circuit();
 CALL decorate_input();
 
 -- Loop for each layer
-WHILE EXISTS(SELECT NULL FROM linked_circuit_qubit WHERE visited = FALSE) LOOP
+WHILE EXISTS(SELECT NULL FROM linked_circuit WHERE visited = FALSE) LOOP
     CALL decorate_layer(layer);
     layer := layer + 1;
 END LOOP;

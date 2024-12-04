@@ -14,8 +14,11 @@ pandora_t* pandora_create(char* db_name)
     pan->tag_name = NULL;
 
     pan->db_name_len =  strlen(db_name);
-    pan->db_name = malloc(pan->db_name_len);
+    pan->db_name = malloc(pan->db_name_len + 1);
     memcpy(pan->db_name, db_name, pan->db_name_len);
+    pan->db_name[pan->db_name_len] = '\0';
+
+    pan->conn = NULL;
 
     pandora_connect(pan);
     return pan;
@@ -151,12 +154,12 @@ size_t pandora_connect_get_n_qubits(pandora_t* pan)
  */
 size_t pandora_get_gates_layer(pandora_t* pan, const size_t layer, instruction_stream_u** stream)
 { 
-
+ 
     uint32_t ht_layer = htonl(layer);
     char* param_values[1] = {(char*)&ht_layer}; 
 
     const static int n_params = 1;
-    const static Oid param_types[1] = {};
+    const static Oid *param_types = NULL;
     const static int param_lengths[1] = {sizeof(int)}; 
     const static int param_formats[1] = {POSTGRES_BINARY_FORMAT};
 
