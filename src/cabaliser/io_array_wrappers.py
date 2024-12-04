@@ -6,11 +6,11 @@
 
 from ctypes import POINTER
 
-from ctypes import c_void_p, create_string_buffer, c_char_p, c_size_t
+from ctypes import c_void_p, string_at, create_string_buffer, c_char_p, c_size_t, c_uint32
 from cabaliser.qubit_array import QubitArray
-from cabaliser.structs import ScheduleDependencyType, PauliCorrectionType
-from cabaliser.structs import InvMapperType, PauliOperatorType
-from cabaliser.gates import SINGLE_QUBIT_GATE_TABLE
+from cabaliser.structs import (ScheduleDependencyType, PauliCorrectionType,
+ InvMapperType, PauliOperatorType)
+from cabaliser.gates import SINGLE_QUBIT_GATE_ARR, LOCAL_CLIFFORD_MASK 
 from cabaliser.gate_constructors import tag_to_angle
 from cabaliser.utils import deref
 
@@ -33,16 +33,76 @@ class LocalCliffords(QubitArray):
     '''
         Ordered array of local clifford operations
     '''
+    def __init__(self, *args, **kwargs):
+        '''
+            Constructor for the local clifford map 
+        '''
+        self.__string = None
+        super().__init__(*args, **kwargs)
+
     def to_list(self, cache=True, to_string=True):
+        '''
+            Maps the underlying array to a Python object 
+        '''
+        # Return a string object
         if to_string:
-            return list(map(SINGLE_QUBIT_GATE_TABLE.__getitem__, self))
+            if cache and self.__string is None: 
+                self.__string = list(map(SINGLE_QUBIT_GATE_ARR.__getitem__, iter(self)))
+            elif not cache:
+                return list(map(SINGLE_QUBIT_GATE_ARR.__getitem__, iter(self)))
+            return self.__string 
+
+        # Return a list object
         return super().to_list(cache=cache)
 
 
 class IOMap(QubitArray):
+    COND_MEASUREMENT_TAG = c_uint32(0x0fffffff).value 
     '''
         Ordered array of map of input qubits to output qubits
     '''
+    
+    def __init__(self, n_qubits: int, arr: c_void_p, measurement_tags: MeasurementTags=None):       
+        """
+            Constructor for the IO map
+             
+        """
+        self.__measurement_tags = measurement_tags
+        super().__init__(n_qubits, arr)
+
+    def to_list(self, cache=True):
+        '''
+            Converts the underlying array to a Python list
+        '''
+        if self.__measurement_tags is None:
+            return super().to_list(cache=cache)
+
+        if cache and self._get_list() is None:
+            lst = [ 
+                idx if self.__measurement_tags[idx] != IOMap.COND_MEASUREMENT_TAG 
+                else None
+                for idx in iter(self)
+            ]
+            super()._set_list(lst)
+        elif not cache:
+            return [ 
+                idx if self.__measurement_tags[idx] != IOMap.COND_MEASUREMENT_TAG 
+                else None
+                for idx in iter(self)
+            ]      
+        return super()._get_list()
+
+    def __getitem__(self, idx: int):
+        '''
+            Returns an item from the array
+            :: idx : int :: Index to query
+        '''
+        if idx > self.n_qubits:
+            raise IndexError("Qubit index is out of range")
+        arr_idx = self.arr[idx]
+        if self.__measurement_tags[arr_idx] == IOMap.COND_MEASUREMENT_TAG:
+            return None
+        return arr_idx
 
 
 class ScheduleDependency(QubitArray):

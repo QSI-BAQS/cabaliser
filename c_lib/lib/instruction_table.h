@@ -8,7 +8,7 @@
 #define NON_LOCAL_CLIFFORD_MASK ((uint8_t)(1 << 6)) 
 #define RZ_MASK ((uint8_t)(1 << 7)) 
 
-#define MEASUREMENT_CONDITIONED_MASK = ((uint8_t)((1 << 6) | (1 << 7)))    
+#define MEASUREMENT_CONDITIONED_MASK ((uint8_t)((1 << 6) | (1 << 7)))    
 
 #define N_LOCAL_CLIFFORDS 24 
 #define N_NON_LOCAL_CLIFFORDS 2 
@@ -54,9 +54,9 @@
 
 #define _NOP_ (0xff) 
 
-#define _MCX_ = (0x01 | MEASUREMENT_CONDITIONED_MASK)
-#define _MCY_ = (0x02 | MEASUREMENT_CONDITIONED_MASK)
-#define _MCZ_ = (0x03 | MEASUREMENT_CONDITIONED_MASK)
+#define _MCX_ (0x01 | MEASUREMENT_CONDITIONED_MASK)
+#define _MCY_ (0x02 | MEASUREMENT_CONDITIONED_MASK)
+#define _MCZ_ (0x03 | MEASUREMENT_CONDITIONED_MASK)
 
 
 /*
@@ -92,7 +92,7 @@ struct rz_instruction
 };
 
 
-struct measurement_conditioned_instruction
+struct conditional_instruction
 {
     instruction_t opcode; // Type of operation is encoded in opcode 
     uint32_t ctrl;  
@@ -111,6 +111,7 @@ union instruction_stream
     struct single_qubit_instruction single;
     struct two_qubit_instruction multi;
     struct rz_instruction rz; 
+    struct conditional_instruction cond;
 };
 typedef union instruction_stream instruction_stream_u;
 
