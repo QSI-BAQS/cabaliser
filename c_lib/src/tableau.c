@@ -150,11 +150,7 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ)
     uint8_t bit_z = 0;
     // TODO Vectorise this
 
-    #ifdef __GNUC__
-    #ifndef __clang__    
-    #pragma GCC ivdep  
-    #endif
-    #endif
+    #pragma omp for simd
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
         bit_z = __inline_slice_get_bit(tab->slices_z[i], targ); 
@@ -283,6 +279,9 @@ void tableau_transpose_slices(tableau_t* tab, uint64_t** slices)
     return;
 }
 
+/*
+ * Naive transpose method retained for comparisons when testing
+ */
 void tableau_transpose_naive(tableau_t* tab)
 {
 
@@ -309,7 +308,6 @@ void tableau_transpose_naive(tableau_t* tab)
     }
     return;
 }
-
 
 
 /*
@@ -459,6 +457,13 @@ void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
     return;
 }
 
+/*
+ * tableau_slice_xor
+ * Performs a rowsum between two rows of stabilisers 
+ * :: tab : tableau_t const* :: Tableau object
+ * :: ctrl : const size_t :: Control of the rowsum
+ * :: targ : const size_t :: Target of the rowsum
+ */
 void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ)
 {
     CHUNK_OBJ* slice_ctrl = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
@@ -467,11 +472,7 @@ void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ)
     size_t i;
     #pragma omp parallel private(i)
     { 
-        #ifdef __GNUC__
-        #ifndef __clang__
         #pragma omp for simd
-        #endif
-        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             slice_targ[i] ^= slice_ctrl[i];
@@ -483,11 +484,7 @@ void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ)
 
     #pragma omp parallel private(i)
     { 
-        #ifdef __GNUC__
-        #ifndef __clang__
         #pragma omp for simd
-        #endif
-        #endif
         for (i = 0; i < tab->slice_len; i++)
         {
             slice_targ[i] ^= slice_ctrl[i];

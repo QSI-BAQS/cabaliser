@@ -137,7 +137,6 @@ void tableau_print(const tableau_t* tab);
  * :: tab : tableau_t* :: Tableau to transpose
  * Flips the orientation field and the member fields
  * This flips the alignment of the cache lines
- * TODO simd port swap based nlogn bitvector transpose 
  */
 void tableau_transpose(tableau_t* tab);
 void tableau_transpose_naive(tableau_t* tab);
@@ -148,7 +147,6 @@ void tableau_transpose_naive(tableau_t* tab);
  * :: tab : tableau_t const* :: Tableau object
  * :: ctrl : const size_t :: Control of the rowsum
  * :: targ : const size_t :: Target of the rowsum
- * TODO Check if phases should also be XORed
  */
 void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ);
 
