@@ -75,7 +75,6 @@ void qft_benchmark(const size_t n_qubits)
 {
     widget_t* wid = widget_qft_create(n_qubits);
 
-    return;
     widget_decompose(wid);    
 
     for (size_t i = 0; i < n_qubits; i++)//n_qubits; i++)
@@ -91,10 +90,10 @@ void qft_benchmark(const size_t n_qubits)
 
 int main(int argc, char** argv)
 {
-    if (argc < 3)
+    if (argc < 2)
     {
         printf("Insufficient parameters, requires <n_qubits>\n");
-    return 0;
+	return 0;
     }
 
     size_t tableau_size = atoi(argv[1]);
