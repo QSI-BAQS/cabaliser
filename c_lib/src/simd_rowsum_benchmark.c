@@ -27,21 +27,19 @@ int check(char* a, char* b, char* c, char* d, size_t n) {
 int op(uint64_t *restrict a, uint64_t *restrict b, uint64_t *restrict c, uint64_t *restrict d, size_t n) {
     uint64_t pos = 0;
     uint64_t neg = 0;
-    for (size_t i = 0; i < n; i++) {
+
+    for (size_t i = 0; i < n - n % 4; i++) {
         uint64_t plus = 0;
         uint64_t minus = 0;
 
         plus = (~a[i] & b[i] & c[i] & ~d[i]) | (a[i] & ~b[i] & c[i] & d[i]) | (a[i] & b[i] & ~c[i] & d[i]);
         pos += __builtin_popcountll(plus);
-        // pos %= 4;
 
         minus = (a[i] & ~b[i] & ~c[i] & d[i]) | (~a[i] & b[i] & c[i] & d[i]) | (a[i] & b[i] & c[i] & ~d[i]);
         neg += __builtin_popcountll(minus);
-        // neg %= 4;
     }
-    // neg = __builtin_popcount(minus);
 
-    return ((pos - neg) % 4 + 4) % 4;
+    return (pos - neg) % 4;
 }
 
 int op2(void *restrict w, void *restrict x, void *restrict y, void *restrict z, size_t n_bytes) {
@@ -54,31 +52,93 @@ int op2(void *restrict w, void *restrict x, void *restrict y, void *restrict z, 
         __m256i d = _mm256_loadu_si256(z + i);
 
         __m256i plus = _mm256_or_si256(
-        _mm256_and_si256(_mm256_andnot_si256(d, _mm256_xor_si256(_mm256_set1_epi8(0xff), a)), _mm256_and_si256(b, c)),
+        _mm256_andnot_si256(_mm256_or_si256(d, a), _mm256_and_si256(b, c)),
         _mm256_and_si256(_mm256_and_si256(a, d), _mm256_xor_si256(b, c)));
         
         __m256i minus = _mm256_or_si256(
-        _mm256_and_si256(_mm256_andnot_si256(c, _mm256_xor_si256(_mm256_set1_epi8(0xff), b)), _mm256_and_si256(a, d)),
+        _mm256_andnot_si256(_mm256_or_si256(c, b), _mm256_and_si256(a, d)),
         _mm256_and_si256(_mm256_and_si256(b, c), _mm256_xor_si256(a, d)));
 
-        // pos += _mm256_reduce_add_epi8(_mm256_popcnt_epi8(plus)) % 4;
-        // neg += _mm256_reduce_add_epi8(_mm256_popcnt_epi8(minus)) % 4;
 
-        pos += _mm_popcnt_u64(_mm256_extract_epi64(plus, 0));
-        pos += _mm_popcnt_u64(_mm256_extract_epi64(plus, 1));
-        pos += _mm_popcnt_u64(_mm256_extract_epi64(plus, 2));
-        pos += _mm_popcnt_u64(_mm256_extract_epi64(plus, 3));
+        pos += _mm_popcnt_u64(_mm256_extract_epi64(plus, 0))
+            + _mm_popcnt_u64(_mm256_extract_epi64(plus, 1))
+            + _mm_popcnt_u64(_mm256_extract_epi64(plus, 2))
+            + _mm_popcnt_u64(_mm256_extract_epi64(plus, 3));
 
-        neg += _mm_popcnt_u64(_mm256_extract_epi64(minus, 0));
-        neg += _mm_popcnt_u64(_mm256_extract_epi64(minus, 1));
-        neg += _mm_popcnt_u64(_mm256_extract_epi64(minus, 2));
-        neg += _mm_popcnt_u64(_mm256_extract_epi64(minus, 3));
+        neg += _mm_popcnt_u64(_mm256_extract_epi64(minus, 0))
+            + _mm_popcnt_u64(_mm256_extract_epi64(minus, 1))
+            + _mm_popcnt_u64(_mm256_extract_epi64(minus, 2))
+            + _mm_popcnt_u64(_mm256_extract_epi64(minus, 3));
 
-        // pos %= 4;
-        // neg %= 4;
     }
 
     return ((pos - neg) % 4 + 4) % 4;
+}
+
+int op2b(void *restrict w, void *restrict x, void *restrict y, void *restrict z, size_t n_bytes) {
+    uint64_t acc0 = 0;
+    uint64_t acc1 = 0;
+    uint64_t acc2 = 0;
+    uint64_t acc3 = 0;
+    for (size_t i = 0; i < n_bytes; i+=32) {
+        __m256i a = _mm256_loadu_si256(w + i);
+        __m256i b = _mm256_loadu_si256(x + i);
+        __m256i c = _mm256_loadu_si256(y + i);
+        __m256i d = _mm256_loadu_si256(z + i);
+
+        __m256i plus = _mm256_or_si256(
+        _mm256_andnot_si256(_mm256_or_si256(d, a), _mm256_and_si256(b, c)),
+        _mm256_and_si256(_mm256_and_si256(a, d), _mm256_xor_si256(b, c)));
+        
+        __m256i minus = _mm256_or_si256(
+        _mm256_andnot_si256(_mm256_or_si256(c, b), _mm256_and_si256(a, d)),
+        _mm256_and_si256(_mm256_and_si256(b, c), _mm256_xor_si256(a, d)));
+
+
+        acc0 += _mm_popcnt_u64(_mm256_extract_epi64(plus, 0)) - _mm_popcnt_u64(_mm256_extract_epi64(minus, 0));
+        acc1 += _mm_popcnt_u64(_mm256_extract_epi64(plus, 1)) - _mm_popcnt_u64(_mm256_extract_epi64(minus, 1));
+        acc2 += _mm_popcnt_u64(_mm256_extract_epi64(plus, 2)) - _mm_popcnt_u64(_mm256_extract_epi64(minus, 2));
+        acc3 += _mm_popcnt_u64(_mm256_extract_epi64(plus, 3)) - _mm_popcnt_u64(_mm256_extract_epi64(minus, 3));
+    }
+
+    return (acc0 + acc1 + acc2 + acc3) % 4;
+}
+
+int op2c(void *restrict w, void *restrict x, void *restrict y, void *restrict z, size_t n_bytes) {
+    uint64_t acc0 = 0;
+    uint64_t acc1 = 0;
+    uint64_t acc2 = 0;
+    uint64_t acc3 = 0;
+    uint64_t bcc0 = 0;
+    uint64_t bcc1 = 0;
+    uint64_t bcc2 = 0;
+    uint64_t bcc3 = 0;
+    for (size_t i = 0; i < n_bytes; i+=32) {
+        __m256i a = _mm256_loadu_si256(w + i);
+        __m256i b = _mm256_loadu_si256(x + i);
+        __m256i c = _mm256_loadu_si256(y + i);
+        __m256i d = _mm256_loadu_si256(z + i);
+
+        __m256i plus = _mm256_or_si256(
+        _mm256_andnot_si256(_mm256_or_si256(d, a), _mm256_and_si256(b, c)),
+        _mm256_and_si256(_mm256_and_si256(a, d), _mm256_xor_si256(b, c)));
+        
+        __m256i minus = _mm256_or_si256(
+        _mm256_andnot_si256(_mm256_or_si256(c, b), _mm256_and_si256(a, d)),
+        _mm256_and_si256(_mm256_and_si256(b, c), _mm256_xor_si256(a, d)));
+
+
+        acc0 += _mm_popcnt_u64(_mm256_extract_epi64(plus, 0));
+        bcc0 += _mm_popcnt_u64(_mm256_extract_epi64(minus, 0));
+        acc1 += _mm_popcnt_u64(_mm256_extract_epi64(plus, 1));
+        bcc1 += _mm_popcnt_u64(_mm256_extract_epi64(minus, 1));
+        acc2 += _mm_popcnt_u64(_mm256_extract_epi64(plus, 2));
+        bcc2 += _mm_popcnt_u64(_mm256_extract_epi64(minus, 2));
+        acc3 += _mm_popcnt_u64(_mm256_extract_epi64(plus, 3));
+        bcc3 += _mm_popcnt_u64(_mm256_extract_epi64(minus, 3));
+    }
+
+    return (((acc0 + acc1 + acc2 + acc3) - (bcc0 + bcc1 + bcc2 + bcc3)) % 4 + 4)%4;
 }
 
 int op3(void *restrict w, void *restrict x, void *restrict y, void *restrict z, size_t n_bytes) {
@@ -191,6 +251,8 @@ int main(int argc, char const *argv[])
     int c_val = 0;
     int op_val = 0;
     int op2_val = 0;
+    int op2b_val = 0;
+    int op2c_val = 0;
     int op3_val = 0;
     double start, end;
 
@@ -213,7 +275,22 @@ int main(int argc, char const *argv[])
         op2_val += op2(a, b, c, d, TEST_SIZE);
     }
     end = clock();
-    printf("2 %d %lf\n", op2_val, (end - start)/CLOCKS_PER_SEC);
+    printf("2a %d %lf\n", op2_val, (end - start)/CLOCKS_PER_SEC);
+
+    start = clock();
+    for (int i = 0; i < 10000; i++) {
+        op2b_val += op2b(a, b, c, d, TEST_SIZE);
+    }
+    end = clock();
+    printf("2b %d %lf\n", op2b_val, (end - start)/CLOCKS_PER_SEC);
+
+    start = clock();
+    for (int i = 0; i < 10000; i++) {
+        op2c_val += op2c(a, b, c, d, TEST_SIZE);
+    }
+    end = clock();
+    printf("2c %d %lf\n", op2c_val, (end - start)/CLOCKS_PER_SEC);
+
 
     start = clock();
     for (int i = 0; i < 10000; i++) {
