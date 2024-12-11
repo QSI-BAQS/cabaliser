@@ -374,7 +374,7 @@ def norm(x, eps=15):
     Begin Operator and State definitions
 """
 
-I = np.eye(2)
+I = np.eye(2, dtype=np.complex128)
 
 X = array([[0, 1], [1, 0]])
 Y = array([[0.0 + 0.0j, -0.0 - 1.0j], [0.0 + 1.0j, 0.0 + 0.0j]])
@@ -570,6 +570,40 @@ def Toffoli(n_qubits=3, ctrl_0=0, ctrl_1=1, targ=2):
     return n_qubit_gate(toff_mat, n_qubits, 3, ctrl_0, ctrl_1, targ)
 
 
+_Rz = lambda theta: np.array([[1, 0], [0, np.exp(1j * theta / 2)]], dtype=np.complex128)
+
+_Rx = lambda theta: np.array(
+[[0, np.exp(-1j * theta / 2)], 
+ [np.exp(1j * theta / 2), 0]], dtype=np.complex128)
+
+def CPHASE(n_qubits: int, ctrl: int = 0, targ: int = 1, theta: float = 1.0):
+    """
+    CPHASE gate
+    :: n_qubits : int :: Size of computational space 
+    :: ctrl : int :: Ctrl qubit
+    :: targ : int :: Target qubit
+    :: theta : float :: Rotation angle 
+    """
+    cphase_mat = np.eye(4, dtype=np.complex128)
+    cphase_mat[2:, 2:] = _Rz(theta) 
+    return two_qubit_gate(cphase_mat, n_qubits, ctrl, targ)
+cphase = CPHASE
+
+def QFT(n_qubits: int, *targs):
+    """
+    Simple qft
+    :: n_qubits : int :: Number of qubits in the system
+    :: targs :: Target Qubits   
+    """
+    mat = kr(*[I] * n_qubits)
+    n_targets = len(targs)
+    rotation = lambda x: 2 ** (-1 * x) * np.pi
+    for i in range(n_targets):
+        mat = single_qubit_gate(H,:n_qubits, targs[i]) @ mat    
+        for j in range(i + 1, n_targets):
+           mat = CPHASE(n_qubits, targs[j], targs[i], theta=rotation(j - i + 1)) @ mat 
+    return mat 
+
 def n_qubit_gate(gate, n_qubits, n_qubits_gate, *args):
     """
     Composes an n qubit gate over an arbitrary set of targets using swaps
@@ -587,6 +621,16 @@ def n_qubit_gate(gate, n_qubits, n_qubits_gate, *args):
 
     return swap_mat.transpose() @ mat @ swap_mat
 
+
+def single_qubit_gate(gate, n_qubits, *args):
+    '''
+    Simple map for expanding single qubit gates
+    '''
+    mats = [I] * n_qubits
+    for arg in args:
+        mats[arg] = gate
+    print(mats)
+    return kr(*mats) 
 
 def two_qubit_gate(gate, n_qubits, ctrl, targ):
     """
