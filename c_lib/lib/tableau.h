@@ -14,6 +14,8 @@ typedef struct tableau_t tableau_t;
 #include "instructions.h"
 
 #include "simd_transpose.h"
+#include "simd_rowsum.h"
+
 
 
 
@@ -130,6 +132,14 @@ uint8_t __inline_slice_get_bit(
  * :: tab : const tableau_t* :: Tableau to print
  */
 void tableau_print(const tableau_t* tab);
+
+/*
+ * tableau_print_phases 
+ * Inefficient method for printing phase terms of a tableau 
+ * :: tab : const tableau_t* :: Tableau to print
+ */
+void tableau_print_phases(const tableau_t* tab);
+
 
 /*
  * tableau_transpose

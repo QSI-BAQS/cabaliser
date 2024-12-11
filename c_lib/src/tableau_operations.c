@@ -16,8 +16,9 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
     {
        if (CTZ_SENTINEL == tableau_ctz(tab->slices_x[i], tab->slice_len)) 
        {
+         DPRINT(DEBUG_3, "Empty X Col, applying H to %lu\n", i);
          tableau_H(tab, i);
-         clifford_queue_local_clifford_right(c_que, _H_, i);   
+         clifford_queue_local_clifford_right(c_que, _H_, i);
        } 
     } 
     return;
@@ -27,6 +28,7 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
 /*
  * tableau_Z_block_diagonal
  * Ensures that the Z block of the tableau is diagonal
+ * Operation unused as it only applies to the non-transposed matrix
  * :: tab : tableau_t* :: Tableau to act on
  *
  */
@@ -36,10 +38,11 @@ void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que)
     #pragma omp parallel for private(i)
     for (i = 0; i < tab->n_qubits; i++)
     { 
-        uint8_t z = __inline_slice_get_bit(tab->slices_z[i], i);  
-        instruction_t operator = (z * (_I_)) | (!z * (_S_)); 
-        
-        clifford_queue_local_clifford_right(c_que, i, operator);   
+        if (__inline_slice_get_bit(tab->slices_z[i], i))  
+        {
+            tableau_R(tab, i);
+            clifford_queue_local_clifford_right(c_que, i, _S_);   
+        }
     }
     return;
 }
@@ -53,6 +56,7 @@ void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_
         // Swap stabilisers
         if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
         {
+            DPRINT(DEBUG_3, "Strategy 1: Swapping %lu <-> %lu\n", j, idx);
             tableau_idx_swap_transverse(tab, idx, j);
             return; 
         } 
@@ -60,6 +64,7 @@ void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_
 
     if (1 == __inline_slice_get_bit(tab->slices_z[idx], idx))
     {
+        DPRINT(DEBUG_3, "Strategy 2: Applying Hadamard to %lu\n", idx);
         tableau_transverse_hadamard(tab, idx);
         clifford_queue_local_clifford_right(queue, _H_, idx);   
         return;
@@ -73,13 +78,14 @@ void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_
             // Backup Strategy
             tableau_idx_swap_transverse(tab, idx, j);
 
+            DPRINT(DEBUG_3, "Strategy 3: Applying Hadamard to %lu\n", idx);
+
             tableau_transverse_hadamard(tab, idx);
             clifford_queue_local_clifford_right(queue, _H_, idx);   
             return; 
         } 
     }
-    //assert(0); // Could not place a 1 in the X diagonal
-    
+    DPRINT(DEBUG_3, "Applying Hadamard to %lu\n", idx);
     return;
 }
 
@@ -93,6 +99,7 @@ void tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
         {
             if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
             {
+                DPRINT(DEBUG_3, "Slice XOR Upper: %lu %lu\n", idx, j);
                 tableau_slice_xor(tab, idx, j);
             }
         }
@@ -113,6 +120,7 @@ void tableau_X_diag_col_lower(tableau_t* tab, const size_t idx)
         {
             if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
             {
+                DPRINT(DEBUG_3, "Slice XOR Lower: %lu %lu\n", idx, j);
                 tableau_slice_xor(tab, idx, j);
             }
         }
@@ -156,6 +164,7 @@ void tableau_H(tableau_t* tab, const size_t targ)
             __atomic_fetch_xor(slice_r + i, slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
         }  
     }
+    DPRINT(DEBUG_3, "Hadamard on %lu\n", targ);
     void* ptr = tab->slices_x[targ];
     tab->slices_x[targ] = tab->slices_z[targ];
     tab->slices_z[targ] = ptr;

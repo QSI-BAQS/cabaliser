@@ -6,6 +6,8 @@
 #include "omp.h"
 #include "tableau.h"
 #include "instructions.h"
+#include "debug.h"
+
 
 #define OPT_PRAGMA
 #ifndef OPT_PRAGMA

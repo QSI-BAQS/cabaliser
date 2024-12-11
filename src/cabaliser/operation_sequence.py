@@ -45,6 +45,9 @@ class OperationSequence():
         self.max_qubit_index = 0
         self.n_rz_operations = 0
 
+    def __len__(self):
+        return self.curr_instructions
+
     def __getitem__(self, idx: int):
         '''
             __getitem__
@@ -125,7 +128,6 @@ class OperationSequence():
         return seq
 
     def __repr__(self):
-        print(self.ops[0])
         return '\n'.join(repr(self.ops[i]) for i in range(self.curr_instructions))
 
     def __str__(self):

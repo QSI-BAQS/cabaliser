@@ -23,14 +23,9 @@ void test_tableau_transpose(const size_t n_qubits)
         }
     } 
 
-//    test_tableau_print(tab->slices_x, 16, 0, 2, 0);
-//    test_tableau_print(tab_cmp->slices_x, 16, 0, 2, 0);
 
     tableau_transpose(tab);  
     tableau_transpose_naive(tab_cmp);
-
-//    test_tableau_print(tab->slices_x, 16, 128, 0, 0);
-//    test_tableau_print(tab_cmp->slices_x, 16, 128, 0, 0);
 
 
     for (size_t i = 0; i < tab->n_qubits; i++)
@@ -82,7 +77,6 @@ int main()
         srand(i);
         test_tableau_transpose(64 * i + i);
     }
-
 
     return 0;
 }

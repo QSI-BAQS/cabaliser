@@ -150,4 +150,15 @@ extern const instruction_t CNOT_MAP_TARG_CTRL[N_LOCAL_CLIFFORDS];
  */
 void clifford_queue_local_clifford_right(clifford_queue_t* que, const instruction_t cliff, const size_t target);
 
+/*
+ * clifford_queue_local_clifford_left 
+ * Applies clifford operator from the left of the expression  
+ * This is used when extracting Clifford terms from the graph state preparaion
+ * :: que : clifford_queue_t* :: The clifford queue
+ * :: cliff : instruction_t :: The instruction 
+ * :: target : size_t :: The target qubit 
+ */
+void clifford_queue_local_clifford_left(clifford_queue_t* que, const instruction_t cliff, const size_t target);
+
+
 #endif

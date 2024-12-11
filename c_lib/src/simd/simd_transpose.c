@@ -25,6 +25,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
 
     // Transpose high and low bytes
     // This shuffle is within each 128 byte lane
+    // Better unrolling will skip this setr operation 
     __m256i shuffle_mask = _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15, 16, 18, 20, 22, 24, 26, 28, 30, 17, 19, 21, 23, 25, 27, 29, 31); 
     msrc = _mm256_shuffle_epi8(msrc, shuffle_mask); 
     

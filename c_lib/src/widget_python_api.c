@@ -88,3 +88,16 @@ void widget_print_tableau_api(
     tableau_print(wid->tableau); 
     wid->tableau->n_qubits = tmp;
 }
+
+/*
+ * widget_print_tableau
+ * Prints the tableau
+ */
+void widget_print_tableau_phases_api(
+    const widget_t* wid)
+{
+    size_t tmp = wid->tableau->n_qubits;
+    wid->tableau->n_qubits = wid->n_qubits;
+    tableau_print_phases(wid->tableau); 
+    wid->tableau->n_qubits = tmp;
+}

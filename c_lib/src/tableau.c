@@ -150,15 +150,26 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ)
     uint8_t bit_z = 0;
     // TODO Vectorise this
 
-    #pragma omp for simd
-    for (size_t i = 0; i < tab->n_qubits; i++)
-    {
-        bit_z = __inline_slice_get_bit(tab->slices_z[i], targ); 
-        bit_x = __inline_slice_get_bit(tab->slices_x[i], targ); 
-
-        __inline_slice_set_bit(tab->slices_z[i], targ, bit_x); 
-        __inline_slice_set_bit(tab->slices_x[i], targ, bit_z); 
-    }
+//    if (tab->n_qubits < sizeof(size_t))
+//    { 
+        // TODO SIMD this by chunks  
+        #pragma omp for simd
+        for (size_t i = 0; i < tab->n_qubits; i++)
+        {
+            bit_z = __inline_slice_get_bit(tab->slices_z[i], targ); 
+            bit_x = __inline_slice_get_bit(tab->slices_x[i], targ); 
+            uint8_t bit_phase = ((uint8_t)bit_z & (uint8_t)bit_x) ^ __inline_slice_get_bit(tab->phases, i);
+            __inline_slice_set_bit(tab->phases, i, bit_phase);
+            __inline_slice_set_bit(tab->slices_z[i], targ, bit_x); 
+            __inline_slice_set_bit(tab->slices_x[i], targ, bit_z); 
+        }
+//    }
+//    else
+//    {
+//
+//            mask |= (bit_z & bit_x) <<   
+//
+//    }
 
     return;
 }
@@ -337,6 +348,21 @@ void tableau_print(const tableau_t* tab)
     }
 }
 
+/*
+ * tableau_print_phases 
+ * Inefficient method for printing a tableau 
+ * :: tab : const tableau_t* :: Tableau to print
+ */
+void tableau_print_phases(const tableau_t* tab)
+{
+    for (size_t i = 0; i < tab->n_qubits; i++)
+    {
+        printf("|");
+        printf("%d", slice_get_bit(tab->phases, i));
+        printf("|\n");
+    }
+}
+
 
 /*
  * slice_empty
@@ -426,6 +452,11 @@ void tableau_idx_swap(tableau_t* tab, const size_t i, const size_t j)
     tab->slices_z[i] = tab->slices_z[j];  
     tab->slices_z[j] = tmp;  
 
+    uint8_t phase_i = slice_get_bit(tab->phases, i); 
+    uint8_t phase_j = slice_get_bit(tab->phases, j); 
+    slice_set_bit(tab->phases, i, phase_j); 
+    slice_set_bit(tab->phases, j, phase_i); 
+
     return;
 }
 
@@ -466,28 +497,42 @@ void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
  */
 void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ)
 {
-    CHUNK_OBJ* slice_ctrl = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
-    CHUNK_OBJ* slice_targ = (CHUNK_OBJ*)(tab->slices_x[targ]); 
+    CHUNK_OBJ* slice_ctrl_x = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
+    CHUNK_OBJ* slice_targ_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
+    CHUNK_OBJ* slice_ctrl_z = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
+    CHUNK_OBJ* slice_targ_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            slice_targ[i] ^= slice_ctrl[i];
-        }  
-    }
+    CHUNK_OBJ phase_slice = 0; 
 
-    slice_ctrl = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
-    slice_targ = (CHUNK_OBJ*)(tab->slices_z[targ]); 
+    DPRINT(DEBUG_3, "ROWSUM: %lu -> %lu\n", ctrl, targ);
 
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            slice_targ[i] ^= slice_ctrl[i];
-        }  
-    }
+    int8_t phase = simd_rowsum(tab->slice_len * sizeof(CHUNK_OBJ), slice_ctrl_x, slice_ctrl_z, slice_targ_x, slice_targ_z);
+
+    DPRINT(DEBUG_3, "Phase: %u\n", phase);
+    int8_t c_phase = slice_get_bit(tab->phases, ctrl) << 1;
+    int8_t t_phase = slice_get_bit(tab->phases, targ) << 1;
+
+    phase = (4 + ((c_phase + t_phase + phase) % 4) % 4) >> 1;
+
+    slice_set_bit(tab->phases, targ, phase);
+    
+    //size_t i;
+    //#pragma omp parallel for simd 
+    //    private(i) 
+    //    reduction(^:phase_slice)
+    //for (i = 0; i < tab->slice_len; i++)
+    //{
+    //    phase_slice ^= (slice_ctrl_x[i] & slice_targ_z[i]) ^ (slice_ctrl_z[i] & slice_targ_x[i]);
+    //    slice_targ_x[i] ^= slice_ctrl_x[i];
+    //    slice_targ_z[i] ^= slice_ctrl_z[i];
+    //}  
+
+    //uint8_t c_phase = slice_get_bit(tab->phases, ctrl);
+    //c_phase ^= __builtin_parityll(phase_slice);  
+    //uint8_t t_phase = slice_get_bit(tab->phases, targ);
+
+    //DPRINT(DEBUG_3, "Phase %lu : %u %u %u -> %u\n", targ, __builtin_parityll(phase_slice), c_phase, t_phase,
+    //         __builtin_parityll(phase_slice) ^ c_phase ^ t_phase
+    //);
+
 }
