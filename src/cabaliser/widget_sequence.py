@@ -32,18 +32,35 @@ class WidgetSequence:
         self.qubit_width = qubit_width
         self.max_qubits = max_qubits
 
-    def __call__(
+    def __call__(self, *args, json_output: bool = True, store_output = None, **kwargs):
+        """
+            Wrapper around widgetise_operation_sequence 
+            That is ultimately a wrapper around _widgetise_operation_sequence_iter
+            :: json_output  : bool :: Flag to trigger json output
+        """
+        if store_output is not None:  # Legacy syntax support
+            json_output = store_output
+        self.widgetise_operation_sequence(*args, json_output=json_output, **kwargs)
+
+    def widgetise_operation_sequence(self, *args, **kwargs): 
+        """
+            Wrapper around _wigetise_operation_sequence_iter
+            This function just forces the evaluation of the generator output 
+        """ 
+        return list(self._widgetise_operation_sequence_iter(*args, **kwargs))
+
+    def _widgetise_operation_sequence_iter(
         self,
         ops: OperationSequence,
-        progress: bool = True,
-        store_output: bool = True,
+        progress: bool = False,
+        json_output: bool = False,
         **widget_args
     ):
         """
         Processes an operations sequence
         :: ops : OperationSequence :: Sequence of operations to split and process
         :: progress : bool :: Simple progress printer
-        :: store_output : bool :: Whether to save json objects
+        :: json_output : bool :: Whether to yield json objects or widgets 
         :: **widget_args :: Args for the widget
             - rz_to_float=False
             - local_clifford_to_string=True 
@@ -57,11 +74,17 @@ class WidgetSequence:
             wid(seq)
             wid.decompose()
 
-            if store_output:
-                self._json.append(wid.json(**widget_args))
+            if json_output:
+                yield self._json.append(wid.json(**widget_args))
+            else:
+                yield wid
 
-            # Widget objects are large, clear memory!
-            del wid
+    def __iter__(self, *args, **kwargs):
+        """
+        Wrapper around _widgetise_operation_sequence_iter
+        """
+        return self._widgetise_operation_sequence_iter(*args, **kwargs)
+
 
     def json(self):
         """
