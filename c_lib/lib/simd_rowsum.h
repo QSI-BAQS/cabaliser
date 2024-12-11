@@ -24,10 +24,10 @@
  */
 int8_t simd_rowsum(
     size_t n_bytes,
-    void* ctrl_x, 
-    void* ctrl_z, 
-    void* targ_x, 
-    void* targ_z
+    void* restrict ctrl_x,
+    void* restrict ctrl_z,
+    void* restrict targ_x,
+    void* restrict targ_z
 );
 
 /*
@@ -42,10 +42,29 @@ int8_t simd_rowsum(
  */
 int8_t simd_xor_rowsum(
     size_t n_bytes,
-    void* ctrl_x, 
-    void* ctrl_z, 
-    void* targ_x, 
-    void* targ_z
+    void* restrict ctrl_x,
+    void* restrict ctrl_z,
+    void* restrict targ_x,
+    void* restrict targ_z
 );
+
+/*
+ * rowsum_naive_lookup_table
+ * Naive lookup table implementation
+ * :: n_bytes : size_t :: Length of the chunk 
+ * :: ctrl_x :: void* :: Control X vec 
+ * :: ctrl_z :: void* :: Control Z vec 
+ * :: targ_x :: void* :: Target X vec 
+ * :: targ_z :: void* :: Target Z vec 
+ * Returns the phase term 
+ */
+int8_t rowsum_naive_lookup_table(
+    size_t n_bytes,
+    void* restrict ctrl_x,
+    void* restrict ctrl_z,
+    void* restrict targ_x,
+    void* restrict targ_z
+);
+
 
 #endif

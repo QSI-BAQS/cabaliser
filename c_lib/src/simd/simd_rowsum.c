@@ -18,6 +18,10 @@
 #define PLS (1)
 #define MNS ((int8_t) -1) 
 
+
+#define NAIVE_LOOKUP_TABLE 0, 0, 0, 0, 0, 0, 1, 3, 0, 3, 0, 1, 0, 1, 3, 0
+
+
 #define ROWSUM_MASK MASK_0, MASK_0, MASK_0, MASK_0
 
 //                             00   01   10   11                             
@@ -25,6 +29,7 @@
 #define ROWSUM_SHUFFLE_MASK_01 NIL, NIL, NIL, NIL
 #define ROWSUM_SHUFFLE_MASK_10 MNS, MNS, MNS, MNS
 #define ROWSUM_SHUFFLE_MASK_11 NIL, NIL, NIL, NIL
+
 #define ROWSUM_SHUFFLE_SEQ ROWSUM_SHUFFLE_MASK_00, ROWSUM_SHUFFLE_MASK_01, ROWSUM_SHUFFLE_MASK_10, ROWSUM_SHUFFLE_MASK_11
 #define ROWSUM_SHUFFLE_MASK ROWSUM_SHUFFLE_SEQ, ROWSUM_SHUFFLE_SEQ 
 /*
@@ -55,10 +60,10 @@
  */
 int8_t simd_rowsum(
     size_t n_bytes,
-    void* ctrl_x, 
-    void* ctrl_z, 
-    void* targ_x, 
-    void* targ_z 
+    void* restrict ctrl_x, 
+    void* restrict ctrl_z, 
+    void* restrict targ_x, 
+    void* restrict targ_z 
 )
 {
     __m256i mask = _mm256_setr_epi64x(ROWSUM_MASK); 
@@ -227,10 +232,10 @@ int8_t simd_rowsum(
  */
 int8_t simd_xor_rowsum(
     size_t n_bytes,
-    void* ctrl_x, 
-    void* ctrl_z, 
-    void* targ_x, 
-    void* targ_z 
+    void* restrict ctrl_x, 
+    void* restrict ctrl_z, 
+    void* restrict targ_x, 
+    void* restrict targ_z 
 )
 {
 
@@ -302,3 +307,93 @@ int8_t simd_xor_rowsum(
 
     return acc;
 }
+
+
+void simd_rowsum_xor_only(
+    size_t n_bytes,
+    void* restrict ctrl_x, 
+    void* restrict ctrl_z, 
+    void* restrict targ_x, 
+    void* restrict targ_z 
+)
+{
+    for (size_t i = 0; i < n_bytes; i += ROWSUM_STRIDE)
+    {
+        __m256i v_targ_x = _mm256_loadu_si256(
+            targ_x + i 
+        );
+
+        __m256i v_ctrl_x = _mm256_loadu_si256(
+            ctrl_x + i 
+        );
+
+        // Perform XOR operations
+        _mm256_storeu_si256(
+            targ_x + i,
+            _mm256_xor_si256(
+                v_ctrl_x,
+                v_targ_x
+            )
+        ); 
+
+        __m256i v_ctrl_z = _mm256_loadu_si256(
+            ctrl_z + i 
+        );
+
+        __m256i v_targ_z = _mm256_loadu_si256(
+            targ_z + i 
+        );
+        
+        // Perform XOR operations
+        _mm256_storeu_si256(
+            targ_z + i,
+            _mm256_xor_si256(
+                v_ctrl_z,
+                v_targ_z
+            )
+        ); 
+    }
+}
+
+
+/*
+ * rowsum_naive_lookup_table
+ * Naive lookup table implementation
+ * :: n_bytes : size_t :: Length of the chunk 
+ * :: ctrl_x :: void* :: Control X vec 
+ * :: ctrl_z :: void* :: Control Z vec 
+ * :: targ_x :: void* :: Target X vec 
+ * :: targ_z :: void* :: Target Z vec 
+ * Returns the phase term 
+ */
+int8_t rowsum_naive_lookup_table(
+    size_t n_bytes,
+    void* restrict ctrl_x,
+    void* restrict ctrl_z,
+    void* restrict targ_x,
+    void* restrict targ_z)
+{
+
+
+    uint8_t lookup_table[16] = {
+        NAIVE_LOOKUP_TABLE
+    };
+
+    uint32_t sum = 0;
+
+    for (size_t i = 0; i < n_bytes; i++) {
+
+        int idx = (
+              (((((uint8_t*)ctrl_x)[i/8] >> (i % 8)) & 0x1) << 3)
+            | (((((uint8_t*)ctrl_z)[i/8] >> (i % 8)) & 0x1) << 2)
+            | (((((uint8_t*)targ_x)[i/8] >> (i % 8)) & 0x1) << 1)
+            | (((((uint8_t*)targ_z)[i/8] >> (i % 8)) & 0x1) << 0)
+        );
+
+        sum += lookup_table[idx];
+    }
+
+    simd_rowsum_xor_only(n_bytes, ctrl_x, ctrl_z, targ_x, targ_z);
+    return ((sum + 2) % 4 - 2);
+}
+

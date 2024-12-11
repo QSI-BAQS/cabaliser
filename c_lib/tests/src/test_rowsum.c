@@ -106,6 +106,8 @@ void test_phase_terms(
     DPRINT(DEBUG_1, "TESTING: 1 0 0 1\n");
     targ_z[byte_shift] = 1 << bit_shift; 
     phase = rowsum(len / 8, ctrl_x, ctrl_z, targ_x, targ_z);
+    printf("%d %d %d %d %d\n", phase, *ctrl_x, *ctrl_z, *targ_x, *targ_z);
+
     assert(-1 == phase);
     
     // Test 1 0 1 1
@@ -155,7 +157,7 @@ void test_phase_terms(
 int main()
 {
     const size_t n_fns = 2;
-    int8_t (*fns[2])(size_t, void*, void*, void*, void*) = {simd_rowsum, simd_xor_rowsum};
+    int8_t (*fns[2])(size_t, void* restrict, void* restrict, void* restrict, void* restrict) = {simd_xor_rowsum, rowsum_naive_lookup_table};
     for (size_t i = 0; i < 1000; i++)
     {
         for (size_t j = 0; j < n_fns; j++)
