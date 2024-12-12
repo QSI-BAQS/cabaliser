@@ -16,7 +16,7 @@
 
 #define NIL (0)
 #define PLS (1)
-#define MNS ((int8_t) -1) 
+#define MNS ((int16_t) -1) 
 
 
 #define NAIVE_LOOKUP_TABLE 0, 0, 0, 0, 0, 0, 1, 3, 0, 3, 0, 1, 0, 1, 3, 0
@@ -26,9 +26,9 @@
 
 //                             00   01   10   11                             
 #define ROWSUM_SHUFFLE_MASK_00 NIL, NIL, NIL, NIL
-#define ROWSUM_SHUFFLE_MASK_01 NIL, NIL, NIL, NIL
-#define ROWSUM_SHUFFLE_MASK_10 MNS, MNS, MNS, MNS
-#define ROWSUM_SHUFFLE_MASK_11 NIL, NIL, NIL, NIL
+#define ROWSUM_SHUFFLE_MASK_01 NIL, NIL, PLS, MNS 
+#define ROWSUM_SHUFFLE_MASK_10 NIL, MNS, NIL, PLS 
+#define ROWSUM_SHUFFLE_MASK_11 NIL, PLS, MNS, NIL
 
 #define ROWSUM_SHUFFLE_SEQ ROWSUM_SHUFFLE_MASK_00, ROWSUM_SHUFFLE_MASK_01, ROWSUM_SHUFFLE_MASK_10, ROWSUM_SHUFFLE_MASK_11
 #define ROWSUM_SHUFFLE_MASK ROWSUM_SHUFFLE_SEQ, ROWSUM_SHUFFLE_SEQ 
@@ -70,7 +70,6 @@ int8_t simd_rowsum(
     __m256i lookup = _mm256_setr_epi8(ROWSUM_SHUFFLE_MASK); 
     __m256i accumulator = _mm256_setzero_si256(); 
 
-    printf("%lu %d\n", n_bytes, ROWSUM_STRIDE);
     for (size_t i = 0; i < n_bytes; i += ROWSUM_STRIDE)
     {
 
@@ -91,15 +90,6 @@ int8_t simd_rowsum(
             targ_z + i 
         );
 
-        printf("TARG_X\n");
-        for (size_t i = 0; i < 4; i++)
-        {
-            printf("%llu," , v_targ_x[i]);
-        }
-        printf("\n");
-
-
-
         // Perform XOR operations
         _mm256_storeu_si256(
             targ_x + i,
@@ -115,106 +105,66 @@ int8_t simd_rowsum(
                 v_ctrl_z,
                 v_targ_z
             )
-        ); 
+        );
 
         // Strictly required to unroll the shifts
         // Without this pragma the variables are not 
         // correctly treated as immediates and the code
         // will fail to compile  
-        #pragma GCC unroll 4
-        for (uint8_t j = 0; j < 1; j++)
+        #pragma GCC unroll 8
+        for (uint8_t j = 0; j < 8; j++)
         {   
-            // TODO shift
-            __m256i lane = _mm256_and_si256(mask, v_ctrl_x); 
-            printf("v_ctrl_x\n");
-            for (size_t i = 0; i < 4; i++)
-            {
-                printf("%llu," , lane[i]);
-            }
-            printf("\n");
-
-
+            __m256i lane = _mm256_and_si256( // Apply the mask
+                        mask, 
+                        _mm256_srli_epi16(v_ctrl_x, j) // Shift right by j
+                    ); 
 
             lane = _mm256_or_si256( // Or with existing lane  
-                _mm256_bslli_epi128( // Shift left by POS_CTRL_Z 
+                _mm256_slli_epi16( // Shift left by POS_CTRL_Z 
                     _mm256_and_si256( // Apply the mask
                         mask, 
-                        _mm256_bsrli_epi128(v_ctrl_z, j)
+                        _mm256_srli_epi16(v_ctrl_z, j)
                     ), 
                 POS_CTRL_Z),
                 lane
             );
 
-            printf("v_ctrl_z\n");
-            for (size_t i = 0; i < 4; i++)
-            {
-                printf("%llu," , lane[i]);
-            }
-
-            printf("\n");
-
-
             lane = _mm256_or_si256( // Or with existing lane  
-                _mm256_bslli_epi128( // Shift left by POS_CTRL_Z 
+                _mm256_slli_epi16( // Shift left by POS_CTRL_X 
                     _mm256_and_si256( // Apply the mask
                         mask, 
-                        _mm256_bsrli_epi128(v_targ_x, j)
+                        _mm256_srli_epi16(v_targ_x, j)
                     ), 
                 POS_TARG_X),
                 lane
             );
 
-            printf("v_targ_x\n");
-            for (size_t i = 0; i < 4; i++)
-            {
-                printf("%llu," , lane[i]);
-            }
-           printf("\n");
-
-
             lane = _mm256_or_si256( // Or with existing lane  
-                _mm256_bslli_epi128( // Shift left by POS_CTRL_Z 
+                _mm256_slli_epi16( // Shift left by POS_CTRL_Z 
                     _mm256_and_si256( // Apply the mask
                         mask, 
-                        _mm256_bsrli_epi128(v_targ_z, j)
+                        _mm256_srli_epi16(v_targ_z, j)
                     ), 
                 POS_TARG_Z),
                 lane
             );
 
-            printf("v_targ_z\n");
-            for (size_t i = 0; i < 4; i++)
-            {
-                printf("%llu," , lane[i]);
-            }
-            printf("\n");
-
-            //// Apply lookup 
-            lookup = _mm256_shuffle_epi8(lookup, lane); 
-
-            printf("Lookup\n");
-            for (size_t i = 0; i < 4; i++)
-            {
-                printf("%llu," , lookup[i]);
-            }
-            printf("\n");
-
+            __m256i lookup_res = _mm256_shuffle_epi8(lookup, lane); 
 
             // Accumulator overflow is just a mod 4 operation
-            accumulator = _mm256_add_epi8(accumulator, lookup);  
+            accumulator = _mm256_add_epi8(accumulator, lookup_res);  
         }
     }  
 
+
     // Load the accumulator back to regular memory
     int8_t acc[32];  
-    _mm256_storeu_epi8(acc, accumulator);
-    printf("%u, ", acc[0]);
+    _mm256_storeu_si256((void*)acc, accumulator);
+    //_mm256_storeu_epi8(acc, accumulator);
     for (size_t i = 1; i < 32; i++)
     {
-        printf("%u, ", acc[i]);
         acc[0] += acc[i];
-    }   
-    printf("\n");
+    }
     return acc[0];
 }
 
@@ -238,7 +188,6 @@ int8_t simd_xor_rowsum(
     void* restrict targ_z 
 )
 {
-
     int16_t acc = 0;
     for (size_t i = 0; i < n_bytes; i += ROWSUM_STRIDE)
     {
@@ -367,13 +316,12 @@ void simd_rowsum_xor_only(
  * Returns the phase term 
  */
 int8_t rowsum_naive_lookup_table(
-    size_t n_bytes,
+    size_t n_bits,
     void* restrict ctrl_x,
     void* restrict ctrl_z,
     void* restrict targ_x,
     void* restrict targ_z)
 {
-
 
     uint8_t lookup_table[16] = {
         NAIVE_LOOKUP_TABLE
@@ -381,19 +329,18 @@ int8_t rowsum_naive_lookup_table(
 
     uint32_t sum = 0;
 
-    for (size_t i = 0; i < n_bytes; i++) {
+    for (size_t i = 0; i < n_bits * 8; i++) {
 
         int idx = (
-              (((((uint8_t*)ctrl_x)[i/8] >> (i % 8)) & 0x1) << 3)
-            | (((((uint8_t*)ctrl_z)[i/8] >> (i % 8)) & 0x1) << 2)
-            | (((((uint8_t*)targ_x)[i/8] >> (i % 8)) & 0x1) << 1)
-            | (((((uint8_t*)targ_z)[i/8] >> (i % 8)) & 0x1) << 0)
+              (((((uint8_t*)ctrl_x)[i / 8] >> (i % 8)) & 0x1) << 3)
+            | (((((uint8_t*)ctrl_z)[i / 8] >> (i % 8)) & 0x1) << 2)
+            | (((((uint8_t*)targ_x)[i / 8] >> (i % 8)) & 0x1) << 1)
+            | (((((uint8_t*)targ_z)[i / 8] >> (i % 8)) & 0x1) << 0)
         );
 
         sum += lookup_table[idx];
     }
 
-    simd_rowsum_xor_only(n_bytes, ctrl_x, ctrl_z, targ_x, targ_z);
+    simd_rowsum_xor_only(n_bits, ctrl_x, ctrl_z, targ_x, targ_z);
     return ((sum + 2) % 4 - 2);
 }
-

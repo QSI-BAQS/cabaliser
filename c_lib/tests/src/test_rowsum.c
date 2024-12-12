@@ -86,28 +86,27 @@ void test_phase_terms(
 
     // Empty test
     // Test 0 0 0 0
-    DPRINT(DEBUG_1, "TESTING: 0 0 0 0\n");
+    DPRINT(DEBUG_3, "TESTING: 0 0 0 0\n");
     int8_t phase = rowsum(len / 8, ctrl_x, ctrl_z, targ_x, targ_z);
     assert(0 == phase);
 
     // Test 1 0 0 0 
-    DPRINT(DEBUG_1, "TESTING: 1 0 0 0\n");
+    DPRINT(DEBUG_3, "TESTING: 1 0 0 0\n");
     ctrl_x[byte_shift] = 1 << bit_shift; 
     phase = rowsum(len / 8, ctrl_x, ctrl_z, targ_x, targ_z);
-    printf("%d %d %d %d %d\n", phase, *ctrl_x, *ctrl_z, *targ_x, *targ_z);
+    DPRINT(DEBUG_3,"%d %d %d %d %d\n", phase, *ctrl_x, *ctrl_z, *targ_x, *targ_z);
     assert(0 == phase);
 
     // Test 1 0 1 0
-    DPRINT(DEBUG_1, "TESTING: 1 0 1 0\n");
+    DPRINT(DEBUG_3, "TESTING: 1 0 1 0\n");
     phase = rowsum(len / 8, ctrl_x, ctrl_z, targ_x, targ_z);
     assert(0 == phase);
 
     // Test 1 0 0 1
-    DPRINT(DEBUG_1, "TESTING: 1 0 0 1\n");
+    DPRINT(DEBUG_3, "TESTING: 1 0 0 1\n");
     targ_z[byte_shift] = 1 << bit_shift; 
     phase = rowsum(len / 8, ctrl_x, ctrl_z, targ_x, targ_z);
-    printf("%d %d %d %d %d\n", phase, *ctrl_x, *ctrl_z, *targ_x, *targ_z);
-
+    DPRINT(DEBUG_3,"%d %d %d %d %d\n", phase, *ctrl_x, *ctrl_z, *targ_x, *targ_z);
     assert(-1 == phase);
     
     // Test 1 0 1 1
@@ -154,17 +153,25 @@ void test_phase_terms(
 
 }
 
+
+#define N_FNS 3
 int main()
 {
-    const size_t n_fns = 2;
-    int8_t (*fns[2])(size_t, void* restrict, void* restrict, void* restrict, void* restrict) = {simd_xor_rowsum, rowsum_naive_lookup_table};
-    for (size_t i = 0; i < 1000; i++)
+    int8_t (*fns[N_FNS])(size_t, void* restrict, void* restrict, void* restrict, void* restrict) = {simd_rowsum, simd_xor_rowsum, rowsum_naive_lookup_table};
+    for (size_t i = 1; i < 1000; i += 100)
     {
-        for (size_t j = 0; j < n_fns; j++)
+        for (size_t j = 0; j < N_FNS; j++)
         { 
             srand(i);
             test_non_phase_terms(fns[j], 256 * i);
-            test_phase_terms(fns[j], 256, 0, 0);
+
+            for (size_t byte_shift = 0; byte_shift < 32; byte_shift++)
+            {
+                for (size_t bit_shift = 0; bit_shift < 8; bit_shift++)
+                {
+                    test_phase_terms(fns[j], 256, byte_shift, bit_shift);
+                }
+            }
         }
     }
     return 0;
