@@ -504,35 +504,14 @@ void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ)
 
     CHUNK_OBJ phase_slice = 0; 
 
-    DPRINT(DEBUG_3, "ROWSUM: %lu -> %lu\n", ctrl, targ);
+    int8_t phase = simd_rowsum_cnf(tab->slice_len * sizeof(CHUNK_OBJ), slice_ctrl_x, slice_ctrl_z, slice_targ_x, slice_targ_z);
 
-    int8_t phase = simd_rowsum(tab->slice_len * sizeof(CHUNK_OBJ), slice_ctrl_x, slice_ctrl_z, slice_targ_x, slice_targ_z);
-
-    DPRINT(DEBUG_3, "Phase: %u\n", phase);
     int8_t c_phase = slice_get_bit(tab->phases, ctrl) << 1;
     int8_t t_phase = slice_get_bit(tab->phases, targ) << 1;
 
-    phase = (4 + ((c_phase + t_phase + phase) % 4) % 4) >> 1;
+    // https://arxiv.org/pdf/quant-ph/0406196 Page 4
+    phase = ((c_phase + t_phase + phase) % 4) >> 1;
 
     slice_set_bit(tab->phases, targ, phase);
     
-    //size_t i;
-    //#pragma omp parallel for simd 
-    //    private(i) 
-    //    reduction(^:phase_slice)
-    //for (i = 0; i < tab->slice_len; i++)
-    //{
-    //    phase_slice ^= (slice_ctrl_x[i] & slice_targ_z[i]) ^ (slice_ctrl_z[i] & slice_targ_x[i]);
-    //    slice_targ_x[i] ^= slice_ctrl_x[i];
-    //    slice_targ_z[i] ^= slice_ctrl_z[i];
-    //}  
-
-    //uint8_t c_phase = slice_get_bit(tab->phases, ctrl);
-    //c_phase ^= __builtin_parityll(phase_slice);  
-    //uint8_t t_phase = slice_get_bit(tab->phases, targ);
-
-    //DPRINT(DEBUG_3, "Phase %lu : %u %u %u -> %u\n", targ, __builtin_parityll(phase_slice), c_phase, t_phase,
-    //         __builtin_parityll(phase_slice) ^ c_phase ^ t_phase
-    //);
-
 }
