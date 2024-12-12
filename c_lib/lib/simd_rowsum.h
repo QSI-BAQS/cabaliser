@@ -23,7 +23,7 @@
  * Returns the phase term 
  */
 int8_t simd_rowsum(
-    size_t n_bytes,
+    const size_t n_bytes,
     void* restrict ctrl_x,
     void* restrict ctrl_z,
     void* restrict targ_x,
@@ -41,7 +41,7 @@ int8_t simd_rowsum(
  * Returns the phase term 
  */
 int8_t simd_xor_rowsum(
-    size_t n_bytes,
+    const size_t n_bytes,
     void* restrict ctrl_x,
     void* restrict ctrl_z,
     void* restrict targ_x,
@@ -59,7 +59,61 @@ int8_t simd_xor_rowsum(
  * Returns the phase term 
  */
 int8_t rowsum_naive_lookup_table(
-    size_t n_bytes,
+    const size_t n_bytes,
+    void* restrict ctrl_x,
+    void* restrict ctrl_z,
+    void* restrict targ_x,
+    void* restrict targ_z
+);
+
+/*
+ * rowsum_cnf
+ * Non-vectorised CNF implementation 
+ * :: n_bytes : size_t :: Length of the chunk 
+ * :: ctrl_x :: void* :: Control X vec 
+ * :: ctrl_z :: void* :: Control Z vec 
+ * :: targ_x :: void* :: Target X vec 
+ * :: targ_z :: void* :: Target Z vec 
+ * Returns the phase term 
+ */
+int8_t rowsum_cnf(
+    const size_t n_bytes,
+    void* restrict ctrl_x,
+    void* restrict ctrl_z,
+    void* restrict targ_x,
+    void* restrict targ_z
+);
+
+/*
+ * simd_rowsum_cnf_popcnt
+ * Vectorised CNF implementation using popcnt 
+ * :: n_bytes : size_t :: Length of the chunk 
+ * :: ctrl_x :: void* :: Control X vec 
+ * :: ctrl_z :: void* :: Control Z vec 
+ * :: targ_x :: void* :: Target X vec 
+ * :: targ_z :: void* :: Target Z vec 
+ * Returns the phase term 
+ */
+int8_t simd_rowsum_cnf_popcnt(
+    const size_t n_bytes,
+    void* restrict ctrl_x,
+    void* restrict ctrl_z,
+    void* restrict targ_x,
+    void* restrict targ_z
+);
+
+/*
+ * simd_rowsum_cnf
+ * Vectorised CNF implementation using popcnt 
+ * :: n_bytes : size_t :: Length of the chunk 
+ * :: ctrl_x :: void* :: Control X vec 
+ * :: ctrl_z :: void* :: Control Z vec 
+ * :: targ_x :: void* :: Target X vec 
+ * :: targ_z :: void* :: Target Z vec 
+ * Returns the phase term 
+ */
+int8_t simd_rowsum_cnf(
+    const size_t n_bytes,
     void* restrict ctrl_x,
     void* restrict ctrl_z,
     void* restrict targ_x,

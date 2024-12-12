@@ -59,7 +59,7 @@
  * Returns the phase term 
  */
 int8_t simd_rowsum(
-    size_t n_bytes,
+    const size_t n_bytes,
     void* restrict ctrl_x, 
     void* restrict ctrl_z, 
     void* restrict targ_x, 
@@ -181,7 +181,7 @@ int8_t simd_rowsum(
  * Returns the phase term 
  */
 int8_t simd_xor_rowsum(
-    size_t n_bytes,
+    const size_t n_bytes,
     void* restrict ctrl_x, 
     void* restrict ctrl_z, 
     void* restrict targ_x, 
@@ -259,7 +259,7 @@ int8_t simd_xor_rowsum(
 
 
 void simd_rowsum_xor_only(
-    size_t n_bytes,
+    const size_t n_bytes,
     void* restrict ctrl_x, 
     void* restrict ctrl_z, 
     void* restrict targ_x, 
@@ -316,7 +316,7 @@ void simd_rowsum_xor_only(
  * Returns the phase term 
  */
 int8_t rowsum_naive_lookup_table(
-    size_t n_bits,
+    const size_t n_bytes,
     void* restrict ctrl_x,
     void* restrict ctrl_z,
     void* restrict targ_x,
@@ -329,7 +329,7 @@ int8_t rowsum_naive_lookup_table(
 
     uint32_t sum = 0;
 
-    for (size_t i = 0; i < n_bits * 8; i++) {
+    for (size_t i = 0; i < n_bytes * 8; i++) {
 
         int idx = (
               (((((uint8_t*)ctrl_x)[i / 8] >> (i % 8)) & 0x1) << 3)
@@ -341,6 +341,167 @@ int8_t rowsum_naive_lookup_table(
         sum += lookup_table[idx];
     }
 
-    simd_rowsum_xor_only(n_bits, ctrl_x, ctrl_z, targ_x, targ_z);
+    simd_rowsum_xor_only(n_bytes, ctrl_x, ctrl_z, targ_x, targ_z);
     return ((sum + 2) % 4 - 2);
+}
+
+
+int8_t rowsum_cnf(
+    const size_t n_bytes,
+    void* restrict ctrl_x, 
+    void* restrict ctrl_z, 
+    void* restrict targ_x, 
+    void* restrict targ_z) 
+{
+    uint64_t pos = 0;
+    uint64_t neg = 0;
+    size_t n_bits = n_bytes * 8;
+
+    for (size_t i = 0; i < n_bytes / sizeof(uint64_t); i++) {
+        uint64_t plus = 0;
+        uint64_t minus = 0;
+
+        plus = (~((uint64_t*)ctrl_x)[i] & ((uint64_t*)ctrl_z)[i] & ((uint64_t*)targ_x)[i] & ~((uint64_t*)targ_z)[i]) 
+                | (((uint64_t*)ctrl_x)[i] & ~((uint64_t*)ctrl_z)[i] & ((uint64_t*)targ_x)[i] & ((uint64_t*)targ_z)[i]) 
+                | (((uint64_t*)ctrl_x)[i] & ((uint64_t*)ctrl_z)[i] & ~((uint64_t*)targ_x)[i] & ((uint64_t*)targ_z)[i]);
+        pos += __builtin_popcountll(plus);
+
+        minus = (((uint64_t*)ctrl_x)[i] & ~((uint64_t*)ctrl_z)[i] & ~((uint64_t*)targ_x)[i] & ((uint64_t*)targ_z)[i]) 
+                | (~((uint64_t*)ctrl_x)[i] & ((uint64_t*)ctrl_z)[i] & ((uint64_t*)targ_x)[i] & ((uint64_t*)targ_z)[i]) 
+                | (((uint64_t*)ctrl_x)[i] & ((uint64_t*)ctrl_z)[i] & ((uint64_t*)targ_x)[i] & ~((uint64_t*)targ_z)[i]);
+        neg += __builtin_popcountll(minus);
+    }
+    simd_rowsum_xor_only(n_bytes, ctrl_x, ctrl_z, targ_x, targ_z);
+    return ((((pos - neg) % 4) + 2) % 4) - 2;
+}
+
+/*
+ * simd_rowsum_cnf_popcnt
+ * Vectorised CNF implementation using popcnt 
+ * :: n_bytes : size_t :: Length of the chunk 
+ * :: ctrl_x :: void* :: Control X vec 
+ * :: ctrl_z :: void* :: Control Z vec 
+ * :: targ_x :: void* :: Target X vec 
+ * :: targ_z :: void* :: Target Z vec 
+ * Returns the phase term 
+ */
+int8_t simd_rowsum_cnf_popcnt(
+    const size_t n_bytes,
+    void *restrict ctrl_x,
+    void *restrict ctrl_z,
+    void *restrict targ_x,
+    void *restrict targ_z) 
+{
+    uint64_t pos = 0;
+    uint64_t neg = 0;
+    for (size_t i = 0; i < n_bytes; i+=32) {
+        __m256i v_ctrl_x = _mm256_loadu_si256(ctrl_x + i);
+        __m256i v_ctrl_z = _mm256_loadu_si256(ctrl_z + i);
+        __m256i v_targ_x = _mm256_loadu_si256(targ_x + i);
+        __m256i v_targ_z = _mm256_loadu_si256(targ_z + i);
+
+        __m256i plus = _mm256_or_si256(
+        _mm256_andnot_si256(_mm256_or_si256(v_targ_z, v_ctrl_x), _mm256_and_si256(v_ctrl_z, v_targ_x)),
+        _mm256_and_si256(_mm256_and_si256(v_ctrl_x, v_targ_z), _mm256_xor_si256(v_ctrl_z, v_targ_x)));
+        
+        __m256i minus = _mm256_or_si256(
+        _mm256_andnot_si256(_mm256_or_si256(v_targ_x, v_ctrl_z), _mm256_and_si256(v_ctrl_x, v_targ_z)),
+        _mm256_and_si256(_mm256_and_si256(v_ctrl_z, v_targ_x), _mm256_xor_si256(v_ctrl_x, v_targ_z)));
+
+        pos += _mm_popcnt_u64(_mm256_extract_epi64(plus, 0))
+            + _mm_popcnt_u64(_mm256_extract_epi64(plus, 1))
+            + _mm_popcnt_u64(_mm256_extract_epi64(plus, 2))
+            + _mm_popcnt_u64(_mm256_extract_epi64(plus, 3));
+
+        neg += _mm_popcnt_u64(_mm256_extract_epi64(minus, 0))
+            + _mm_popcnt_u64(_mm256_extract_epi64(minus, 1))
+            + _mm_popcnt_u64(_mm256_extract_epi64(minus, 2))
+            + _mm_popcnt_u64(_mm256_extract_epi64(minus, 3));
+    }
+
+    simd_rowsum_xor_only(n_bytes, ctrl_x, ctrl_z, targ_x, targ_z);
+
+    return (((pos - neg) % 4 + 2) % 4) - 2;
+}
+
+
+
+int8_t simd_rowsum_cnf(
+    const size_t n_bytes,
+    void *restrict ctrl_x,
+    void *restrict ctrl_z,
+    void *restrict targ_x,
+    void *restrict targ_z) 
+{
+    __m256i pos = _mm256_setzero_si256();
+    __m256i neg = _mm256_setzero_si256();
+    __m256i acc = _mm256_setzero_si256();
+
+    for (size_t i = 0; i < n_bytes; i += 32) {
+        __m256i v_ctrl_x = _mm256_loadu_si256(ctrl_x + i);
+        __m256i v_ctrl_z = _mm256_loadu_si256(ctrl_z + i);
+        __m256i v_targ_x = _mm256_loadu_si256(targ_x + i);
+        __m256i v_targ_z = _mm256_loadu_si256(targ_z + i);
+
+        __m256i plus = _mm256_or_si256(
+            _mm256_andnot_si256(
+                _mm256_or_si256(v_targ_z, v_ctrl_x),
+                _mm256_and_si256(v_ctrl_z, v_targ_x)),
+            _mm256_and_si256(
+                _mm256_and_si256(v_ctrl_x, v_targ_z),
+                _mm256_xor_si256(v_ctrl_z, v_targ_x)
+            ));
+        
+        __m256i minus = _mm256_or_si256(
+            _mm256_andnot_si256(
+                _mm256_or_si256(v_targ_x, v_ctrl_z),
+                _mm256_and_si256(v_ctrl_x, v_targ_z)),
+            _mm256_and_si256(
+                _mm256_and_si256(v_ctrl_z, v_targ_x),
+                _mm256_xor_si256(v_ctrl_x, v_targ_z)
+            ));
+        
+        // Perform XOR operations
+        _mm256_storeu_si256(
+            targ_x + i,
+            _mm256_xor_si256(
+                v_ctrl_x,
+                v_targ_x
+            )
+        ); 
+
+        _mm256_storeu_si256(
+            targ_z + i,
+            _mm256_xor_si256(
+                v_ctrl_z,
+                v_targ_z
+            )
+        );
+
+
+        acc = _mm256_xor_si256(acc, _mm256_and_si256(pos, plus));
+        acc = _mm256_xor_si256(acc, _mm256_and_si256(neg, minus));
+
+        pos = _mm256_xor_si256(pos, plus);
+        neg = _mm256_xor_si256(neg, minus);
+    }
+
+    uint64_t total = 0;
+
+    total += _mm_popcnt_u64(_mm256_extract_epi64(pos, 0))
+        + _mm_popcnt_u64(_mm256_extract_epi64(pos, 1))
+        + _mm_popcnt_u64(_mm256_extract_epi64(pos, 2))
+        + _mm_popcnt_u64(_mm256_extract_epi64(pos, 3));
+
+    total -= _mm_popcnt_u64(_mm256_extract_epi64(neg, 0))
+        + _mm_popcnt_u64(_mm256_extract_epi64(neg, 1))
+        + _mm_popcnt_u64(_mm256_extract_epi64(neg, 2))
+        + _mm_popcnt_u64(_mm256_extract_epi64(neg, 3));
+    
+    total += (_mm_popcnt_u64(_mm256_extract_epi64(acc, 0))
+            + _mm_popcnt_u64(_mm256_extract_epi64(acc, 1))
+            + _mm_popcnt_u64(_mm256_extract_epi64(acc, 2))
+            + _mm_popcnt_u64(_mm256_extract_epi64(acc, 3))) << 1;
+
+    return ((total + 2) % 4) - 2;
 }

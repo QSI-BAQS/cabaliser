@@ -154,11 +154,11 @@ void test_phase_terms(
 }
 
 
-#define N_FNS 3
+#define N_FNS 6
 int main()
 {
-    int8_t (*fns[N_FNS])(size_t, void* restrict, void* restrict, void* restrict, void* restrict) = {simd_rowsum, simd_xor_rowsum, rowsum_naive_lookup_table};
-    for (size_t i = 1; i < 1000; i += 100)
+    int8_t (*fns[N_FNS])(size_t, void* restrict, void* restrict, void* restrict, void* restrict) = {simd_rowsum, rowsum_naive_lookup_table, rowsum_cnf, simd_rowsum_cnf_popcnt, simd_rowsum_cnf, simd_xor_rowsum}; 
+    for (size_t i = 1; i < 1001; i += 100)
     {
         for (size_t j = 0; j < N_FNS; j++)
         { 
@@ -169,7 +169,7 @@ int main()
             {
                 for (size_t bit_shift = 0; bit_shift < 8; bit_shift++)
                 {
-                    test_phase_terms(fns[j], 256, byte_shift, bit_shift);
+                    test_phase_terms(fns[j], 256 * i, byte_shift, bit_shift);
                 }
             }
         }
