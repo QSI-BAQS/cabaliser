@@ -24,7 +24,6 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
     return;
 }
 
-
 /*
  * tableau_Z_block_diagonal
  * Ensures that the Z block of the tableau is diagonal
@@ -48,7 +47,10 @@ void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que)
     return;
 }
 
-
+/*
+ *
+ *
+ */
 void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_t idx)
 {
 
@@ -152,23 +154,26 @@ void tableau_X_diagonal(tableau_t* tab, clifford_queue_t* c_que)
 
 void tableau_H(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
+    /*
+     * x -> z
+     * z -> x
+     * r -> r ^ x.z
+     */
 
-    size_t i;
-    #pragma omp parallel private(i)
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
+
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
-        }  
-    }
-    DPRINT(DEBUG_3, "Hadamard on %lu\n", targ);
-    void* ptr = tab->slices_x[targ];
-    tab->slices_x[targ] = tab->slices_z[targ];
-    tab->slices_z[targ] = ptr;
+        __m256i x = _mm256_load_si256(slice_x + i);   
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, z);
+        _mm256_store_si256(slice_z + i, x);
+        _mm256_store_si256(slice_r + i, _mm256_xor_si256(r, _mm256_and_si256(x, z)));
+    }  
 }
 
 
@@ -324,10 +329,6 @@ void tableau_Y(tableau_t* tab, const size_t targ)
 
 void tableau_HX(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
-
     /*
      * X : (r ^= z)
      * H : (r ^= x.z; x <-> z) 
@@ -338,18 +339,25 @@ void tableau_HX(tableau_t* tab, const size_t targ)
      * r_2 = r_0 ^ (~x & z) 
      * Swap x and z
      */
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, ~slice_x[i] & slice_z[i], __ATOMIC_RELAXED);      
-        }  
+
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
+
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, z);
+        _mm256_store_si256(slice_z + i, x);
+        _mm256_store_si256(slice_r + i, 
+            _mm256_xor_si256(r, 
+                _mm256_andnot_si256(x, z)
+            )
+        );
     }
-    void* ptr = tab->slices_x[targ];
-    tab->slices_x[targ] = tab->slices_z[targ];
-    tab->slices_z[targ] = ptr;
 }
 
 void tableau_SX(tableau_t* tab, const size_t targ)
@@ -412,9 +420,6 @@ void tableau_RX(tableau_t* tab, const size_t targ)
 
 void tableau_HZ(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
     /*
      * Z : (r ^= x)
      * H : (r ^= x.z; x <-> z) 
@@ -427,27 +432,30 @@ void tableau_HZ(tableau_t* tab, const size_t targ)
      * x_2 = z_0
      */
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, ~slice_z[i] & slice_x[i], __ATOMIC_RELAXED);      
-        }  
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
+
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, z);
+        _mm256_store_si256(slice_z + i, x);
+        _mm256_store_si256(slice_r + i, 
+            _mm256_xor_si256(r, 
+                _mm256_andnot_si256(z, x)
+            )
+        );
     }
-    void* ptr = tab->slices_x[targ];
-    tab->slices_x[targ] = tab->slices_z[targ];
-    tab->slices_z[targ] = ptr;
 }
 
 
 
 void tableau_HY(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
     /*
      * Y : r ^= x ^ z
      * H : (r ^= x.z; x <-> z) 
@@ -460,25 +468,29 @@ void tableau_HY(tableau_t* tab, const size_t targ)
      * x_2 = z_0
      */
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, slice_z[i] ^ slice_x[i], __ATOMIC_RELAXED);      
-        }  
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
+
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, z);
+        _mm256_store_si256(slice_z + i, x);
+        _mm256_store_si256(slice_r + i, 
+            _mm256_xor_si256(r, 
+                _mm256_xor_si256(z, x)
+            )
+        );
     }
-    void* ptr = tab->slices_x[targ];
-    tab->slices_x[targ] = tab->slices_z[targ];
-    tab->slices_z[targ] = ptr;
 }
 
 
 void tableau_SH(tableau_t* tab, const size_t targ)
 {
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
     /*
      * H : (r ^= x.z; x <-> z) 
      * S : (r ^= x.z; z ^= x)
@@ -493,7 +505,8 @@ void tableau_SH(tableau_t* tab, const size_t targ)
      * z_2 ^= x_2 -> x_0 ^= z_0
      * 
      */
-    // DONE
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
@@ -614,10 +627,6 @@ void tableau_HR(tableau_t* tab, const size_t targ)
 
 void tableau_HSX(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
-
     /*
      * X : (r ^= z)
      * S : (r ^= x.z; z ^= x)
@@ -632,32 +641,34 @@ void tableau_HSX(tableau_t* tab, const size_t targ)
      *
      * r_3 = r_2 ^ x_0.z_2 
      * r_3 = r_0 ^ ~x_0.z_0 ^ x_0.(z_0 ^ x_0)
+     *
      * r_3 = r_0 ^ x_0 ^ z_0
      * x_3 = z_2 = x_0 ^ z_0 
      * z_3 = x_2 = x_0
      */
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, slice_x[i] ^ slice_z[i], __ATOMIC_RELAXED);
-            slice_z[i] ^= slice_x[i];
-        }  
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
+
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, _mm256_xor_si256(x, z));
+        _mm256_store_si256(slice_z + i, x);
+        _mm256_store_si256(slice_r + i, 
+            _mm256_xor_si256(r, 
+                _mm256_xor_si256(z, x)
+            )
+        );
     }
-    void* ptr = tab->slices_x[targ];
-    tab->slices_x[targ] = tab->slices_z[targ];
-    tab->slices_z[targ] = ptr;
 }
 
 void tableau_HRX(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
-
     /*
      * X : (r ^= z)
      * R : (r ^= x.~z; z ^= x)
@@ -677,134 +688,146 @@ void tableau_HRX(tableau_t* tab, const size_t targ)
      * z_3 = x_2 = x_0
      */
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, slice_z[i], __ATOMIC_RELAXED);
-            slice_z[i] ^= slice_x[i];
-        }  
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
+
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, _mm256_xor_si256(x, z));
+        _mm256_store_si256(slice_z + i, x);
+        _mm256_store_si256(slice_r + i, _mm256_xor_si256(r, z));
     }
-    void* ptr = tab->slices_x[targ];
-    tab->slices_x[targ] = tab->slices_z[targ];
-    tab->slices_z[targ] = ptr;
 }
 
 void tableau_SHY(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, slice_z[i] ^ slice_x[i], __ATOMIC_RELAXED);
-            slice_x[i] ^= slice_z[i];
-        }  
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, z);
+        _mm256_store_si256(slice_z + i, _mm256_xor_si256(x, z));
+        _mm256_store_si256(slice_r + i, _mm256_xor_si256(r, _mm256_xor_si256(x, z)));
     }
-    void* ptr = tab->slices_x[targ];
-    tab->slices_x[targ] = tab->slices_z[targ];
-    tab->slices_z[targ] = ptr;
 }
 
 void tableau_RHY(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, slice_x[i], __ATOMIC_RELAXED);
-            slice_x[i] ^= slice_z[i];
-        }  
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, z);
+        _mm256_store_si256(slice_z + i, _mm256_xor_si256(x, z));
+        _mm256_store_si256(slice_r + i, _mm256_xor_si256(r, x));
     }
-    void* ptr = tab->slices_x[targ];
-    tab->slices_x[targ] = tab->slices_z[targ];
-    tab->slices_z[targ] = ptr;
 }
 
 void tableau_HSH(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, ~slice_x[i] & slice_z[i], __ATOMIC_RELAXED);
-            slice_x[i] ^= slice_z[i];
-        }  
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
+
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, _mm256_xor_si256(x, z));
+        _mm256_store_si256(slice_z + i, z);
+        _mm256_store_si256(slice_r + i, 
+            _mm256_xor_si256(r,
+                _mm256_andnot_si256(x, z)
+            )
+        );
     }
 }
 
 void tableau_HRH(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, slice_x[i] & slice_z[i], __ATOMIC_RELAXED);
-            slice_x[i] ^= slice_z[i];
-        }  
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, _mm256_xor_si256(x, z));
+        _mm256_store_si256(slice_z + i, z);
+        _mm256_store_si256(slice_r + i, 
+            _mm256_xor_si256(r,
+                _mm256_and_si256(x, z)
+            )
+        );
     }
 }
 
 
 void tableau_RHS(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, slice_x[i] | slice_z[i], __ATOMIC_RELAXED);
-            slice_x[i] ^= slice_z[i];
-        }  
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, _mm256_xor_si256(x, z));
+        _mm256_store_si256(slice_z + i, z);
+        _mm256_store_si256(slice_r + i, 
+            _mm256_xor_si256(r,
+                _mm256_or_si256(x, z)
+            )
+        );
     }
 }
 
 
 void tableau_SHR(tableau_t* tab, const size_t targ)
 {
-    CHUNK_OBJ* slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
+    void* slice_x = (void*)(tab->slices_x[targ]); 
+    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, slice_x[i] & ~slice_z[i], __ATOMIC_RELAXED);
-            slice_x[i] ^= slice_z[i];
-        }  
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i x = _mm256_load_si256(slice_x + i);
+        __m256i z = _mm256_load_si256(slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(slice_x + i, _mm256_xor_si256(x, z));
+        _mm256_store_si256(slice_z + i, z);
+        _mm256_store_si256(slice_r + i, 
+            _mm256_xor_si256(r,
+                _mm256_andnot_si256(z, x)
+            )
+        );
     }
 }
 
@@ -818,26 +841,30 @@ void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ)
      *
      */ 
 
-    CHUNK_OBJ* ctrl_slice_x = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
-    CHUNK_OBJ* ctrl_slice_z = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
-    CHUNK_OBJ* targ_slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* targ_slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
+    void* ctrl_slice_x = (void*)(tab->slices_x[ctrl]); 
+    void* ctrl_slice_z = (void*)(tab->slices_z[ctrl]); 
+    void* targ_slice_x = (void*)(tab->slices_x[targ]); 
+    void* targ_slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
 
-    size_t i;
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(
-                slice_r + i,
-                (ctrl_slice_x[i] & targ_slice_z[i] & ~(targ_slice_x[i] ^ ctrl_slice_z[i])),
-                 __ATOMIC_RELAXED
-            );
-            targ_slice_x[i] ^= ctrl_slice_x[i];
-            ctrl_slice_z[i] ^= targ_slice_z[i];
-        }  
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i ctrl_x = _mm256_load_si256(ctrl_slice_x + i);
+        __m256i ctrl_z = _mm256_load_si256(ctrl_slice_z + i);
+        __m256i targ_x = _mm256_load_si256(targ_slice_x + i);
+        __m256i targ_z = _mm256_load_si256(targ_slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(targ_slice_x + i, _mm256_xor_si256(ctrl_x, targ_x));
+        _mm256_store_si256(ctrl_slice_z + i, _mm256_xor_si256(ctrl_z, targ_z));
+        _mm256_store_si256(slice_r + i, 
+            _mm256_xor_si256(r,
+                _mm256_andnot_si256(
+                    _mm256_xor_si256(targ_x, ctrl_z), 
+                    _mm256_and_si256(ctrl_x, targ_z) 
+                )
+            )
+        );
     }
 }
 
@@ -879,25 +906,32 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
      *
      */ 
 
-    CHUNK_OBJ* ctrl_slice_x = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
-    CHUNK_OBJ* ctrl_slice_z = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
-    CHUNK_OBJ* targ_slice_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* targ_slice_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
-    CHUNK_OBJ* slice_r = (CHUNK_OBJ*)(tab->phases); 
+    void* ctrl_slice_x = (void*)(tab->slices_x[ctrl]); 
+    void* ctrl_slice_z = (void*)(tab->slices_z[ctrl]); 
+    void* targ_slice_x = (void*)(tab->slices_x[targ]); 
+    void* targ_slice_z = (void*)(tab->slices_z[targ]); 
+    void* slice_r = (void*)(tab->phases); 
 
-    size_t i;
-    // TODO the compiler isn't able to avx this section of code itself, CNOT appears to be near instant while CZ is non-trivial
-    #pragma omp parallel private(i)
-    { 
-        #pragma omp for simd
-        for (i = 0; i < tab->slice_len; i++)
-        {
-            __atomic_fetch_xor(slice_r + i, (
-                (ctrl_slice_x[i] & targ_slice_x[i] & ctrl_slice_z[i]) 
-                ^ (ctrl_slice_x[i] & targ_slice_x[i] & targ_slice_z[i]) 
-            ), __ATOMIC_RELAXED); 
-            targ_slice_z[i] ^= ctrl_slice_x[i];
-            ctrl_slice_z[i] ^= targ_slice_x[i];
-        }  
+    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    {
+        __m256i ctrl_x = _mm256_load_si256(ctrl_slice_x + i);
+        __m256i ctrl_z = _mm256_load_si256(ctrl_slice_z + i);
+        __m256i targ_x = _mm256_load_si256(targ_slice_x + i);
+        __m256i targ_z = _mm256_load_si256(targ_slice_z + i);
+        __m256i r = _mm256_load_si256(slice_r + i);
+
+        _mm256_store_si256(targ_slice_z + i, _mm256_xor_si256(ctrl_x, targ_z));
+        _mm256_store_si256(ctrl_slice_z + i, _mm256_xor_si256(ctrl_z, targ_x));
+
+        __m256i x_and_x = _mm256_and_si256(ctrl_x, targ_x);
+
+        _mm256_store_si256(slice_r + i, 
+            _mm256_xor_si256(r,
+                _mm256_xor_si256(
+                    _mm256_and_si256(x_and_x, ctrl_z), 
+                    _mm256_and_si256(x_and_x, targ_z) 
+                )
+            )
+        );
     }
 }
