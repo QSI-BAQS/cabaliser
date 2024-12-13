@@ -69,7 +69,6 @@ struct adjacency_obj widget_get_adjacencies(const widget_t* wid, const size_t ta
 
     tableau_slice_p slice = wid->tableau->slices_z[target_qubit];
      
-    #pragma omp parallel for 
     for (size_t i = 0; i < wid->tableau->slice_len; i++)  
     {
         if (slice[i] > 0 )
@@ -152,7 +151,6 @@ void widget_decompose(widget_t* wid)
 
     // Phase operation to set Z diagonal to zero 
     // Loop acts on separate cache line entries for each element
-    #pragma omp parallel for
     for (size_t i = 0; i < wid->n_qubits; i++)
     {
         if (__inline_slice_get_bit(wid->tableau->slices_z[i], i))
@@ -173,7 +171,6 @@ void widget_decompose(widget_t* wid)
     }
 
     // Z to set phases to 0
-    #pragma omp parallel for simd
     for (size_t i = 0; i < wid->n_qubits; i++)
     {
         //
@@ -189,7 +186,6 @@ void widget_decompose(widget_t* wid)
 
     // The previous loop zeros the phases, this loop just does it faster
     // Effective action of a Z gate
-    #pragma omp parallel for simd
     for (size_t i = 0; i < wid->tableau->slice_len; i++)
     {
         wid->tableau->phases[i] = 0; 

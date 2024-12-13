@@ -3,7 +3,7 @@
 
 #include <stdatomic.h>
 
-#include "omp.h"
+//#include "omp.h"
 #include "tableau.h"
 #include "instructions.h"
 #include "debug.h"

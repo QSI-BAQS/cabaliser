@@ -87,7 +87,6 @@ tableau_t* tableau_create(const size_t n_qubits)
     tab->orientation = COL_MAJOR;
     tab->phases = phases;
 
-    #pragma omp parallel for  
     for (size_t i = 0; i < n_qubits; i++)
     {   
         uint8_t* ptr_z = z_start + (i * slice_len_bytes);
@@ -152,7 +151,6 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ)
 //    if (tab->n_qubits < sizeof(size_t))
 //    { 
         // TODO SIMD this by chunks  
-        #pragma omp for simd
         for (size_t i = 0; i < tab->n_qubits; i++)
         {
             bit_z = __inline_slice_get_bit(tab->slices_z[i], targ); 

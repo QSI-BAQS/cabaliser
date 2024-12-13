@@ -33,9 +33,7 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
  */
 void tableau_Z_zero_diagonal(tableau_t* tab, clifford_queue_t* c_que)
 {
-    size_t i;
-    #pragma omp parallel for private(i)
-    for (i = 0; i < tab->n_qubits; i++)
+    for (size_t i = 0; i < tab->n_qubits; i++)
     { 
         if (__inline_slice_get_bit(tab->slices_z[i], i))  
         {
@@ -95,16 +93,12 @@ void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_
 void tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
 {
     size_t  j;
-    #pragma omp parallel
+    for (j = idx + 1; j < tab->n_qubits; j++) 
     {
-        #pragma omp for 
-        for (j = idx + 1; j < tab->n_qubits; j++) 
+        if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
         {
-            if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
-            {
-                DPRINT(DEBUG_3, "Slice XOR Upper: %lu %lu\n", idx, j);
-                tableau_slice_xor(tab, idx, j);
-            }
+            DPRINT(DEBUG_3, "Slice XOR Upper: %lu %lu\n", idx, j);
+            tableau_slice_xor(tab, idx, j);
         }
     }
     return;
