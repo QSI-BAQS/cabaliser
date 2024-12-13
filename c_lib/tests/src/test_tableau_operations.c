@@ -276,6 +276,9 @@ void test_cliffords()
         tableau_S(tab, i);
         tableau_H(tab, i);
 
+        test_ident(tab, i, 2, tableau_HRH, tableau_HSH);
+        ASSERT_SLICES_EQUAL(tab, i, val_x, val_z, val_r); 
+
         assert(val_x == tab->slices_x[i][0]);  
         assert(val_z == tab->slices_z[i][0]);  
         assert(val_r == tab->phases[0]);  
@@ -285,9 +288,10 @@ void test_cliffords()
         tableau_H(tab, i);
         tableau_R(tab, i);
 
-        assert(val_x == tab->slices_x[i][0]);  
-        assert(val_z == tab->slices_z[i][0]);  
-        assert(val_r == tab->phases[0]);  
+        ASSERT_SLICES_EQUAL(tab, i, val_x, val_z, val_r); 
+
+        test_ident(tab, i, 2, tableau_RHS, tableau_RHS);
+        ASSERT_SLICES_EQUAL(tab, i, val_x, val_z, val_r); 
 
         tableau_SHR(tab, i);
         tableau_R(tab, i);
@@ -297,6 +301,10 @@ void test_cliffords()
         assert(val_x == tab->slices_x[i][0]);  
         assert(val_z == tab->slices_z[i][0]);  
         assert(val_r == tab->phases[0]);  
+
+        test_ident(tab, i, 2, tableau_SHR, tableau_SHR);
+        ASSERT_SLICES_EQUAL(tab, i, val_x, val_z, val_r); 
+
 
     }   
     tableau_destroy(tab);
