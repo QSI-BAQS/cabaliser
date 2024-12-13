@@ -23,7 +23,6 @@ typedef struct tableau_t tableau_t;
 
 // Always add one so that we can do offset alignment if the manual alignment fails
 #define SLICE_LEN_CACHE(n_qubits) ((n_qubits / CACHE_SIZE_BITS) + !!(n_qubits % CACHE_SIZE_BITS)) 
-
 #define SLICE_LEN_SIZE_T(n_qubits) ((n_qubits / (8 * sizeof(size_t))) + !!(n_qubits % sizeof(size_t)))
 
 #define CHUNK_OBJ uint64_t
@@ -31,12 +30,12 @@ typedef struct tableau_t tableau_t;
 #define TABLEAU_SIMD_LANE_SIZE sizeof(TABLEAU_SIMD_VEC)
 #define TABLEAU_SIMD_STRIDE (TABLEAU_SIMD_LANE_SIZE)     
 
-
 #define CHUNK_SIZE_BYTES (sizeof(CHUNK_OBJ))
 #define CHUNK_SIZE_BITS (CHUNK_SIZE_BYTES * BITS_TO_BYTE)
 #define CACHE_CHUNKS (CACHE_SIZE / CHUNK_SIZE_BYTES) 
 #define __CHUNK_CTZ __builtin_ctzll 
 
+#define TABLEAU_STRIDE(tab) (SLICE_LEN_CACHE(tab->n_qubits) * CACHE_SIZE) 
 
 struct aligned_chunk {
    CHUNK_OBJ components[CACHE_CHUNKS]; 
