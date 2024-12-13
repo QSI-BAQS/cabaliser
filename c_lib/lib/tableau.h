@@ -32,10 +32,10 @@ typedef struct tableau_t tableau_t;
 
 #define CHUNK_SIZE_BYTES (sizeof(CHUNK_OBJ))
 #define CHUNK_SIZE_BITS (CHUNK_SIZE_BYTES * BITS_TO_BYTE)
-#define CACHE_CHUNKS (CACHE_SIZE / CHUNK_SIZE_BYTES) 
+#define CACHE_CHUNKS (CACHE_SIZE / CHUNK_SIZE_BYTES)
 #define __CHUNK_CTZ __builtin_ctzll 
 
-#define TABLEAU_STRIDE(tab) (SLICE_LEN_CACHE(tab->n_qubits) * CACHE_SIZE) 
+#define TABLEAU_STRIDE(tab) (SLICE_LEN_CACHE(tab->n_qubits) * CACHE_SIZE)
 
 struct aligned_chunk {
    CHUNK_OBJ components[CACHE_CHUNKS]; 
