@@ -157,7 +157,7 @@ void test_phase_terms(
 int main()
 {
     int8_t (*fns[N_FNS])(size_t, void* restrict, void* restrict, void* restrict, void* restrict) = {simd_rowsum, rowsum_naive_lookup_table, rowsum_cnf, simd_rowsum_cnf_popcnt, simd_rowsum_cnf, simd_xor_rowsum}; 
-    for (size_t i = 1; i < 1001; i += 100)
+    for (size_t i = 1; i < 256; i += 124)
     {
         for (size_t j = 0; j < N_FNS; j++)
         { 

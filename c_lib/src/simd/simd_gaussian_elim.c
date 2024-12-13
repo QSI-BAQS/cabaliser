@@ -93,8 +93,8 @@ void tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
     const uint64_t stride = TABLEAU_STRIDE(tab);
     // In preparation for taking this to a gather instruction
     // We collect the whole 8 byte chunk 
-    void* ptr = ((void*)tab->slices_x[idx]) + (idx / 64); 
-    const uint64_t mask = 1 << (64 - (idx % 64));
+    void* ptr = ((void*)tab->slices_x[idx]) + (idx / 8); 
+    const uint64_t mask = 1 << (idx % 8);
 
     for (size_t j = idx + 1; j < tab->n_qubits; j++) 
     {
@@ -183,5 +183,3 @@ void simd_tableau_idx_swap_transverse(tableau_t* restrict tab, const size_t i, c
 
     return;
 }
-
-

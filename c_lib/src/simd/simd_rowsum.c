@@ -18,13 +18,11 @@
 #define PLS (1)
 #define MNS ((int16_t) -1) 
 
-
 #define NAIVE_LOOKUP_TABLE 0, 0, 0, 0, 0, 0, 1, 3, 0, 3, 0, 1, 0, 1, 3, 0
-
 
 #define ROWSUM_MASK MASK_0, MASK_0, MASK_0, MASK_0
 
-//                             00   01   10   11                             
+// Shuffle lookup table        00   01   10   11                             
 #define ROWSUM_SHUFFLE_MASK_00 NIL, NIL, NIL, NIL
 #define ROWSUM_SHUFFLE_MASK_01 NIL, NIL, PLS, MNS 
 #define ROWSUM_SHUFFLE_MASK_10 NIL, MNS, NIL, PLS 
@@ -32,8 +30,9 @@
 
 #define ROWSUM_SHUFFLE_SEQ ROWSUM_SHUFFLE_MASK_00, ROWSUM_SHUFFLE_MASK_01, ROWSUM_SHUFFLE_MASK_10, ROWSUM_SHUFFLE_MASK_11
 #define ROWSUM_SHUFFLE_MASK ROWSUM_SHUFFLE_SEQ, ROWSUM_SHUFFLE_SEQ 
-/*
- *            if ((b_ctrl_x == 1) && (b_ctrl_z == 0))
+
+/*          Structure of naive implementation is:
+ *          if ((b_ctrl_x == 1) && (b_ctrl_z == 0))
  *          {
  *              acc += b_targ_z * (2 * b_targ_x - 1); 
  *          }
