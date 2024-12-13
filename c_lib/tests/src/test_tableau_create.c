@@ -13,6 +13,9 @@ void test_tableau_create(const size_t n_qubits)
     tableau_t* tab = tableau_create(n_qubits);
     assert(NULL != tab);
 
+    printf("%lu %lu\n", tab->slice_len, tab->n_qubits);
+    assert(tab->slice_len % 32 == 0);
+
     for (size_t i = 0; i < n_qubits; i++)
     {   
         assert(tableau_slice_empty_x(tab, i));

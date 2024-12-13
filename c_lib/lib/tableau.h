@@ -29,8 +29,11 @@ typedef struct tableau_t tableau_t;
 
 #define SLICE_LEN_SIZE_T(n_qubits) ((n_qubits / (8 * sizeof(size_t))) + !!(n_qubits % sizeof(size_t)))
 
-
 #define CHUNK_OBJ uint64_t
+#define TABLEAU_SIMD_VEC __m256i
+#define TABLEAU_SIMD_LANE_SIZE sizeof(TABLEAU_SIMD_VEC)     
+#define TABLEAU_SIMD_STRIDE (TABLEAU_SIMD_LANE_SIZE / 8)     
+
 
 #define CHUNK_SIZE_BYTES (sizeof(CHUNK_OBJ))
 #define CHUNK_SIZE_BITS (CHUNK_SIZE_BYTES * BITS_TO_BYTE)

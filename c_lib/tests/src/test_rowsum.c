@@ -150,7 +150,6 @@ void test_phase_terms(
     // Test 0 1 0 0
     phase = rowsum(len / 8, ctrl_x, ctrl_z, targ_x, targ_z);
     assert(0 == phase);
-
 }
 
 

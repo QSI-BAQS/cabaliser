@@ -23,7 +23,6 @@ void test_single_qubit_compositions()
     return;
 }
 
-
 void test_identity(void)
 {
     for (size_t i = 0; i < N_LOCAL_CLIFFORD_INSTRUCTIONS; i++)
