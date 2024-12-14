@@ -65,6 +65,23 @@ void test_tableau_print(uint64_t** arr_a, const size_t n_channels, const size_t 
     printf("\n");
 }
 
+tableau_t* tableau_copy(tableau_t* tab)
+{
+    tableau_t* tab_cpy = tableau_create(tab->n_qubits); 
+    for (size_t i = 0; i < sizeof(size_t); i++)
+    {
+        for (size_t j = 0; j < tab->slice_len; j++)
+        {
+            tab_cpy->slices_x[i][j] = tab->slices_x[i][j]; 
+            tab_cpy->slices_z[i][j] = tab->slices_z[i][j]; 
+        }
+    }   
+    for (size_t j = 0; j < tab->slice_len; j++)
+    {
+        tab_cpy->phases[j] = tab->phases[j]; 
+    }
+    return tab_cpy;
+}
 
 #endif
 

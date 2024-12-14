@@ -4,6 +4,10 @@
 
 #include "widget.h"
 #include "tableau_operations.h"
+#include "simd_gaussian_elimination.h"
+
+#include "tableau.h"
+
 #include "input_stream.h"
 #include "instructions.h"
 
@@ -78,6 +82,66 @@ widget_t* widget_sample_create()
     return wid;
 }
 
+
+void test_block_diag(size_t n_qubits)
+{
+    widget_t* wid = widget_random_create(n_qubits, n_qubits * n_qubits);
+    widget_t* cpy = widget_create(n_qubits, n_qubits);
+    tableau_destroy(cpy->tableau);
+
+    tableau_remove_zero_X_columns(wid->tableau, wid->queue);
+    tableau_transpose(wid->tableau);
+
+    cpy->tableau = tableau_copy(wid->tableau); 
+
+    tableau_elim_upper(wid);
+    simd_tableau_elim_upper(cpy);
+
+    for (size_t i = 0; i < n_qubits; i++)
+    {
+
+        assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
+        assert(1 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
+
+        for (size_t j = i + 1; j < i; j++)
+        {
+            assert(0 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
+            assert(0 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
+        }
+    } 
+
+    return;
+}
+
+
+void test_idx_swap(size_t n_qubits)
+{
+    widget_t* wid = widget_random_create(n_qubits, n_qubits);
+
+    void* stage_x = malloc(n_qubits / 8 + 1);
+    void* stage_z = malloc(n_qubits / 8 + 1);
+
+    for (size_t i = 0; i < n_qubits; i++)
+    {
+        for (size_t j = 0; j < i; j++)
+        {
+            memcpy(stage_x, wid->tableau->slices_x[i], n_qubits / 8 + 1);
+            memcpy(stage_z, wid->tableau->slices_z[i], n_qubits / 8 + 1);
+
+            tableau_idx_swap_transverse(wid->tableau, i, j);
+            assert(0 == memcmp(stage_x, wid->tableau->slices_x[j], n_qubits / 8 + 1));
+            assert(0 == memcmp(stage_z, wid->tableau->slices_z[j], n_qubits / 8 + 1));
+
+            simd_tableau_idx_swap_transverse(wid->tableau, i, j);
+            assert(0 == memcmp(stage_x, wid->tableau->slices_x[i], n_qubits / 8 + 1));
+            assert(0 == memcmp(stage_z, wid->tableau->slices_z[i], n_qubits / 8 + 1));
+        }
+    } 
+
+    return;
+}
+
+
 void test_ghz(void)
 {
     const size_t n_qubits = 3;
@@ -123,6 +187,12 @@ void test_random(const size_t n_qubits)
 
 int main()
 {
+
+    for (size_t i = 10; i < 128; i+=10)
+    {
+        test_idx_swap(i);
+        test_block_diag(i);
+    }
     
     test_ghz();
     for (size_t i = 0; i < 100; i++)

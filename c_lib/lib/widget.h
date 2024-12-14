@@ -3,6 +3,7 @@
 
 #include "tableau.h"
 #include "tableau_operations.h"
+#include "simd_gaussian_elimination.h"
 
 #include "instructions.h"
 #include "instructions.h"
