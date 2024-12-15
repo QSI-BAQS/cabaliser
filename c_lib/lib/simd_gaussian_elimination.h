@@ -5,7 +5,7 @@
 #include "widget.h"
 #include "tableau_operations.h"
 
-struct widget_t;
+typedef struct widget_t widget_t;
 
 /*
  * simd_widget_decompose

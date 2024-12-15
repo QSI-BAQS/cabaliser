@@ -6,7 +6,9 @@
 #include "tableau_operations.h"
 #include "simd_gaussian_elimination.h"
 
+
 #include "tableau.h"
+#include "test_tableau.h"
 
 #include "input_stream.h"
 #include "instructions.h"

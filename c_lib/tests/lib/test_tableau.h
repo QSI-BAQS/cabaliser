@@ -65,7 +65,7 @@ void test_tableau_print(uint64_t** arr_a, const size_t n_channels, const size_t 
     printf("\n");
 }
 
-tableau_t* tableau_copy(tableau_t* tab)
+tableau_t* tableau_copy(tableau_t* const tab)
 {
     tableau_t* tab_cpy = tableau_create(tab->n_qubits); 
     for (size_t i = 0; i < sizeof(size_t); i++)

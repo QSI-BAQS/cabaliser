@@ -26,7 +26,6 @@ void debug_print_block(uint64_t block[64])
     printf("\n");
 }
 
-static inline
 void tableau_elim_upper(widget_t* wid);
 
 static inline
@@ -62,7 +61,6 @@ void simd_widget_decompose(widget_t* wid)
 }
 
 
-static inline
 void tableau_elim_upper(widget_t* wid)
 {
     for (size_t i = 0; i < wid->n_qubits; i++)
