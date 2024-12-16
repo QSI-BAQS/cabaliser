@@ -570,13 +570,13 @@ def Toffoli(n_qubits=3, ctrl_0=0, ctrl_1=1, targ=2):
     return n_qubit_gate(toff_mat, n_qubits, 3, ctrl_0, ctrl_1, targ)
 
 
-_Rz = lambda theta: np.array([[1, 0], [0, np.exp(1j * theta / 2)]], dtype=np.complex128)
+_Rz = lambda theta: np.array([[1, 0], [0, np.exp(1j * theta)]], dtype=np.complex128)
 
 _Rx = lambda theta: np.array(
-[[0, np.exp(-1j * theta / 2)], 
- [np.exp(1j * theta / 2), 0]], dtype=np.complex128)
+[[0, np.exp(-1j * theta)], 
+ [np.exp(1j * theta), 0]], dtype=np.complex128)
 
-def CPHASE(n_qubits: int, ctrl: int = 0, targ: int = 1, theta: float = 1.0):
+def CPHASE(n_qubits: int, ctrl: int = 0, targ: int = 1, theta: float = np.pi):
     """
     CPHASE gate
     :: n_qubits : int :: Size of computational space 
@@ -599,7 +599,7 @@ def QFT(n_qubits: int, *targs):
     n_targets = len(targs)
     rotation = lambda x: 2 ** (-1 * x) * np.pi
     for i in range(n_targets):
-        mat = single_qubit_gate(H,:n_qubits, targs[i]) @ mat    
+        mat = single_qubit_gate(H, n_qubits, targs[i]) @ mat    
         for j in range(i + 1, n_targets):
            mat = CPHASE(n_qubits, targs[j], targs[i], theta=rotation(j - i + 1)) @ mat 
     return mat 
