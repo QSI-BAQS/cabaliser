@@ -492,16 +492,19 @@ void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
  * :: ctrl : const size_t :: Control of the rowsum
  * :: targ : const size_t :: Target of the rowsum
  */
-void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ)
+void tableau_rowsum(tableau_t* tab, const size_t ctrl, const size_t targ)
 {
     CHUNK_OBJ* slice_ctrl_x = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
     CHUNK_OBJ* slice_targ_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
     CHUNK_OBJ* slice_ctrl_z = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
     CHUNK_OBJ* slice_targ_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
 
-    CHUNK_OBJ phase_slice = 0; 
-
-    int8_t phase = simd_rowsum_cnf(tab->slice_len * sizeof(CHUNK_OBJ), slice_ctrl_x, slice_ctrl_z, slice_targ_x, slice_targ_z);
+    int8_t phase = simd_rowsum_cnf(
+        tab->slice_len * sizeof(CHUNK_OBJ),
+        slice_ctrl_x,
+        slice_ctrl_z,
+        slice_targ_x,
+        slice_targ_z);
 
     int8_t c_phase = slice_get_bit(tab->phases, ctrl) << 1;
     int8_t t_phase = slice_get_bit(tab->phases, targ) << 1;
@@ -510,5 +513,30 @@ void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ)
     phase = ((c_phase + t_phase + phase) % 4) >> 1;
 
     slice_set_bit(tab->phases, targ, phase);
-    
+}
+
+
+void tableau_rowsum_offset(tableau_t* tab, const size_t ctrl, const size_t targ, const size_t offset)
+{
+    const size_t offset_bytes = 8 * (offset / 64) ; 
+
+    CHUNK_OBJ* slice_ctrl_x = (CHUNK_OBJ*)((void*)(tab->slices_x[ctrl]) + offset_bytes); 
+    CHUNK_OBJ* slice_ctrl_z = (CHUNK_OBJ*)((void*)(tab->slices_z[ctrl]) + offset_bytes); 
+    CHUNK_OBJ* slice_targ_x = (CHUNK_OBJ*)((void*)(tab->slices_x[targ]) + offset_bytes); 
+    CHUNK_OBJ* slice_targ_z = (CHUNK_OBJ*)((void*)(tab->slices_z[targ]) + offset_bytes); 
+
+    int8_t phase = simd_rowsum_cnf(
+        tab->slice_len * sizeof(CHUNK_OBJ) - offset_bytes,
+        slice_ctrl_x,
+        slice_ctrl_z,
+        slice_targ_x,
+        slice_targ_z);
+
+    int8_t c_phase = slice_get_bit(tab->phases, ctrl) << 1;
+    int8_t t_phase = slice_get_bit(tab->phases, targ) << 1;
+
+    // https://arxiv.org/pdf/quant-ph/0406196 Page 4
+    phase = ((c_phase + t_phase + phase) % 4) >> 1;
+
+    slice_set_bit(tab->phases, targ, phase);
 }

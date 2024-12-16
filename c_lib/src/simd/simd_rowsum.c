@@ -46,7 +46,6 @@
  *          }
  */
 
-
 /*
  * simd_rowsum 
  * Performs a rowsum between two rows of stabilisers 
@@ -422,8 +421,6 @@ int8_t simd_rowsum_cnf_popcnt(
 
     return (((pos - neg) % 4 + 2) % 4) - 2;
 }
-
-
 
 int8_t simd_rowsum_cnf(
     const size_t n_bytes,

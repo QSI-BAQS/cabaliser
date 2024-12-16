@@ -124,10 +124,6 @@ size_t* widget_get_io_map(const widget_t* wid)
  */
 void widget_decompose(widget_t* wid)
 {
-    simd_widget_decompose(wid);
-}
-
-/*
     tableau_remove_zero_X_columns(wid->tableau, wid->queue);
 
     tableau_transpose(wid->tableau);
@@ -197,4 +193,3 @@ void widget_decompose(widget_t* wid)
 
     return;
 }
-*/

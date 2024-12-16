@@ -139,10 +139,10 @@ void tableau_print(const tableau_t* tab);
  */
 void tableau_print_phases(const tableau_t* tab);
 
-
 /*
  * tableau_transpose
  * Transposes a tableau
+ * The naive version of this function is used for testing 
  * :: tab : tableau_t* :: Tableau to transpose
  * Flips the orientation field and the member fields
  * This flips the alignment of the cache lines
@@ -151,13 +151,23 @@ void tableau_transpose(tableau_t* tab);
 void tableau_transpose_naive(tableau_t* tab);
 
 /*
- * tableau_slice_xor
+ * tableau_rowsum
+ * tableau_rowsum_offset 
  * Performs a rowsum between two rows of stabilisers 
+ * The offset version of the function starts
+ * from an offset bit index 
  * :: tab : tableau_t const* :: Tableau object
  * :: ctrl : const size_t :: Control of the rowsum
  * :: targ : const size_t :: Target of the rowsum
  */
-void tableau_slice_xor(tableau_t* tab, const size_t ctrl, const size_t targ);
+void tableau_rowsum(
+    tableau_t* tab,
+    const size_t ctrl,
+    const size_t targ);
+void tableau_rowsum_offset(tableau_t* tab,
+    const size_t ctrl,
+    const size_t targ,
+    const size_t offset);
 
 /*
  * tableau_slice_empty_x
@@ -169,7 +179,7 @@ bool tableau_slice_empty_x(const tableau_t* tab, size_t idx);
 
 /*
  * tableau_slice_empty_z
- * Fast operation for checking if an x slice is empty
+ * Fast operation for checking if a z slice is empty
  *  :: tab : const tableau_t* :: The tableau object
  *  :: idx : const size_t :: Index of the slice
  */
@@ -177,7 +187,7 @@ bool tableau_slice_empty_z(const tableau_t* tab, size_t idx);
 
 /*
  * tableau_ctz
- * Fast operation for checking if an x slice is empty
+ * Fast operation for checking if a slice is empty
  *  :: slice : const tableau_t* :: The tableau object
  *  :: len : const size_t :: Index of the slice
  */
@@ -196,7 +206,6 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ);
 /*
  * tableau_idx_swap_transverse 
  * Swaps indicies over both the X and Z slices  
- * Also swaps associated phases
  * :: tab : tableau_t* :: Tableau object to swap over 
  * :: i :: const size_t :: Index to swap 
  * :: j :: const size_t :: Index to swap

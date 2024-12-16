@@ -64,7 +64,7 @@ void simd_widget_decompose(widget_t* wid)
 }
 
 
-void tableau_elim_upper(widget_t* wid)
+void simd_tableau_elim_upper(widget_t* wid)
 {
     for (size_t i = 0; i < wid->n_qubits; i++)
     {
@@ -103,25 +103,33 @@ void decomp_load_ctrl_block(
 }
 
 
-void decomp_local_elim(
+size_t decomp_local_elim(
         widget_t* wid,
+        const size_t offset,
         const size_t start,
         const size_t end,
         uint64_t ctrl_block[64])
 {
-    for (size_t j = start; j < end; j++)
+
+    size_t elim_tracer = 0;
+    for (size_t i = 0; i < 64; i++)
     {
         size_t ctrl = 0;
         while (
-            j > 
-            (ctrl = __builtin_ctzll(ctrl_block[j]))
-        ) 
+        i > 
+        (ctrl = __builtin_ctzll(ctrl_block[i])))
         {
-            ctrl_block[j] ^= ctrl_block[ctrl];
-            printf("ELIM %lu -> %lu\n", ctrl, j); 
+            ctrl_block[i] ^= ctrl_block[ctrl];
+            tableau_rowsum_offset(
+                    wid->tableau,
+                    i + offset,
+                    ctrl + offset,
+                    offset);
+            printf("ELIM %lu -> %lu / %lu\n", ctrl, i, end); 
             debug_print_block(ctrl_block);
         }
     }
+    return SENTINEL;
 }
 
 void decomp_local_X(
@@ -149,7 +157,7 @@ void decomp_local_X(
     } 
 }
 
-void simd_tableau_elim_upper(widget_t* wid)
+void tableau_elim_upper(widget_t* wid)
 {
     const size_t tableau_stride = TABLEAU_STRIDE(
                                     wid->tableau);
@@ -162,7 +170,6 @@ void simd_tableau_elim_upper(widget_t* wid)
          i < wid->n_qubits;
          i += BLOCK_STRIDE_BITS)
     {
-
         // Constant control block
         // Allows for quick in-place inspection of the local impact of an xor 
         uint64_t ctrl_block[BLOCK_STRIDE_BITS] = {0};
@@ -172,16 +179,40 @@ void simd_tableau_elim_upper(widget_t* wid)
         // Cleanup the non-diagonal elements in the block
         for (size_t j = 0; j < wid->n_qubits; j++)
         {
-
             printf("%lu\n", ctrl_block[j] & (1lu << j));
-            if (0 == (ctrl_block[j] & (1lu << j)))
+            if (__builtin_ctzll(ctrl_block[j]) < j)
             {
                 printf("Elim?\n");
-                decomp_local_elim(wid, start, j, ctrl_block); 
-                decomp_load_ctrl_block(ctrl_block, slices, tableau_stride, i);
+                // Try to eliminate elements in the local column
+                decomp_local_elim(
+                    wid,
+                    i,
+                    start,
+                    j - 1,
+                    ctrl_block); 
 
-                decomp_local_X(wid, i, j, ctrl_block);
-                start = j;
+                // Check if bit not set after gaussian elimination
+                //if __builtin_ctzll(ctrl_block[j] <= j) 
+                //{
+
+                //}
+
+                //if (SENTINEL != end)
+                //{
+                //    simd_tableau_idx_swap_transverse(
+                //        wid->tableau,
+                //        end + i,
+                //        j + i);
+                //    uint64_t tmp = ctrl_block[j];
+                //    ctrl_block[j] = ctrl_block[end];
+                //    ctrl_block[end] = tmp;
+                //} 
+                //else
+                //{
+                //    decomp_load_ctrl_block(ctrl_block, slices, tableau_stride, i);
+                //    decomp_local_X(wid, i, j, ctrl_block);
+                //    start = j;
+                //}
 //                // Swap blocks to set X to zero
 //                size_t idx = simd_tableau_X_diag_element(wid->tableau, wid->queue, i + j);
 //
@@ -201,11 +232,6 @@ void simd_tableau_elim_upper(widget_t* wid)
             debug_print_block(ctrl_block);
             printf("%lu %u\n", j, BLOCK_STRIDE_BITS);
         }
-
-
-
-
-    
     }
     printf("END\n");
     return;
@@ -389,7 +415,7 @@ void tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
     {
         if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
         {
-            tableau_slice_xor(tab, idx, j);
+            tableau_rowsum_offset(tab, idx, j, j);
         }
     }
     return;
@@ -406,7 +432,7 @@ void tableau_X_diag_col_lower(tableau_t* tab, const size_t idx)
     {
         if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
         {
-            tableau_slice_xor(tab, idx, j);
+            tableau_rowsum_offset(tab, idx, j, j);
         }
     }
     return;
@@ -447,7 +473,7 @@ void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
             if (dst[chunk])
             {
                 DPRINT(DEBUG_3, "Slice XOR Upper: %lu %lu\n", idx, j + chunk);
-                tableau_slice_xor(tab, idx, j + chunk);
+                tableau_rowsum_offset(tab, idx, j + chunk, j);
             }
         }
 
@@ -458,7 +484,7 @@ void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
     {
         if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
         {
-            tableau_slice_xor(tab, idx, j);
+            tableau_rowsum_offset(tab, idx, j, j);
         }
     }
     return;
@@ -474,7 +500,7 @@ void simd_tableau_X_diag_col_lower(tableau_t* tab, const size_t idx)
         if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
         {
             DPRINT(DEBUG_3, "Slice XOR Lower: %lu %lu\n", idx, j);
-            tableau_slice_xor(tab, idx, j);
+            tableau_rowsum_offset(tab, idx, j, j);
         }
     }
     return;
