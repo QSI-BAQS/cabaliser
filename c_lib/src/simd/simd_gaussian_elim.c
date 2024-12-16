@@ -358,6 +358,47 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
 }
 
 
+
+// Naive implementation
+void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_t idx)
+{
+
+    for (size_t j = idx + 1; j < tab->n_qubits; j++)
+    {
+        // Swap stabilisers
+        if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
+        {
+            tableau_idx_swap_transverse(tab, idx, j);
+            return; 
+        } 
+    } 
+
+    if (1 == __inline_slice_get_bit(tab->slices_z[idx], idx))
+    {
+        tableau_transverse_hadamard(tab, idx);
+        clifford_queue_local_clifford_right(queue, _H_, idx);   
+        return;
+    }
+
+    for (size_t j = idx + 1; j < tab->n_qubits; j++)
+    {
+        // Swap stabilisers
+        if (1 == __inline_slice_get_bit(tab->slices_z[j], idx))
+        {
+            // Backup Strategy
+            tableau_idx_swap_transverse(tab, idx, j);
+
+            tableau_transverse_hadamard(tab, idx);
+            clifford_queue_local_clifford_right(queue, _H_, idx);   
+            return; 
+        } 
+    }
+    //assert(0); // Could not place a 1 in the X diagonal
+    
+    return;
+}
+
+
 /*
  * Sets a 1 bit on the diagonal element of the X tableau
  * Returns the index of the permuted row if any   
@@ -544,3 +585,6 @@ void simd_tableau_idx_swap_transverse(tableau_t* restrict tab, const size_t i, c
 
     return;
 }
+
+
+

@@ -540,3 +540,5 @@ void tableau_rowsum_offset(tableau_t* tab, const size_t ctrl, const size_t targ,
 
     slice_set_bit(tab->phases, targ, phase);
 }
+
+

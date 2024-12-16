@@ -28,7 +28,11 @@ void simd_tableau_idx_swap_transverse(tableau_t* restrict tab, const size_t i, c
 
 
 void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx);
+
+
+void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_t idx);
 size_t simd_tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_t idx);
+
 
 void simd_tableau_elim_upper(widget_t* wid);
 void tableau_elim_upper(widget_t* wid);
