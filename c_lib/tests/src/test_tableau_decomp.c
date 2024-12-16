@@ -190,10 +190,11 @@ void test_random(const size_t n_qubits)
 int main()
 {
 
+    test_block_diag(8);
+
     for (size_t i = 10; i < 128; i+=10)
     {
         test_idx_swap(i);
-        test_block_diag(i);
     }
     
     test_ghz();

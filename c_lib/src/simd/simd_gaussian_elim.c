@@ -45,7 +45,10 @@ void zero_phases(widget_t* wid);
  */
 void simd_widget_decompose(widget_t* wid)
 {
-    tableau_remove_zero_X_columns(wid->tableau, wid->queue);
+    tableau_remove_zero_X_columns(
+        wid->tableau,
+        wid->queue
+    );
 
     tableau_transpose(wid->tableau);
 
@@ -65,71 +68,163 @@ void tableau_elim_upper(widget_t* wid)
 {
     for (size_t i = 0; i < wid->n_qubits; i++)
     {
-        if (0 == __inline_slice_get_bit(wid->tableau->slices_x[i], i))
+        if (0 == __inline_slice_get_bit(
+            wid->tableau->slices_x[i], i)
+           )
         {
-            simd_tableau_X_diag_element(wid->tableau, wid->queue, i);
+            simd_tableau_X_diag_element(
+                wid->tableau,
+                wid->queue, i);
         }
         tableau_X_diag_col_upper(wid->tableau, i);
     }
 }
 
 
+
 #define BLOCK_STRIDE_BITS 64
 #define BLOCK_STRIDE_BYTES 8
+void decomp_load_ctrl_block(
+    uint64_t ctrl_block[64],
+    void* slices, 
+    size_t stride,
+    size_t offset
+)
+{
+        #pragma GCC unroll 64 
+        for (size_t j = 0; j < BLOCK_STRIDE_BITS; j++)
+        {
+           ctrl_block[j] = *(uint64_t*)(
+                slices + (offset + j) 
+                * stride 
+                + (offset / BLOCK_STRIDE_BYTES)
+            );
+        }
+}
+
+
+void decomp_local_elim(
+        widget_t* wid,
+        const size_t start,
+        const size_t end,
+        uint64_t ctrl_block[64])
+{
+    for (size_t j = start; j < end; j++)
+    {
+        size_t ctrl = 0;
+        while (
+            j > 
+            (ctrl = __builtin_ctzll(ctrl_block[j]))
+        ) 
+        {
+            ctrl_block[j] ^= ctrl_block[ctrl];
+            printf("ELIM %lu -> %lu\n", ctrl, j); 
+            debug_print_block(ctrl_block);
+        }
+    }
+}
+
+void decomp_local_X(
+        widget_t* wid,
+        const size_t offset,
+        const size_t idx,
+        uint64_t ctrl_block[64])
+{
+    const uint64_t mask = (1ull << idx);
+    for (size_t i = idx; i < 8; i++)
+    {
+        if (mask & ctrl_block[i]) 
+        {
+            uint64_t tmp = ctrl_block[idx]; 
+            ctrl_block[idx] = ctrl_block[i]; 
+            ctrl_block[i] = tmp; 
+
+            simd_tableau_idx_swap_transverse(
+                wid->tableau,
+                idx + offset,
+                i + offset);
+            printf("SWAP %lu %lu\n", idx, i);
+            return;
+        }
+    } 
+}
+
 void simd_tableau_elim_upper(widget_t* wid)
 {
-    const size_t tableau_stride = TABLEAU_STRIDE(wid->tableau);
+    const size_t tableau_stride = TABLEAU_STRIDE(
+                                    wid->tableau);
 
     // All slices will be offset from this pointer
     uint8_t* slices = (void*)wid->tableau->slices_x[0];
 
     // Stride through the tableau in chunks of 64 elements
-    for (size_t i = 0; i < wid->n_qubits; i += BLOCK_STRIDE_BITS)
+    for (size_t i = 0;
+         i < wid->n_qubits;
+         i += BLOCK_STRIDE_BITS)
     {
 
         // Constant control block
         // Allows for quick in-place inspection of the local impact of an xor 
         uint64_t ctrl_block[BLOCK_STRIDE_BITS] = {0};
-        #pragma GCC unroll 64 
-        for (size_t j = 0; j < BLOCK_STRIDE_BITS; j++)
-        {
-           ctrl_block[j] = *(uint64_t*)(slices + (i + j) * tableau_stride + (i / BLOCK_STRIDE_BYTES));
-        }
+        decomp_load_ctrl_block(ctrl_block, slices, tableau_stride, i);
 
-        size_t ctrl = 0;
+        size_t start = 0;
         // Cleanup the non-diagonal elements in the block
-        for (size_t j = 0; j < BLOCK_STRIDE_BITS; j++)
+        for (size_t j = 0; j < wid->n_qubits; j++)
         {
+
+            printf("%lu\n", ctrl_block[j] & (1lu << j));
             if (0 == (ctrl_block[j] & (1lu << j)))
             {
-                size_t idx = simd_tableau_X_diag_element(wid->tableau, wid->queue, i + j);
-                ctrl_block[j] = *(uint64_t*)(slices + (i + j) * tableau_stride + (i / BLOCK_STRIDE_BYTES));
-                if ((SENTINEL != idx) && (idx < i + BLOCK_STRIDE_BITS))
-                {
-                    ctrl_block[idx - i] = *(uint64_t*)(slices + (i + j) * tableau_stride + (i / BLOCK_STRIDE_BYTES));
-                }
-            }
-            if (i < 8 && j < 8)
-            {
-                debug_print_block(ctrl_block);
+                printf("Elim?\n");
+                decomp_local_elim(wid, start, j, ctrl_block); 
+                decomp_load_ctrl_block(ctrl_block, slices, tableau_stride, i);
+
+                decomp_local_X(wid, i, j, ctrl_block);
+                start = j;
+//                // Swap blocks to set X to zero
+//                size_t idx = simd_tableau_X_diag_element(wid->tableau, wid->queue, i + j);
+//
+//                ctrl_block[j] = *(uint64_t*)(
+//                    slices + (i + j) 
+//                    * tableau_stride 
+//                    + (i / BLOCK_STRIDE_BYTES)
+//                );
+//
+//                if ((SENTINEL != idx) && (idx < i + BLOCK_STRIDE_BITS))
+//                {
+//                    printf("Swapping %lu %lu\n", idx, j);
+//                    ctrl_block[idx - i] = *(uint64_t*)(slices + (idx) * tableau_stride + (i / BLOCK_STRIDE_BYTES));
+//                }
             }
 
-            // From the previous loop, the ctzll call here should be upper bounded by j
-            for (size_t k = j + 1; k < BLOCK_STRIDE_BITS; k++)
-            {
-                if (ctrl_block[k] & (1ull << j))  
-                {
-                    tableau_slice_xor(wid->tableau, i + ctrl, i + j);
-                    ctrl_block[k] ^= ctrl_block[j];
-                }
-            }
+            debug_print_block(ctrl_block);
+            printf("%lu %u\n", j, BLOCK_STRIDE_BITS);
         }
+
+
+
+
+    
+    }
+    printf("END\n");
+    return;
+}
+    
+            // From the previous loop, the ctzll call here should be upper bounded by j
+//            for (size_t k = j + 1; k < BLOCK_STRIDE_BITS; k++)
+//            {
+//                if (ctrl_block[k] & (1ull << j))  
+//                {
+//                    tableau_slice_xor(wid->tableau, i + ctrl, i + j);
+//                    ctrl_block[k] ^= ctrl_block[j];
+//                }
+//            }
         //debug_print_block(ctrl_block);
 
 
        // // Target block initial allocation
        // uint64_t target_block[BLOCK_STRIDE_BITS] = {0};
-
        // // Eliminate diagonal elements in subsequent blocks
        // for (size_t j = i + BLOCK_STRIDE_BITS; j < wid->n_qubits; j += BLOCK_STRIDE_BITS)
        // {
@@ -153,10 +248,6 @@ void simd_tableau_elim_upper(widget_t* wid)
        //         }
        //     } 
        // }
-    }
-
-    return;
-}
 
 static inline
 void tableau_elim_lower(widget_t* wid)
@@ -240,6 +331,7 @@ void tableau_remove_zero_X_columns(tableau_t* tab, clifford_queue_t* c_que)
     return;
 }
 
+
 /*
  * Sets a 1 bit on the diagonal element of the X tableau
  * Returns the index of the permuted row if any   
@@ -282,7 +374,7 @@ size_t simd_tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, cons
     }
     
     // Failed
-    assert(0);
+    //assert(0);
     return SENTINEL;
 }
 
@@ -419,10 +511,10 @@ void simd_tableau_idx_swap_transverse(tableau_t* restrict tab, const size_t i, c
         _mm256_store_si256(ptr_j_z + step, v_i_z);
     }
 
-    uint8_t phase_i = slice_get_bit(tab->phases, i);
-    uint8_t phase_j = slice_get_bit(tab->phases, j);
-    slice_set_bit(tab->phases, i, phase_j);
-    slice_set_bit(tab->phases, j, phase_i);
+//    uint8_t phase_i = slice_get_bit(tab->phases, i);
+//    uint8_t phase_j = slice_get_bit(tab->phases, j);
+//    slice_set_bit(tab->phases, i, phase_j);
+//    slice_set_bit(tab->phases, j, phase_i);
 
     return;
 }
