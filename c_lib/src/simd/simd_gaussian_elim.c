@@ -213,6 +213,19 @@ void simd_tableau_elim_upper(widget_t* wid)
     // All slices will be offset from this pointer
     uint8_t* slices = (void*)wid->tableau->slices_x[0];
 
+    for (size_t i = 0; i < 8; i++)
+    {
+        printf("%p, ", slices + i * tableau_stride);
+    }
+    printf("\n");
+  
+    for (size_t i = 0; i < 8; i++)
+    {
+        printf("%p, ", wid->tableau->slices_x[i]);
+    }
+    printf("\n");
+
+ 
     // Stride through the tableau in chunks of 64 elements
     for (size_t offset = 0;
          offset < wid->n_qubits;

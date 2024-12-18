@@ -50,9 +50,10 @@ tableau_t* tableau_create(const size_t n_qubits)
 
     size_t slice_len_bytes = n_qubits / 8 + !!(n_qubits % 8);
     const size_t slice_len_sized = slice_len_bytes / sizeof(CHUNK_OBJ) + !!(slice_len_bytes % sizeof(CHUNK_OBJ)); 
-    const size_t slice_len_cache = slice_len_bytes / CACHE_SIZE + !!(slice_len_bytes % CACHE_SIZE); 
-    slice_len_bytes = slice_len_cache * CACHE_SIZE / 2; 
-    assert(slice_len_sized * sizeof(size_t) <= slice_len_bytes);
+    const size_t slice_len = (slice_len_bytes / TABLEAU_SIMD_LANE_SIZE + !!(slice_len_bytes % TABLEAU_SIMD_LANE_SIZE)) * TABLEAU_SIMD_LANE_SIZE; 
+    printf("Row Size: %lu\n", slice_len);
+
+    assert(slice_len * sizeof(size_t) <= slice_len_bytes);
 
     printf("ALLOC: %zu\n", slice_len_bytes);
 
@@ -99,6 +100,7 @@ tableau_t* tableau_create(const size_t n_qubits)
         slice_set_bit(tab->slices_z[i], i, 1); 
         tab->slices_x[i] = (tableau_slice_p)ptr_x; 
     }
+    printf("STRIDE: %lu\n", TABLEAU_STRIDE(tab));
     return tab;
 }
 

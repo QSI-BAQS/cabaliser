@@ -99,7 +99,9 @@ void test_block_diag(size_t n_qubits)
 
     tableau_elim_upper(wid);
     simd_tableau_elim_upper(cpy);
-      
+     
+    tableau_transpose(cpy->tableau);
+
     tableau_print(cpy->tableau);
 
     for (size_t i = 0; i < n_qubits; i++)
