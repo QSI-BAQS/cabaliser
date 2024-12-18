@@ -135,7 +135,7 @@ void widget_decompose(widget_t* wid)
             tableau_X_diag_element(wid->tableau, wid->queue, i);
         }
 
-        simd_tableau_X_diag_col_upper(wid->tableau, i);
+        tableau_X_diag_col_upper(wid->tableau, i);
     }
 
 

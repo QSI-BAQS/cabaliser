@@ -14,7 +14,6 @@
 #include "instructions.h"
 
 
-
 instruction_stream_u* create_sample_instruction_stream()
 {
     instruction_stream_u* inst = malloc(3 * sizeof(instruction_stream_u));  
@@ -96,8 +95,12 @@ void test_block_diag(size_t n_qubits)
 
     cpy->tableau = tableau_copy(wid->tableau); 
 
+    tableau_print(cpy->tableau);
+
     tableau_elim_upper(wid);
     simd_tableau_elim_upper(cpy);
+      
+    tableau_print(cpy->tableau);
 
     for (size_t i = 0; i < n_qubits; i++)
     {
@@ -105,12 +108,29 @@ void test_block_diag(size_t n_qubits)
         assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
         assert(1 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
 
-        for (size_t j = i + 1; j < i; j++)
+        for (size_t j = 0; j < i; j++)
         {
             assert(0 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
             assert(0 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
         }
     } 
+
+//    tableau_elim_lower(wid);
+//    simd_tableau_elim_lower(cpy);
+//
+//    for (size_t i = 0; i < n_qubits; i++)
+//    {
+//
+//        assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
+//        assert(1 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
+//
+//        for (size_t j = i + 1; j < n_qubits; j++)
+//        {
+//            assert(0 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
+//            assert(0 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
+//        }
+//    } 
+
 
     return;
 }
@@ -192,23 +212,23 @@ int main()
 
     test_block_diag(8);
 
-    for (size_t i = 10; i < 128; i+=10)
-    {
-        test_idx_swap(i);
-    }
-    
-    test_ghz();
-    for (size_t i = 0; i < 100; i++)
-    {
-        srand(i);
-        test_random(8);
-    }
+    //for (size_t i = 10; i < 128; i+=10)
+    //{
+    //    test_idx_swap(i);
+    //}
+    //
+    //test_ghz();
+    //for (size_t i = 0; i < 100; i++)
+    //{
+    //    srand(i);
+    //    test_random(8);
+    //}
 
-    for (size_t i = 10; i < 100; i+= 10)
-    {
-        srand(i);
-        test_random(i * 64);
-    }
+    //for (size_t i = 10; i < 100; i+= 10)
+    //{
+    //    srand(i);
+    //    test_random(i * 64);
+    //}
 
     return 0;
 }

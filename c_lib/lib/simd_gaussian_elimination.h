@@ -14,6 +14,8 @@ typedef struct widget_t widget_t;
  * Acts in place on the tableau 
  */
 void simd_widget_decompose(struct widget_t* wid);
+void naive_widget_decompose(struct widget_t* wid);
+
 
 /*
  * simd_tableau_idx_swap_transverse 
@@ -37,6 +39,8 @@ size_t simd_tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, cons
 void simd_tableau_elim_upper(widget_t* wid);
 void tableau_elim_upper(widget_t* wid);
 
+void simd_tableau_elim_lower(widget_t* wid);
+void tableau_elim_lower(widget_t* wid);
 
 
 #endif

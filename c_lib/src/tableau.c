@@ -51,8 +51,10 @@ tableau_t* tableau_create(const size_t n_qubits)
     size_t slice_len_bytes = n_qubits / 8 + !!(n_qubits % 8);
     const size_t slice_len_sized = slice_len_bytes / sizeof(CHUNK_OBJ) + !!(slice_len_bytes % sizeof(CHUNK_OBJ)); 
     const size_t slice_len_cache = slice_len_bytes / CACHE_SIZE + !!(slice_len_bytes % CACHE_SIZE); 
-    slice_len_bytes = slice_len_cache * CACHE_SIZE; 
+    slice_len_bytes = slice_len_cache * CACHE_SIZE / 2; 
     assert(slice_len_sized * sizeof(size_t) <= slice_len_bytes);
+
+    printf("ALLOC: %zu\n", slice_len_bytes);
 
     // Construct memaligned bitmap
     void* tableau_bitmap = NULL;
