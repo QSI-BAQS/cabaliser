@@ -44,29 +44,22 @@ uint8_t slice_get_bit(
  */
 tableau_t* tableau_create(const size_t n_qubits)
 {
-    DPRINT(DEBUG_1, "Allocating %ld qubit tableau\n", n_qubits);
+    DPRINT(DEBUG_1, "Allocating %zu qubit tableau\n", n_qubits);
 
     // The extra chunk is a 64 byte region that we can use for cache line alignment 
-
-    size_t slice_len_bytes = n_qubits / 8 + !!(n_qubits % 8);
-    const size_t slice_len_sized = slice_len_bytes / sizeof(CHUNK_OBJ) + !!(slice_len_bytes % sizeof(CHUNK_OBJ)); 
-    const size_t slice_len = (slice_len_bytes / TABLEAU_SIMD_LANE_SIZE + !!(slice_len_bytes % TABLEAU_SIMD_LANE_SIZE)) * TABLEAU_SIMD_LANE_SIZE; 
-    printf("Row Size: %lu\n", slice_len);
-
-    assert(slice_len * sizeof(size_t) <= slice_len_bytes);
-
-    printf("ALLOC: %zu\n", slice_len_bytes);
+    const size_t slice_len_bytes = SLICE_LEN_BYTES(n_qubits, CACHE_SIZE); 
+    const size_t tableau_bytes = slice_len_bytes * n_qubits * 2; 
 
     // Construct memaligned bitmap
     void* tableau_bitmap = NULL;
-    const size_t tableau_bytes = slice_len_bytes * n_qubits * 2;
+
     int err_code = posix_memalign(&tableau_bitmap, CACHE_SIZE, tableau_bytes); 
     assert(0 == err_code);
 
     // Set map to all zeros
     memset(tableau_bitmap, 0x00, tableau_bytes);
     DPRINT(DEBUG_2, "\tAllocated %ld bytes for tableau\n", tableau_bytes);
-    DPRINT(DEBUG_2, "\t\t Slices: %lu bytes, %lu cache chunks, %lu size_t chunks\n", slice_len_bytes, slice_len_cache, slice_len_sized);
+    DPRINT(DEBUG_2, "\tSlices contain %zu bytes\n", slice_len_bytes);
 
     // Construct start of X and Z segments 
     void* z_start = tableau_bitmap;
@@ -83,7 +76,7 @@ tableau_t* tableau_create(const size_t n_qubits)
     // Create the tableau struct and assign variables   
     tableau_t* tab = malloc(sizeof(tableau_t)); 
     tab->n_qubits = n_qubits;
-    tab->slice_len = slice_len_sized;
+    tab->slice_len = slice_len_bytes;
     tab->chunks = tableau_bitmap; 
     tab->slices_x = slice_ptrs_x;
     tab->slices_z = slice_ptrs_z;
@@ -100,7 +93,6 @@ tableau_t* tableau_create(const size_t n_qubits)
         slice_set_bit(tab->slices_z[i], i, 1); 
         tab->slices_x[i] = (tableau_slice_p)ptr_x; 
     }
-    printf("STRIDE: %lu\n", TABLEAU_STRIDE(tab));
     return tab;
 }
 
@@ -115,7 +107,7 @@ tableau_t* tableau_create(const size_t n_qubits)
 void tableau_set_n_qubits(tableau_t* tab, const size_t n_qubits)
 {
     tab->n_qubits = n_qubits; 
-    tab->slice_len = SLICE_LEN_SIZE_T(n_qubits); 
+    tab->slice_len = SLICE_LEN_BYTES(n_qubits, CACHE_SIZE); 
 }
 
 
@@ -152,26 +144,16 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ)
     uint8_t bit_z = 0;
     // TODO Vectorise this
 
-//    if (tab->n_qubits < sizeof(size_t))
-//    { 
-        // TODO SIMD this by chunks  
-        for (size_t i = 0; i < tab->n_qubits; i++)
-        {
-            bit_z = __inline_slice_get_bit(tab->slices_z[i], targ); 
-            bit_x = __inline_slice_get_bit(tab->slices_x[i], targ); 
-            uint8_t bit_phase = ((uint8_t)bit_z & (uint8_t)bit_x) ^ __inline_slice_get_bit(tab->phases, i);
-            __inline_slice_set_bit(tab->phases, i, bit_phase);
-            __inline_slice_set_bit(tab->slices_z[i], targ, bit_x); 
-            __inline_slice_set_bit(tab->slices_x[i], targ, bit_z); 
-        }
-//    }
-//    else
-//    {
-//
-//            mask |= (bit_z & bit_x) <<   
-//
-//    }
-
+    // TODO SIMD this by chunks  
+    for (size_t i = 0; i < tab->n_qubits; i++)
+    {
+        bit_z = __inline_slice_get_bit(tab->slices_z[i], targ); 
+        bit_x = __inline_slice_get_bit(tab->slices_x[i], targ); 
+        uint8_t bit_phase = ((uint8_t)bit_z & (uint8_t)bit_x) ^ __inline_slice_get_bit(tab->phases, i);
+        __inline_slice_set_bit(tab->phases, i, bit_phase);
+        __inline_slice_set_bit(tab->slices_z[i], targ, bit_x); 
+        __inline_slice_set_bit(tab->slices_x[i], targ, bit_z); 
+    }
     return;
 }
 
@@ -373,12 +355,12 @@ void tableau_print_phases(const tableau_t* tab)
  * :: slice_len : const size_t :: Length of slice in units of size_t
  */
 static inline
-bool __inline_slice_empty(tableau_slice_p slice, const size_t slice_len)
+bool __inline_slice_empty(tableau_slice* slice, const size_t slice_len)
 {
     size_t idx = tableau_ctz(slice, slice_len);  
     return (CTZ_SENTINEL == idx); 
 }
-bool slice_empty(tableau_slice_p slice, const size_t slice_len)
+bool slice_empty(tableau_slice* slice, const size_t slice_len)
 {
     return __inline_slice_empty(slice, slice_len);
 }
@@ -416,19 +398,19 @@ bool tableau_slice_empty_z(const tableau_t* tab, size_t idx)
  */
 size_t tableau_ctz(CHUNK_OBJ* slice, const size_t slice_len)
 {
-    //#pragma GCC unroll 8
+    #pragma GCC unroll 8
     for (size_t i = 0;
          i < slice_len;
-         i++)
+         i += CHUNK_STRIDE)
     {
         DPRINT(DEBUG_3, 
             "%p %lu\n",
             slice + i,
             *(slice + i));
            
-        if (0 < *(slice + i))
+        if (0 < CHUNK_IDX(slice, i))
         {
-            return CHUNK_SIZE_BITS * i + __CHUNK_CTZ(*(slice + i));
+            return CHUNK_SIZE_BITS * (i / CHUNK_STRIDE) + __CHUNK_CTZ(CHUNK_IDX(slice, i));
         }
     }
     return CTZ_SENTINEL;
@@ -445,6 +427,44 @@ size_t tableau_ctz(CHUNK_OBJ* slice, const size_t slice_len)
  */
 void tableau_idx_swap(tableau_t* tab, const size_t i, const size_t j)
 {
+    uint64_t* slice_x_i = tab->slices_x[i];
+    uint64_t* slice_x_j = tab->slices_x[j];
+    uint64_t* slice_z_i = tab->slices_z[i];
+    uint64_t* slice_z_j = tab->slices_z[j];
+
+    printf("SWAPPING: %zu %zu\n", i, j);
+
+    const size_t term = SLICE_LEN_BYTES(tab->n_qubits, sizeof(uint64_t));
+    #pragma GCC unroll 8
+    for (size_t idx = 0; idx < term; idx++)
+    {
+        slice_x_i[idx] ^= slice_x_j[idx];
+        slice_x_j[idx] ^= slice_x_i[idx];
+        slice_x_i[idx] ^= slice_x_j[idx];
+
+        slice_z_i[idx] ^= slice_z_j[idx];
+        slice_z_j[idx] ^= slice_z_i[idx];
+        slice_z_i[idx] ^= slice_z_j[idx];
+    }
+
+    uint8_t phase_i = slice_get_bit(tab->phases, i); 
+    uint8_t phase_j = slice_get_bit(tab->phases, j); 
+    slice_set_bit(tab->phases, i, phase_j); 
+    slice_set_bit(tab->phases, j, phase_i); 
+
+    return;
+}
+
+/*
+ * tableau_idx_swap_ptr
+ * Swaps indicies over both the X and Z slices  
+ * :: tab : tableau_t* :: Tableau object to swap over 
+ * :: i :: const size_t :: Index to swap 
+ * :: j :: const size_t :: Index to swap
+ * Acts in place on the tableau 
+ */
+void tableau_idx_swap_ptr(tableau_t* tab, const size_t i, const size_t j)
+{
     tableau_slice_p tmp = tab->slices_x[i];
     tab->slices_x[i] = tab->slices_x[j];  
     tab->slices_x[j] = tmp;  
@@ -460,6 +480,7 @@ void tableau_idx_swap(tableau_t* tab, const size_t i, const size_t j)
 
     return;
 }
+
 
 
 /*
@@ -473,24 +494,31 @@ void tableau_idx_swap(tableau_t* tab, const size_t i, const size_t j)
  */
 void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
 {
-    tableau_slice_p tmp = tab->slices_x[i];
-    tab->slices_x[i] = tab->slices_x[j];  
-    tab->slices_x[j] = tmp;  
+    uint64_t* slice_x_i = tab->slices_x[i];
+    uint64_t* slice_x_j = tab->slices_x[j];
+    uint64_t* slice_z_i = tab->slices_z[i];
+    uint64_t* slice_z_j = tab->slices_z[j];
 
-    tmp = tab->slices_z[i];
-    tab->slices_z[i] = tab->slices_z[j];  
-    tab->slices_z[j] = tmp;  
-    
-    uint8_t phase_i = slice_get_bit(tab->phases, i); 
-    uint8_t phase_j = slice_get_bit(tab->phases, j); 
-    slice_set_bit(tab->phases, i, phase_j); 
-    slice_set_bit(tab->phases, j, phase_i); 
+    printf("SWAPPING: %zu %zu\n", i, j);
+
+    const size_t term = SLICE_LEN_BYTES(tab->n_qubits, sizeof(uint64_t));
+    #pragma GCC unroll 8
+    for (size_t idx = 0; idx < term; idx++)
+    {
+        slice_x_i[idx] ^= slice_x_j[idx];
+        slice_x_j[idx] ^= slice_x_i[idx];
+        slice_x_i[idx] ^= slice_x_j[idx];
+
+        slice_z_i[idx] ^= slice_z_j[idx];
+        slice_z_j[idx] ^= slice_z_i[idx];
+        slice_z_i[idx] ^= slice_z_j[idx];
+    }
 
     return;
 }
 
 /*
- * tableau_slice_xor
+ * tableau_rowsum
  * Performs a rowsum between two rows of stabilisers 
  * :: tab : tableau_t const* :: Tableau object
  * :: ctrl : const size_t :: Control of the rowsum
@@ -498,13 +526,13 @@ void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
  */
 void tableau_rowsum(tableau_t* tab, const size_t ctrl, const size_t targ)
 {
-    CHUNK_OBJ* slice_ctrl_x = (CHUNK_OBJ*)(tab->slices_x[ctrl]); 
-    CHUNK_OBJ* slice_targ_x = (CHUNK_OBJ*)(tab->slices_x[targ]); 
-    CHUNK_OBJ* slice_ctrl_z = (CHUNK_OBJ*)(tab->slices_z[ctrl]); 
-    CHUNK_OBJ* slice_targ_z = (CHUNK_OBJ*)(tab->slices_z[targ]); 
+    void* slice_ctrl_x = tab->slices_x[ctrl];
+    void* slice_targ_x = tab->slices_x[targ];
+    void* slice_ctrl_z = tab->slices_z[ctrl];
+    void* slice_targ_z = tab->slices_z[targ];
 
-    int8_t phase = simd_rowsum_cnf(
-        tab->slice_len * sizeof(CHUNK_OBJ),
+    int8_t phase = simd_rowsum(
+        tab->slice_len,
         slice_ctrl_x,
         slice_ctrl_z,
         slice_targ_x,
@@ -520,29 +548,40 @@ void tableau_rowsum(tableau_t* tab, const size_t ctrl, const size_t targ)
 }
 
 
+/*
+ * Calculates the rowsum starting from an offset 
+ * :: tab : tableau_t* :: Tableau object
+ * :: ctrl : const size_t :: Control qubit
+ * :: targ : const size_t :: Target qubit
+ * :: offset : const size_t :: Offset qubit index 
+ */
+static inline
+void __inline_tableau_rowsum_offset(tableau_t* tab, const size_t ctrl, const size_t targ, const size_t offset)
+{
+    const size_t offset_bytes = 8 * (offset / 64); 
+
+    tableau_slice* slice_ctrl_x = (tableau_slice*)((void*)(tab->slices_x[ctrl]) + offset_bytes); 
+    tableau_slice* slice_ctrl_z = (tableau_slice*)((void*)(tab->slices_z[ctrl]) + offset_bytes); 
+    tableau_slice* slice_targ_x = (tableau_slice*)((void*)(tab->slices_x[targ]) + offset_bytes); 
+    tableau_slice* slice_targ_z = (tableau_slice*)((void*)(tab->slices_z[targ]) + offset_bytes); 
+
+    int8_t phase = simd_rowsum_cnf(
+        tab->slice_len - offset_bytes,
+        slice_ctrl_x,
+        slice_ctrl_z,
+        slice_targ_x,
+        slice_targ_z);
+
+    // Inlining will remove this as a blocking load
+    int8_t c_phase = slice_get_bit(tab->phases, ctrl) << 1;
+    int8_t t_phase = slice_get_bit(tab->phases, targ) << 1;
+
+    // https://arxiv.org/pdf/quant-ph/0406196 Page 4
+    phase = ((c_phase + t_phase + phase) % 4) >> 1;
+
+    slice_set_bit(tab->phases, targ, phase);
+}
 void tableau_rowsum_offset(tableau_t* tab, const size_t ctrl, const size_t targ, const size_t offset)
 {
-    const size_t offset_bytes = 8 * (offset / 64) ; 
-
-    CHUNK_OBJ* slice_ctrl_x = (CHUNK_OBJ*)((void*)(tab->slices_x[ctrl]) + offset_bytes); 
-    CHUNK_OBJ* slice_ctrl_z = (CHUNK_OBJ*)((void*)(tab->slices_z[ctrl]) + offset_bytes); 
-    CHUNK_OBJ* slice_targ_x = (CHUNK_OBJ*)((void*)(tab->slices_x[targ]) + offset_bytes); 
-    CHUNK_OBJ* slice_targ_z = (CHUNK_OBJ*)((void*)(tab->slices_z[targ]) + offset_bytes); 
-
-    int8_t phase = simd_rowsum_cnf(
-        tab->slice_len * sizeof(CHUNK_OBJ) - offset_bytes,
-        slice_ctrl_x,
-        slice_ctrl_z,
-        slice_targ_x,
-        slice_targ_z);
-
-    int8_t c_phase = slice_get_bit(tab->phases, ctrl) << 1;
-    int8_t t_phase = slice_get_bit(tab->phases, targ) << 1;
-
-    // https://arxiv.org/pdf/quant-ph/0406196 Page 4
-    phase = ((c_phase + t_phase + phase) % 4) >> 1;
-
-    slice_set_bit(tab->phases, targ, phase);
+    __inline_tableau_rowsum_offset(tab, ctrl, targ, offset);
 }
-
-

@@ -8,7 +8,7 @@ void test_transposed_hadamard(size_t n_qubits)
     tableau_t* tab = tableau_random_create(n_qubits); 
     tableau_t* tab_cmp = tableau_copy(tab);  
 
-    for (size_t i = 0; i < tab->slice_len; i++)
+    for (size_t i = 0; i < tab->n_qubits; i++)
     {
         tableau_H(tab, i);
 
@@ -20,7 +20,7 @@ void test_transposed_hadamard(size_t n_qubits)
 
         assert(*(uint8_t*)&(tab_cmp->slices_x[i][0]) == *(uint8_t*)&(tab->slices_x[i][0]));  
         assert(*(uint8_t*)&(tab_cmp->slices_z[i][0]) == *(uint8_t*)&(tab->slices_z[i][0]));  
-        assert(*(uint8_t*)&(tab_cmp->phases[i]) == *(uint8_t*)&(tab->phases[i]));  
+        assert(*(uint8_t*)&(tab_cmp->phases[0]) == *(uint8_t*)&(tab->phases[0]));  
     }
 }
 

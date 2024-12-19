@@ -100,8 +100,6 @@ void test_block_diag(size_t n_qubits)
     tableau_elim_upper(wid);
     simd_tableau_elim_upper(cpy);
      
-    tableau_transpose(cpy->tableau);
-
     tableau_print(cpy->tableau);
 
     for (size_t i = 0; i < n_qubits; i++)
@@ -112,26 +110,26 @@ void test_block_diag(size_t n_qubits)
 
         for (size_t j = 0; j < i; j++)
         {
-            assert(0 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
-            assert(0 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
+            assert(0 == __inline_slice_get_bit(wid->tableau->slices_x[i], j));
+            assert(0 == __inline_slice_get_bit(cpy->tableau->slices_x[i], j));
         }
     } 
 
-//    tableau_elim_lower(wid);
-//    simd_tableau_elim_lower(cpy);
-//
-//    for (size_t i = 0; i < n_qubits; i++)
-//    {
-//
-//        assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
-//        assert(1 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
-//
-//        for (size_t j = i + 1; j < n_qubits; j++)
-//        {
-//            assert(0 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
-//            assert(0 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
-//        }
-//    } 
+    tableau_elim_lower(wid);
+    tableau_elim_lower(cpy);
+
+    for (size_t i = 0; i < n_qubits; i++)
+    {
+
+        assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
+        assert(1 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
+
+        for (size_t j = i + 1; j < n_qubits; j++)
+        {
+            assert(0 == __inline_slice_get_bit(wid->tableau->slices_x[i], j));
+            assert(0 == __inline_slice_get_bit(cpy->tableau->slices_x[i], j));
+        }
+    } 
 
 
     return;

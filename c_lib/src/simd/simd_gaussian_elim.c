@@ -15,7 +15,7 @@ void debug_print_block(uint64_t block[64])
         printf("|");
         for (size_t j = 0; j < 8; j++)
         {
-           printf("%d", !!(block[i] & (1ull << j))); 
+           printf("%d", !!(block[j] & (1ull << i))); 
         }
         printf("|\n");
     }
@@ -150,11 +150,9 @@ void decomp_local_elim(
             ctrl_block[i] ^= ctrl_block[ctrl];
             tableau_rowsum_offset(
                     wid->tableau,
-                    i + offset,
                     ctrl + offset,
+                    i + offset,
                     offset);
-            printf("ELIM %lu -> %lu / %lu\n", ctrl, i, end); 
-            debug_print_block(ctrl_block);
         }
     }
 
@@ -167,13 +165,12 @@ void decomp_local_elim(
         (ctrl = __builtin_ctzll(ctrl_block[i])))
         {
             ctrl_block[i] ^= ctrl_block[ctrl];
+
             tableau_rowsum_offset(
                     wid->tableau,
-                    i + offset,
                     ctrl + offset,
-                    offset);
-            printf("ELIM %lu -> %lu / %lu\n", ctrl, i, end); 
-            debug_print_block(ctrl_block);
+                    i + offset,
+                    offset); 
         }
     }
 }
@@ -184,9 +181,8 @@ size_t decomp_local_X(
         const size_t idx,
         uint64_t ctrl_block[64])
 {
-    printf("Local Swap\n");
     const uint64_t mask = (1ull << idx);
-    for (size_t i = idx; i < 8; i++)
+    for (size_t i = idx + 1; i < 8; i++)
     {
         if (mask & ctrl_block[i]) 
         {
@@ -194,11 +190,11 @@ size_t decomp_local_X(
             ctrl_block[idx] = ctrl_block[i]; 
             ctrl_block[i] = tmp; 
 
-            simd_tableau_idx_swap_transverse(
+            tableau_idx_swap_transverse(
                 wid->tableau,
                 idx + offset,
                 i + offset);
-            printf("SWAP %lu %lu\n", idx, i);
+
             return idx; 
         }
     } 
@@ -225,6 +221,7 @@ void simd_tableau_elim_upper(widget_t* wid)
     }
     printf("\n");
 
+    uint64_t ctrl_block[BLOCK_STRIDE_BITS] = {0};
  
     // Stride through the tableau in chunks of 64 elements
     for (size_t offset = 0;
@@ -233,7 +230,6 @@ void simd_tableau_elim_upper(widget_t* wid)
     {
         // Constant control block
         // Allows for quick in-place inspection of the local impact of an xor 
-        uint64_t ctrl_block[BLOCK_STRIDE_BITS] = {0};
         decomp_load_ctrl_block(ctrl_block, slices, tableau_stride, offset);
 
         size_t start_local = 0;
@@ -295,11 +291,30 @@ void simd_tableau_elim_upper(widget_t* wid)
             printf("%lu %u\n", j, BLOCK_STRIDE_BITS);
         }
     }
+
+
+    for (size_t i = 0; i < 8; i++)
+    {
+        printf("%p, ", slices + i * tableau_stride);
+    }
+    printf("\n");
+  
+    for (size_t i = 0; i < 8; i++)
+    {
+        printf("%p, ", wid->tableau->slices_x[i]);
+    }
+    printf("\n");
+
+
+    debug_print_block(ctrl_block);
+
+    decomp_load_ctrl_block(ctrl_block, slices, tableau_stride, 0);
+    debug_print_block(ctrl_block);
+
+
     printf("END\n");
     return;
 }
-   
-
 
 
 void simd_tableau_elim_lower(widget_t* wid)

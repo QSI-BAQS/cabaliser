@@ -21,31 +21,45 @@ typedef struct tableau_t tableau_t;
 
 #define CTZ_SENTINEL (~0ll)
 
-// Always add one so that we can do offset alignment if the manual alignment fails
-#define SLICE_LEN_CACHE(n_qubits) ((n_qubits / CACHE_SIZE_BITS) + !!(n_qubits % CACHE_SIZE_BITS)) 
-#define SLICE_LEN_SIZE_T(n_qubits) ((n_qubits / (8 * sizeof(size_t))) + !!(n_qubits % sizeof(size_t)))
+#define SLICE_LEN_BYTES(n_qubits, stride_bytes) (size_t)(((n_qubits) / 8) + ((stride_bytes) - (n_qubits / 8) % (stride_bytes)))
+#define SLICE_LEN(n_qubits, stride_bytes) (SLICE_LEN_BYTES(n_qubits, stride_bytes) / (stride_bytes))
 
+#define SLICE_LEN_CACHE(n_qubits) (SLICE_LEN(n_qubits, CACHE_SIZE))
+#define SLICE_LEN_SIZE_T(n_qubits) (SLICE_LEN(n_qubits, sizeof(size_t)))
+#define SLICE_LEN__m128(n_qubits) (SLICE_LEN(n_qubits, sizeof(__m128)))
+#define SLICE_LEN__m256(n_qubits) (SLICE_LEN(n_qubits, sizeof(__m256)))
+
+#define SLICE_IDX(ptr, idx, slice_len) ((void*)(ptr) + (idx * slice_len)) 
+#define SLICE_X_IDX(tab, idx) SLICE_IDX(tab->slices_x[0], idx, tab->slice_len)
+#define SLICE_Z_IDX(tab, idx) SLICE_IDX(tab->slices_z[0], idx, tab->slice_len)
+
+// Non-simd stride helpers
 #define CHUNK_OBJ uint64_t
-#define TABLEAU_SIMD_VEC __m256i
-#define TABLEAU_SIMD_LANE_SIZE sizeof(TABLEAU_SIMD_VEC)
-#define TABLEAU_SIMD_STRIDE (TABLEAU_SIMD_LANE_SIZE)     
-
-#define CHUNK_SIZE_BYTES (sizeof(CHUNK_OBJ))
+#define CHUNK_SIZE sizeof(CHUNK_OBJ)
+#define CHUNK_STRIDE CHUNK_SIZE
+#define CHUNK_SIZE_BYTES CHUNK_SIZE
 #define CHUNK_SIZE_BITS (CHUNK_SIZE_BYTES * BITS_TO_BYTE)
-#define CACHE_CHUNKS (CACHE_SIZE / CHUNK_SIZE_BYTES)
 #define __CHUNK_CTZ __builtin_ctzll 
 
+#define CHUNK_IDX(slice, offset_byte) (*(CHUNK_OBJ*)((void*)slice + offset_byte))
+
+#define TABLEAU_SIMD_VEC __m256i
+#define TABLEAU_SIMD_LANE_SIZE sizeof(TABLEAU_SIMD_VEC)
+#define TABLEAU_SIMD_STRIDE (TABLEAU_SIMD_LANE_SIZE) 
 #define TABLEAU_STRIDE(tab) (SLICE_LEN_CACHE(tab->n_qubits) * CACHE_SIZE)
+
+#define CACHE_CHUNKS (CACHE_SIZE / CHUNK_SIZE_BYTES)
 
 struct aligned_chunk {
    CHUNK_OBJ components[CACHE_CHUNKS]; 
 };
+typedef CHUNK_OBJ tableau_slice;
 typedef CHUNK_OBJ* tableau_slice_p;
 
 
 struct tableau_t {
-    size_t n_qubits;
-    size_t slice_len;
+    size_t n_qubits; // Number of qubits
+    size_t slice_len; // Number of bytes
     void* chunks; // Pointer to allocated chunks
     tableau_slice_p* slices_x; // Slice representation pointers 
     tableau_slice_p* slices_z; // Slice representation pointers 
@@ -83,14 +97,17 @@ void tableau_destroy(tableau_t* tab);
  * non static inlined method. 
  * The enforced behaviour of static inline is only guaranteed for gcc
  */
-void slice_set_bit(tableau_slice_p slice, const size_t index, const uint8_t value);
+void slice_set_bit(
+ tableau_slice* slice,
+ const size_t index,
+ const uint8_t value);
+
 static inline
 void __inline_slice_set_bit(
-    tableau_slice_p slice,
+    tableau_slice* slice,
     const size_t index,
     const uint8_t value)
 {
-
     slice[index / CHUNK_SIZE_BITS] &= ~(1ull << (index % CHUNK_SIZE_BITS)); 
     slice[index / CHUNK_SIZE_BITS] |= (1ull & value) << (index % CHUNK_SIZE_BITS); 
 
@@ -212,5 +229,15 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ);
  * Acts in place on the tableau 
  */
 void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j);
+
+/*
+ * tableau_set_n_qubits
+ * Truncates the tableau to a set number of qubits
+ * :: tab : tableau_t* :: The tableau
+ * :: n_qubits : const size_t :: The number of qubits
+ * Acts in place on the tableau
+ * There is an implicit assumption that the number of qubits should not be greater than the initially allocated number of qubits
+ */
+void tableau_set_n_qubits(tableau_t* tab, const size_t n_qubits);
 
 #endif 

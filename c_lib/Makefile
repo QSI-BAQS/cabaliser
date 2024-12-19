@@ -65,6 +65,7 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 .PHONY: all
 .PHONY: clean
 .PHONY: test tests
+.PHONY: run_tests 
 .PHONY: benchmark benchmarks
 .PHONY: pandora_api
 .PHONY: ${PAULI_TRACKER}
@@ -99,6 +100,9 @@ test: all
 test : CFLAGS += -g
 #tests : test pandora_test ${PAULI_TRACKER_LIB}
 test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} ${PANDORA_TEST_RUNNERS} 
+
+run_tests: test 
+	$(for i in tests/*.out; do echo $i; ./$i; done)
 
 
 benchmark: benchmarks 
