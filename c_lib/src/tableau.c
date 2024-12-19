@@ -48,7 +48,7 @@ tableau_t* tableau_create(const size_t n_qubits)
 
     // The extra chunk is a 64 byte region that we can use for cache line alignment 
     const size_t slice_len_bytes = SLICE_LEN_BYTES(n_qubits, CACHE_SIZE); 
-    const size_t tableau_bytes = slice_len_bytes * n_qubits * 2; 
+    const size_t tableau_bytes = slice_len_bytes * (n_qubits) * 2; 
 
     // Construct memaligned bitmap
     void* tableau_bitmap = NULL;
@@ -394,7 +394,11 @@ bool tableau_slice_empty_z(const tableau_t* tab, size_t idx)
 /*
  * tableau_ctz
  * Gets the index of the first non-zero bit in the slice
- * :: tableau_slice_p ::
+ * :: slice : CHUNK_OBJ* :: ctz target 
+ * :: slice_len : const size_t :: Slice bytes  
+ * Returns either:
+ * - Number of leading zeros
+ * - CTZ_SENTINEL if slice_len is reached 
  */
 size_t tableau_ctz(CHUNK_OBJ* slice, const size_t slice_len)
 {
@@ -531,7 +535,7 @@ void tableau_rowsum(tableau_t* tab, const size_t ctrl, const size_t targ)
     void* slice_ctrl_z = tab->slices_z[ctrl];
     void* slice_targ_z = tab->slices_z[targ];
 
-    int8_t phase = simd_rowsum(
+    int8_t phase = simd_rowsum_cnf(
         tab->slice_len,
         slice_ctrl_x,
         slice_ctrl_z,

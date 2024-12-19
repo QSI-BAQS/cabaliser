@@ -49,7 +49,7 @@
 /*
  * simd_rowsum 
  * Performs a rowsum between two rows of stabilisers 
- * :: slice_len : size_t :: Length of the chunk 
+ * :: n_bytes : size_t :: Length of the chunk 
  * :: ctrl_x :: CHUNK_OBJ* :: Control X vec 
  * :: ctrl_z :: CHUNK_OBJ* :: Control Z vec 
  * :: targ_x :: CHUNK_OBJ* :: Target X vec 
@@ -171,7 +171,7 @@ int8_t simd_rowsum(
  * simd_xor_rowsum 
  * Performs a rowsum between two rows of stabilisers 
  * This uses simd operations for the xor but not the phase accumulator
- * :: slice_len : size_t :: Length of the chunk 
+ * :: n_bytes : size_t :: Length of the chunk 
  * :: ctrl_x :: CHUNK_OBJ* :: Control X vec 
  * :: ctrl_z :: CHUNK_OBJ* :: Control Z vec 
  * :: targ_x :: CHUNK_OBJ* :: Target X vec 

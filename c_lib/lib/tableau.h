@@ -29,6 +29,8 @@ typedef struct tableau_t tableau_t;
 #define SLICE_LEN__m128(n_qubits) (SLICE_LEN(n_qubits, sizeof(__m128)))
 #define SLICE_LEN__m256(n_qubits) (SLICE_LEN(n_qubits, sizeof(__m256)))
 
+
+
 #define SLICE_IDX(ptr, idx, slice_len) ((void*)(ptr) + (idx * slice_len)) 
 #define SLICE_X_IDX(tab, idx) SLICE_IDX(tab->slices_x[0], idx, tab->slice_len)
 #define SLICE_Z_IDX(tab, idx) SLICE_IDX(tab->slices_z[0], idx, tab->slice_len)

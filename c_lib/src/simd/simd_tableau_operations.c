@@ -3,16 +3,16 @@
 
 #include "tableau_operations.h"
 
-void tableau_H(tableau_t* tab, const size_t targ)
+void tableau_H(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * x -> z
      * z -> x
      * r -> r ^ x.z
      */
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -27,16 +27,16 @@ void tableau_H(tableau_t* tab, const size_t targ)
 }
 
 
-void tableau_S(tableau_t* tab, const size_t targ)
+void tableau_S(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * x -> x  
      * z -> z ^ x
      * r -> r ^ x.z
      */
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -53,7 +53,7 @@ void tableau_S(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_Z(tableau_t* tab, const size_t targ)
+void tableau_Z(tableau_t* restrict tab, const size_t targ)
 {
 /*
  * Doubled S gate
@@ -63,9 +63,9 @@ void tableau_Z(tableau_t* tab, const size_t targ)
  * r2 = r0 ^ x.(z0 ^ z0 ^ x); z2 = z0 
  * r2 = r0 ^ x; z2 = z0 
  */
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -81,7 +81,7 @@ void tableau_Z(tableau_t* tab, const size_t targ)
 }
 
 
-void tableau_R(tableau_t* tab, const size_t targ)
+void tableau_R(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * Triple S gate
@@ -98,9 +98,9 @@ void tableau_R(tableau_t* tab, const size_t targ)
      * R : (r ^= x.~z; z ^= x)
      */
 
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -119,12 +119,12 @@ void tableau_R(tableau_t* tab, const size_t targ)
 }
 
 
-void tableau_I(tableau_t* tab, const size_t targ)
+void tableau_I(tableau_t* restrict tab, const size_t targ)
 {
     return;
 }
 
-void tableau_X(tableau_t* tab, const size_t targ)
+void tableau_X(tableau_t* restrict tab, const size_t targ)
 {
 /*
  * HZH Gate
@@ -145,8 +145,8 @@ void tableau_X(tableau_t* tab, const size_t targ)
  * r_3 = r_0 ^ z0;
  *
  */
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -157,7 +157,7 @@ void tableau_X(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_Y(tableau_t* tab, const size_t targ)
+void tableau_Y(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * Y = XZ
@@ -171,9 +171,9 @@ void tableau_Y(tableau_t* tab, const size_t targ)
      * Y : r ^= x ^ z
      */
 
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -189,7 +189,7 @@ void tableau_Y(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_HX(tableau_t* tab, const size_t targ)
+void tableau_HX(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * X : (r ^= z)
@@ -202,9 +202,9 @@ void tableau_HX(tableau_t* tab, const size_t targ)
      * Swap x and z
      */
 
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -222,7 +222,7 @@ void tableau_HX(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_SX(tableau_t* tab, const size_t targ)
+void tableau_SX(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * X : (r ^= z)
@@ -234,9 +234,9 @@ void tableau_SX(tableau_t* tab, const size_t targ)
      * r_2 = r_0 ^ (~x & z) 
      * z_2 = z_0 ^ x
      */
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -256,7 +256,7 @@ void tableau_SX(tableau_t* tab, const size_t targ)
 
 
 
-void tableau_RX(tableau_t* tab, const size_t targ)
+void tableau_RX(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * X : (r ^= z)
@@ -269,9 +269,9 @@ void tableau_RX(tableau_t* tab, const size_t targ)
      * z_2 = z_0 ^ x
      */
 
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -289,7 +289,7 @@ void tableau_RX(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_HZ(tableau_t* tab, const size_t targ)
+void tableau_HZ(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * Z : (r ^= x)
@@ -303,9 +303,9 @@ void tableau_HZ(tableau_t* tab, const size_t targ)
      * x_2 = z_0
      */
 
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -325,7 +325,7 @@ void tableau_HZ(tableau_t* tab, const size_t targ)
 
 
 
-void tableau_HY(tableau_t* tab, const size_t targ)
+void tableau_HY(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * Y : r ^= x ^ z
@@ -339,9 +339,9 @@ void tableau_HY(tableau_t* tab, const size_t targ)
      * x_2 = z_0
      */
 
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -360,7 +360,7 @@ void tableau_HY(tableau_t* tab, const size_t targ)
 }
 
 
-void tableau_SH(tableau_t* tab, const size_t targ)
+void tableau_SH(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * H : (r ^= x.z; x <-> z) 
@@ -376,8 +376,8 @@ void tableau_SH(tableau_t* tab, const size_t targ)
      * z_2 ^= x_2 -> x_0 ^= z_0
      * 
      */
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
@@ -394,11 +394,11 @@ void tableau_SH(tableau_t* tab, const size_t targ)
 }
 
 
-void tableau_RH(tableau_t* tab, const size_t targ)
+void tableau_RH(tableau_t* restrict tab, const size_t targ)
 {
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     /*
      * H : (r ^= x.z; x <-> z) 
@@ -428,11 +428,11 @@ void tableau_RH(tableau_t* tab, const size_t targ)
 }
 
 
-void tableau_HS(tableau_t* tab, const size_t targ)
+void tableau_HS(tableau_t* restrict tab, const size_t targ)
 {
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     /*
      * S : (r ^= x.z; z ^= x)
@@ -463,10 +463,10 @@ void tableau_HS(tableau_t* tab, const size_t targ)
     }  
 }
 
-void tableau_HR(tableau_t* tab, const size_t targ)
+void tableau_HR(tableau_t* restrict tab, const size_t targ)
 {
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     /*
      * R : (r ^= x.~z; z ^= x)
      * H : (r ^= x.z; x <-> z) 
@@ -496,7 +496,7 @@ void tableau_HR(tableau_t* tab, const size_t targ)
     }  
 }
 
-void tableau_HSX(tableau_t* tab, const size_t targ)
+void tableau_HSX(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * X : (r ^= z)
@@ -518,9 +518,9 @@ void tableau_HSX(tableau_t* tab, const size_t targ)
      * z_3 = x_2 = x_0
      */
 
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -538,7 +538,7 @@ void tableau_HSX(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_HRX(tableau_t* tab, const size_t targ)
+void tableau_HRX(tableau_t* restrict tab, const size_t targ)
 {
     /*
      * X : (r ^= z)
@@ -559,9 +559,9 @@ void tableau_HRX(tableau_t* tab, const size_t targ)
      * z_3 = x_2 = x_0
      */
 
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -575,11 +575,11 @@ void tableau_HRX(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_SHY(tableau_t* tab, const size_t targ)
+void tableau_SHY(tableau_t* restrict tab, const size_t targ)
 {
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -593,11 +593,11 @@ void tableau_SHY(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_RHY(tableau_t* tab, const size_t targ)
+void tableau_RHY(tableau_t* restrict tab, const size_t targ)
 {
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -611,12 +611,12 @@ void tableau_RHY(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_HSH(tableau_t* tab, const size_t targ)
+void tableau_HSH(tableau_t* restrict tab, const size_t targ)
 {
 
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -634,11 +634,11 @@ void tableau_HSH(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_HRH(tableau_t* tab, const size_t targ)
+void tableau_HRH(tableau_t* restrict tab, const size_t targ)
 {
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -657,11 +657,11 @@ void tableau_HRH(tableau_t* tab, const size_t targ)
 }
 
 
-void tableau_RHS(tableau_t* tab, const size_t targ)
+void tableau_RHS(tableau_t* restrict tab, const size_t targ)
 {
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -680,11 +680,11 @@ void tableau_RHS(tableau_t* tab, const size_t targ)
 }
 
 
-void tableau_SHR(tableau_t* tab, const size_t targ)
+void tableau_SHR(tableau_t* restrict tab, const size_t targ)
 {
-    void* slice_x = (void*)(tab->slices_x[targ]); 
-    void* slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -702,7 +702,7 @@ void tableau_SHR(tableau_t* tab, const size_t targ)
     }
 }
 
-void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ)
+void tableau_CNOT(tableau_t* restrict tab, const size_t ctrl, const size_t targ)
 {
     /*
      * CNOT a, b: ( 
@@ -712,11 +712,11 @@ void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ)
      *
      */ 
 
-    void* ctrl_slice_x = (void*)(tab->slices_x[ctrl]); 
-    void* ctrl_slice_z = (void*)(tab->slices_z[ctrl]); 
-    void* targ_slice_x = (void*)(tab->slices_x[targ]); 
-    void* targ_slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict ctrl_slice_x = (void*)(tab->slices_x[ctrl]); 
+    void* restrict ctrl_slice_z = (void*)(tab->slices_z[ctrl]); 
+    void* restrict targ_slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict targ_slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {
@@ -739,7 +739,7 @@ void tableau_CNOT(tableau_t* tab, const size_t ctrl, const size_t targ)
     }
 }
 
-void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
+void tableau_CZ(tableau_t* restrict tab, const size_t ctrl, const size_t targ)
 {
     /* CZ = H_b CNOT H_b 
      * H : (r ^= x.z; x <-> z) 
@@ -777,11 +777,11 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ)
      *
      */ 
 
-    void* ctrl_slice_x = (void*)(tab->slices_x[ctrl]); 
-    void* ctrl_slice_z = (void*)(tab->slices_z[ctrl]); 
-    void* targ_slice_x = (void*)(tab->slices_x[targ]); 
-    void* targ_slice_z = (void*)(tab->slices_z[targ]); 
-    void* slice_r = (void*)(tab->phases); 
+    void* restrict ctrl_slice_x = (void*)(tab->slices_x[ctrl]); 
+    void* restrict ctrl_slice_z = (void*)(tab->slices_z[ctrl]); 
+    void* restrict targ_slice_x = (void*)(tab->slices_x[targ]); 
+    void* restrict targ_slice_z = (void*)(tab->slices_z[targ]); 
+    void* restrict slice_r = (void*)(tab->phases); 
 
     for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
     {

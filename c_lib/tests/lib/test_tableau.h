@@ -14,10 +14,10 @@ tableau_t* tableau_random_create(size_t n_qubits)
     tableau_t* tab = tableau_create(n_qubits);
     for (size_t i = 0; i < n_qubits; i++)
     {
-        for (size_t j = 0; j < tab->slice_len / CHUNK_SIZE; j++)
+        for (size_t j = 0; j < tab->slice_len; j++)
         {
-           tab->slices_x[i][j] = rand(); 
-           tab->slices_z[i][j] = rand(); 
+           ((uint8_t*)(tab->slices_x[i]))[j] = rand(); 
+           ((uint8_t*)(tab->slices_z[i]))[j] = rand(); 
         }
     }     
     tab->phases[0] = rand(); 
@@ -42,7 +42,7 @@ tableau_t* tableau_copy(tableau_t* const tab)
     }   
     for (size_t j = 0; j < tab->slice_len / CHUNK_SIZE; j++)
     {
-        tab_cpy->phases[j] = tab->phases[j]; 
+        memcpy(tab_cpy->phases, tab->phases, tab->slice_len);
     }
     return tab_cpy;
 }

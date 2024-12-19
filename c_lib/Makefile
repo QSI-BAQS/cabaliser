@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 CC := gcc 
 OMPFLAG := -fopenmp
-CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG}
+CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG} -pg
 
 # Optimisation Flags
 CFLAGS += -Ofast -fPIC
@@ -95,7 +95,7 @@ debug_L1: test
 debug: CFLAGS += -fopt-info -fopt-info-loop -fopt-info-loop-missed -fopt-info-vec -fopt-info-vec-missed
 debug: test 
 
-tests: test
+tests: test pauli_tracker
 test: all
 test : CFLAGS += -g
 #tests : test pandora_test ${PAULI_TRACKER_LIB}

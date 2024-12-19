@@ -27,4 +27,3 @@ void qubit_map_destroy(qubit_map_t* q_map)
 {
     free(q_map);    
 }
-

@@ -69,7 +69,9 @@ struct adjacency_obj widget_get_adjacencies(const widget_t* wid, const size_t ta
 
     tableau_slice_p slice = wid->tableau->slices_z[target_qubit];
      
-    for (size_t i = 0; i < wid->tableau->slice_len; i++)  
+    for (size_t i = 0;
+         i < SLICE_LEN_SIZE_T(wid->tableau->n_qubits);
+         i++)  
     {
         if (slice[i] > 0 )
         {
@@ -186,7 +188,7 @@ void widget_decompose(widget_t* wid)
 
     // The previous loop zeros the phases, this loop just does it faster
     // Effective action of a Z gate
-    for (size_t i = 0; i < wid->tableau->slice_len; i++)
+    for (size_t i = 0; i < wid->tableau->slice_len; i += CHUNK_STRIDE)
     {
         wid->tableau->phases[i] = 0; 
     }
