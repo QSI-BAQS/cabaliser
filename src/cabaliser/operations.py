@@ -4,7 +4,7 @@
 from itertools import chain, repeat
 
 from ctypes import Structure, Union, c_uint32, c_uint8
-from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, LOCAL_CLIFFORD_MASK, NON_LOCAL_CLIFFORD_MASK, RZ_MASK, OPCODE_TYPE_MASK, RZ_GATES, CONDITIONAL_OPERATION_GATES
+from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, LOCAL_CLIFFORD_MASK, NON_LOCAL_CLIFFORD_MASK, RZ_MASK, OPCODE_TYPE_MASK, RZ_GATES, CONDITIONAL_OPERATION_GATES, SINGLE_QUBIT_GATE_ARR
 from cabaliser.utils import unbound_table_element
 
 OpcodeType = c_uint8
@@ -19,7 +19,7 @@ class SingleQubitOperationType(Structure):
         ]
 
     def __repr__(self):
-        return f"Op: {self.arg}"
+        return f"{SINGLE_QUBIT_GATE_ARR[self.opcode]} : {self.arg}"
 
     def __str__(self):
         return self.__repr__()

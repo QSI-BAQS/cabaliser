@@ -3,6 +3,7 @@
 
 #include "tableau.h"
 #include "tableau_operations.h"
+#include "simd_gaussian_elimination.h"
 
 #include "instructions.h"
 #include "instructions.h"
@@ -11,6 +12,7 @@
 #include "adjacency.h"
 
 #include "pauli_tracker.h"
+
 
 #define WMAP_LOOKUP(widget, idx) (widget->q_map[idx])
 
@@ -22,8 +24,12 @@ struct widget_t {
     struct clifford_queue_t* queue;
     qubit_map_t* q_map;
     void* pauli_tracker;
+    struct clifford_queue_t* decomp_queue;
 };
 typedef struct widget_t widget_t;
+
+// TEMP
+#include "input_stream.h"
 
 
 /*

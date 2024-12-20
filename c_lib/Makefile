@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 CC := gcc 
 OMPFLAG := -fopenmp
-CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG}
+CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG} -pg
 
 # Optimisation Flags
 CFLAGS += -Ofast -fPIC
@@ -29,13 +29,19 @@ SRCFILES := $(wildcard ${SRCDIR}/*.c)
 OBJFILES := $(patsubst ${SRCDIR}/%.c, ${BUILDDIR}/%.o, ${SRCFILES})
 COND_OBJFILES := ${OBJFILES} 
 
+
+SIMD_SRCDIR := ${SRCDIR}/simd
+SIMD_SRCFILES := $(wildcard ${SIMD_SRCDIR}/*.c)
+SIMD_OBJFILES := $(patsubst ${SIMD_SRCDIR}/%.c, ${BUILDDIR}/simd/%.o, ${SIMD_SRCFILES})
+
+OBJFILES += ${SIMD_OBJFILES}
+
 # Transpose requires disabling some loop mangling
 # The loop vectorisation flags don't mesh well with the casts between pointer types
-TRANSPOSE := simd_transpose
-TRANSPOSE_TEST := test_transpose
-TRANSPOSE_CFLAGS := -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
-TRANSPOSE_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
-TRANSPOSE_CFLAGS_CLANG := -march=native -O1
+SIMD_TESTS := test_transpose test_rowsum
+SIMD_CFLAGS := -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
+SIMD_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
+SIMD_CFLAGS_CLANG := -march=native -O1
 
 # Test Files
 TEST_SRCFILES := $(wildcard ${TEST_SRCDIR}/*.c)
@@ -59,6 +65,7 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 .PHONY: all
 .PHONY: clean
 .PHONY: test tests
+.PHONY: run_tests 
 .PHONY: benchmark benchmarks
 .PHONY: pandora_api
 .PHONY: ${PAULI_TRACKER}
@@ -88,11 +95,14 @@ debug_L1: test
 debug: CFLAGS += -fopt-info -fopt-info-loop -fopt-info-loop-missed -fopt-info-vec -fopt-info-vec-missed
 debug: test 
 
-tests: test
+tests: test pauli_tracker
 test: all
 test : CFLAGS += -g
 #tests : test pandora_test ${PAULI_TRACKER_LIB}
 test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} ${PANDORA_TEST_RUNNERS} 
+
+run_tests: test 
+	$(for i in tests/*.out; do echo $i; ./$i; done)
 
 
 benchmark: benchmarks 
@@ -101,9 +111,11 @@ benchmarks: ${TARGET} ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS}
 
 ${BUILDDIR} :
 	mkdir -p ${BUILDDIR}
+	mkdir -p ${BUILDDIR}/simd
 
-${TARGET} : ${BUILDDIR} ${OBJFILES} ${COND_OBJFILES} ${PAULI_TRACKER_LIB}
-	${CC} ${CFLAGS} ${TARGET_FLAGS} -o $@ ${COND_OBJFILES} ${LINK_LIBS} ${LIBS}  
+
+${TARGET} : ${BUILDDIR} ${OBJFILES} ${SIMD_OBJFILES} ${COND_OBJFILES} ${PAULI_TRACKER_LIB}
+	${CC} ${CFLAGS} ${TARGET_FLAGS} -o $@ ${COND_OBJFILES} ${SIMD_OBJFILES} ${LINK_LIBS} ${LIBS}  
 
 # Compilation of the transpose operation
 ${BUILDDIR}/${TRANSPOSE}.o : ${SRCDIR}/${TRANSPOSE}.c
@@ -120,7 +132,10 @@ ${PAULI_TRACKER_LIB}:
 	cd ${PAULI_TRACKER_DIR}; make all
 
 ${BUILDDIR}/%.o : ${SRCDIR}/%.c
-	${CC} $^ ${CFLAGS} ${LINK_LIBS} ${LIBS} -c -o $@ 
+	${CC} $^ ${CFLAGS} ${LINK_LIBS} ${LIBS} -c -o $@
+
+${BUILDDIR}/simd/%.o : ${SRCDIR}/simd/%.c
+	${CC} $^ ${CFLAGS} ${SIMD_CFLAGS} ${LIBS} -c -o $@
 
 ${TESTDIR}/%.out : ${OBJFILES} ${TEST_SRCDIR}/%.c
 	${CC} $^ ${CFLAGS} ${LINK_LIBS} ${TEST_LIBS} ${LIBS} -o $@ 

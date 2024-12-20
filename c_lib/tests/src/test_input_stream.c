@@ -7,7 +7,7 @@
 #include "input_stream.h"
 #include "instructions.h"
 
-
+#include "test_tableau.h"
 
 #define ASSERT_SLICES_EQUAL(tab_a, tab_b, i) { \
 assert(tab_a->slices_x[i][0] == tab->slices_x[i][0]); \
@@ -16,59 +16,24 @@ assert(tab_a->phases[0] == tab_b->phases[0]);  \
 }
 
 
-tableau_t* tableau_random_create()
+void test_tableau_copy(const size_t n_qubits)
 {
-    tableau_t* tab = tableau_create(sizeof(size_t));
-    for (size_t i = 0; i < sizeof(size_t); i++)
-    {
-        for (size_t j = 0; j < tab->slice_len; j++)
-        {
-           tab->slices_x[i][j] = rand(); 
-           tab->slices_z[i][j] = rand(); 
-        }
-    }     
-    tab->phases[0] = rand(); 
-
-    return tab;
-} 
-
-tableau_t* tableau_copy(tableau_t* tab)
-{
-    tableau_t* tab_cpy = tableau_create(tab->n_qubits); 
-    for (size_t i = 0; i < sizeof(size_t); i++)
-    {
-        for (size_t j = 0; j < tab->slice_len; j++)
-        {
-            tab_cpy->slices_x[i][j] = tab->slices_x[i][j]; 
-            tab_cpy->slices_z[i][j] = tab->slices_z[i][j]; 
-        }
-    }   
-    for (size_t j = 0; j < tab->slice_len; j++)
-    {
-        tab_cpy->phases[j] = tab->phases[j]; 
-    }
-    return tab_cpy;
-}
-
-
-void test_tableau_copy()
-{
-    widget_t* wid = widget_create(sizeof(size_t), sizeof(size_t));
+    widget_t* wid = widget_create(n_qubits, n_qubits);
     tableau_destroy(wid->tableau);
-    wid->tableau = tableau_random_create(); 
+    wid->tableau = tableau_random_create(n_qubits);
     tableau_t* tab = tableau_copy(wid->tableau);
 
     for (size_t i = 0; i < sizeof(size_t); i++)
     {
-        for (size_t j = 0; j < tab->slice_len; j++)
+        for (size_t j = 0; j < tab->slice_len / CHUNK_SIZE; j++)
         {
-            assert(tab->slices_x[i][j] == wid->tableau->slices_x[i][j]); 
-            assert(tab->slices_z[i][j] == wid->tableau->slices_z[i][j]); 
+            assert(tab->slices_x[i][j] == wid->tableau->slices_x[i][j]);
+            assert(tab->slices_z[i][j] == wid->tableau->slices_z[i][j]);
         }
-    }   
-    for (size_t j = 0; j < tab->slice_len; j++)
+    }
+    for (size_t j = 0; j < tab->slice_len / CHUNK_SIZE; j++)
     {
-        assert(tab->phases[j] == wid->tableau->phases[j]); 
+        assert(tab->phases[j] == wid->tableau->phases[j]);
     }
     tableau_destroy(tab);
     widget_destroy(wid);
@@ -76,27 +41,27 @@ void test_tableau_copy()
 }
 
 
-void test_identity(void)
+void test_identity(const size_t n_qubits)
 {
     // 8 Qubit tableau
     widget_t* wid = widget_create(sizeof(size_t), sizeof(size_t));
     tableau_destroy(wid->tableau);
-    wid->tableau = tableau_random_create(); 
+    wid->tableau = tableau_random_create(n_qubits);
     tableau_t* tab = tableau_copy(wid->tableau);
 
     instruction_stream_u inst;
-    inst.single.opcode = _I_; 
+    inst.single.opcode = _I_;
     inst.single.arg = 0;
 
     // Random starting opcode
     for (size_t i = 0; i < sizeof(size_t); i++)
     {
         // Apply the tableau update to the tableau
-        SINGLE_QUBIT_OPERATIONS[inst.single.opcode ^ LOCAL_CLIFFORD_MASK](tab, i);        
+        SINGLE_QUBIT_OPERATIONS[inst.single.opcode ^ LOCAL_CLIFFORD_MASK](tab, i);
 
         parse_instruction_block(wid, &inst, 1);
         assert(wid->queue->table[i] == _I_);
-        
+
         // Force application of local cliffords
         apply_local_cliffords(wid);
 
@@ -107,23 +72,23 @@ void test_identity(void)
     return;
 }
 
-void test_stream_X(void)
+void test_stream_X(const size_t n_qubits)
 {
-    widget_t* wid = widget_create(sizeof(size_t), sizeof(size_t));
+    widget_t* wid = widget_create(n_qubits, n_qubits);
     tableau_destroy(wid->tableau);
-    wid->tableau = tableau_random_create(); 
+    wid->tableau = tableau_random_create(n_qubits);
     tableau_t* tab = tableau_copy(wid->tableau);
 
     instruction_stream_u inst;
-    inst.single.opcode = _X_; 
+    inst.single.opcode = _X_;
 
     // Random starting opcode
-    for (size_t i = 0; i < sizeof(size_t); i++)
+    for (size_t i = 0; i < n_qubits; i++)
     {
         inst.single.arg = i;
 
         // Apply the tableau update to the tableau
-        SINGLE_QUBIT_OPERATIONS[inst.single.opcode ^ LOCAL_CLIFFORD_MASK](tab, i);        
+        SINGLE_QUBIT_OPERATIONS[inst.single.opcode ^ LOCAL_CLIFFORD_MASK](tab, i);
 
         parse_instruction_block(wid, &inst, 1);
         assert(wid->queue->table[i] == _X_);
@@ -137,16 +102,16 @@ void test_stream_X(void)
     return;
 }
 
-void test_single_qubit_stream(void)
+void test_single_qubit_stream(const size_t n_qubits)
 {
 
-    widget_t* wid = widget_create(sizeof(size_t), sizeof(size_t));
+    widget_t* wid = widget_create(n_qubits, n_qubits);
     tableau_destroy(wid->tableau);
-    wid->tableau = tableau_random_create(); 
+    wid->tableau = tableau_random_create(n_qubits);
     tableau_t* tab = tableau_copy(wid->tableau);
 
     instruction_stream_u inst;
-    inst.single.opcode = _I_; 
+    inst.single.opcode = _I_;
 
     // Random starting opcode
     uint8_t opcode = rand() % N_LOCAL_CLIFFORDS;
@@ -157,11 +122,11 @@ void test_single_qubit_stream(void)
         opcode = ((opcode + rand()) % N_LOCAL_CLIFFORD_INSTRUCTIONS) | LOCAL_CLIFFORD_MASK;
 
         // Update the opcode
-        inst.single.opcode = opcode; 
-        inst.single.arg = i; 
+        inst.single.opcode = opcode;
+        inst.single.arg = i;
 
         // Apply the tableau update to the tableau
-        SINGLE_QUBIT_OPERATIONS[opcode ^ LOCAL_CLIFFORD_MASK](tab, i);        
+        SINGLE_QUBIT_OPERATIONS[opcode ^ LOCAL_CLIFFORD_MASK](tab, i);
 
         parse_instruction_block(wid, &inst, 1);
 
@@ -177,28 +142,28 @@ void test_single_qubit_stream(void)
     return;
 }
 
-void test_cnot_stream(void)
+void test_cnot_stream(const size_t n_qubits)
 {
 
-    widget_t* wid = widget_create(sizeof(size_t), sizeof(size_t));
+    widget_t* wid = widget_create(n_qubits, n_qubits);
     tableau_destroy(wid->tableau);
-    wid->tableau = tableau_random_create(); 
+    wid->tableau = tableau_random_create(n_qubits);
     tableau_t* tab = tableau_copy(wid->tableau);
 
     instruction_stream_u inst[3];
-    inst[0].single.opcode = _X_; 
-    inst[1].single.opcode = _X_; 
-    inst[2].multi.opcode = _CNOT_; 
+    inst[0].single.opcode = _X_;
+    inst[1].single.opcode = _X_;
+    inst[2].multi.opcode = _CNOT_;
 
-    for (size_t i = 0; i < sizeof(size_t) - 1; i++)
+    for (size_t i = 0; i < n_qubits - 1; i++)
     {
         ASSERT_SLICES_EQUAL(tab, wid->tableau, i);
         ASSERT_SLICES_EQUAL(tab, wid->tableau, i + 1);
 
-        inst[0].single.arg = i; 
-        inst[1].single.arg = i + 1; 
-        inst[2].multi.ctrl = i; 
-        inst[2].multi.targ = i + 1; 
+        inst[0].single.arg = i;
+        inst[1].single.arg = i + 1;
+        inst[2].multi.ctrl = i;
+        inst[2].multi.targ = i + 1;
 
         parse_instruction_block(wid, inst, 3);
 
@@ -215,27 +180,27 @@ void test_cnot_stream(void)
 }
 
 
-void test_cz_stream(void)
+void test_cz_stream(const size_t n_qubits)
 {
-    widget_t* wid = widget_create(sizeof(size_t), sizeof(size_t));
+    widget_t* wid = widget_create(n_qubits, n_qubits);
     tableau_destroy(wid->tableau);
-    wid->tableau = tableau_random_create(); 
+    wid->tableau = tableau_random_create(n_qubits);
     tableau_t* tab = tableau_copy(wid->tableau);
 
     instruction_stream_u inst[3];
-    inst[0].single.opcode = _X_; 
-    inst[1].single.opcode = _X_; 
-    inst[2].multi.opcode = _CZ_; 
+    inst[0].single.opcode = _X_;
+    inst[1].single.opcode = _X_;
+    inst[2].multi.opcode = _CZ_;
 
-    for (size_t i = 0; i < sizeof(size_t) - 1; i++)
+    for (size_t i = 0; i < n_qubits - 1; i++)
     {
         ASSERT_SLICES_EQUAL(tab, wid->tableau, i);
         ASSERT_SLICES_EQUAL(tab, wid->tableau, i + 1);
 
-        inst[0].single.arg = i; 
-        inst[1].single.arg = i + 1; 
-        inst[2].multi.ctrl = i; 
-        inst[2].multi.targ = i + 1; 
+        inst[0].single.arg = i;
+        inst[1].single.arg = i + 1;
+        inst[2].multi.ctrl = i;
+        inst[2].multi.targ = i + 1;
 
         parse_instruction_block(wid, inst, 3);
 
@@ -254,13 +219,16 @@ void test_cz_stream(void)
 
 int main()
 {
-    test_tableau_copy();
-    test_identity();
-    test_stream_X();
+    for (size_t n_qubits = 8; n_qubits < 1024; n_qubits+= 8) 
+    {
+        test_tableau_copy(n_qubits);
+        test_identity(n_qubits);
+        test_stream_X(n_qubits);
 
-    test_single_qubit_stream();
-    test_cnot_stream();
-    test_cz_stream();
+        test_single_qubit_stream(n_qubits);
+        test_cnot_stream(n_qubits);
+        test_cz_stream(n_qubits);
+    }
 
     return 0;
 }

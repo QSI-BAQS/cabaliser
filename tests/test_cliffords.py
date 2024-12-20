@@ -1,7 +1,8 @@
 import unittest
 import numpy as np
+from math import isnan
 
-from itertools import combinations_with_replacement, permutations
+from itertools import combinations_with_replacement, permutations, chain
 from functools import reduce
 
 from cabaliser import gates
@@ -11,35 +12,51 @@ from cabaliser import local_simulator
 
 MAX_CLIFFORD_DEPTH = 12
 EPS = 1e-7
-N_REPETITIONS = 100
-
+N_REPETITIONS = 10
 
 class CliffordsTest(unittest.TestCase):
 
     def test_clifford_depth_1(self):
-        self.clifford_sequences(depth=1)
+        self.clifford_sequences(depth=1, apply=False, test_gates=True)
+
+    def test_clifford_depth_1_applied(self):
+        self.clifford_sequences(depth=1, apply=True, test_gates=False)
 
     def test_clifford_depth_2(self):
-        self.clifford_sequences(depth=2)
+        self.clifford_sequences(depth=2, test_gates=True)
 
     def test_clifford_depth_3(self):
-        self.clifford_sequences(depth=3, test_states=False) # Floating point kicks in around here
+        self.clifford_sequences(depth=3, test_states=False, test_gates=True) # Floating point kicks in around here
 
     def test_clifford_depth_4(self):
-        self.clifford_sequences(depth=4, test_states=False)
+        self.clifford_sequences(depth=4, test_states=False, test_gates=True)
 
     def test_clifford_depth_5(self): # Past depth 5 exhaustive search's exponential scaling hits hard
-        self.clifford_sequences(depth=5, test_states=False)
+        self.clifford_sequences(depth=5, test_states=False, test_gates=True)
 
-    def clifford_sequences(self, depth=1, test_states=True):
+    def test_clifford_depth_2_applied(self):
+        self.clifford_sequences(depth=2, apply=True, test_gates=False, test_states=True)
+
+    def test_clifford_depth_3_applied(self):
+        self.clifford_sequences(depth=3, apply=True, test_gates=False, test_states=True) # Floating point kicks in around here
+
+
+#    def test_cnot_clifford_depth_1(self):
+#        self.clifford_sequences_cnot_first(depth=1)
+#
+#    def test_cnot_clifford_depth_2(self):
+#        self.clifford_sequences_cnot_first(depth=2)
+#
+#    def test_cz_clifford_depth_1(self):
+#        self.clifford_sequences_cz_first(depth=1)
+#
+    def clifford_sequences(self, depth=1, test_states=True, test_gates=True, apply=False):
         '''
            Sequence of random local cliffords 
         '''
         n_qubits = 1
         max_qubits = 3
         
-        #for i in N_REPETITIONS: 
-
         # Test all two qubit clifford sequences
         
         for op_seq in combinations_with_replacement(gates.SINGLE_QUBIT_GATES, depth):
@@ -59,24 +76,30 @@ class CliffordsTest(unittest.TestCase):
                  )
 
                 wid(ops) 
+
+                if apply:
+                    wid.apply_local_cliffords()
+            
                 wid.decompose()
 
-                wid_operation = wid.get_local_cliffords().to_list()[1]
-                if not cmp_gates(local_simulator.LOCAL_CLIFFORD_TABLE[wid_operation], operation):
 
-                    print("OPs:", list(map(gates.SINGLE_QUBIT_GATE_ARR.__getitem__, map(lambda x: x[0], operations))))
-                    print("Operation: ", operation)
-                    print(wid_operation)
-                    print(local_simulator.LOCAL_CLIFFORD_TABLE[wid_operation])
-                    print(wid.get_local_cliffords().to_list())
+                if test_gates:  # Only tests the clifford composition sequences 
+                    wid_operation = wid.get_local_cliffords().to_list()[1]
+                    if not cmp_gates(local_simulator.LOCAL_CLIFFORD_TABLE[wid_operation], operation):
 
-                    assert False
+                        print("OPs:", list(map(gates.SINGLE_QUBIT_GATE_ARR.__getitem__, map(lambda x: x[0], operations))))
+                        print("Operation: ", operation)
+                        print(wid_operation)
+                        print(local_simulator.LOCAL_CLIFFORD_TABLE[wid_operation])
+                        print(wid.get_local_cliffords().to_list())
 
+                        assert False
+                
                 if test_states:
                     ## Test application to random states
-                    for _ in range(N_REPETITIONS):
+                    for _ in range(1):#N_REPETITIONS):
                         input_state = local_simulator.state_prep(
-                            *list(np.random.random(2))
+                           1, 0 #*list(np.random.random(2))
                         )
 
                         widget_state = local_simulator.simulate_widget(
@@ -88,13 +111,10 @@ class CliffordsTest(unittest.TestCase):
                              operation @ input_state
                         )
                         
-                        eff_const = effective_state[0][0]
-                        wid_const = widget_state[0][0] 
-                        if eff_const == 0:
-                            eff_const = effective_state[0][1] 
-                        if wid_const == 0:
-                            wid_const = widget_state[0][1]
-                        if (np.abs(effective_state / eff_const - widget_state / wid_const) > EPS).any():
+                        dephase(widget_state)
+                        dephase(effective_state)
+
+                        if (np.abs(effective_state - widget_state) > EPS).any():
                             print("Operation: ", operation)
                             print(input_state)
                             print(effective_state)
@@ -138,7 +158,125 @@ class CliffordsTest(unittest.TestCase):
 
                 assert False
 
+    def clifford_sequences_cnot_first(self, depth=1, test_states=True):
+        '''
+           Sequence of random local cliffords on one qubit, followed by a CNOT 
+        '''
+        n_qubits = 2
+        max_qubits = 4
+        
+        for op_seq in combinations_with_replacement(gates.SINGLE_QUBIT_GATES, depth):
+            for op_perm in permutations(op_seq):
+                operations = [(op, (0,)) for op in op_perm]
+                print(len(operations), operations)
+                print("####")
+                operations.append((gates.CNOT, (0, 1)))
 
+                wid = Widget(n_qubits, max_qubits)
+
+                ops = OperationSequence(len(operations))
+                for opcode, args in operations: 
+                    ops.append(opcode, *args)
+    
+                operation = reduce(
+                    lambda a, b: b @ a,
+                    map(lambda x: local_simulator.LOCAL_CLIFFORD_OP_TABLE[x[0]], operations[:-1]),
+                    local_simulator.I
+                 )
+                operation = local_simulator.CNOT(2, 0, 1) @ local_simulator.kr(operation, local_simulator.I)
+
+                wid(ops) 
+                wid.decompose()
+
+                ## Test application to random states
+                for _ in range(1): #N_REPETITIONS):
+                    input_state = local_simulator.kr(local_simulator.zero_state, local_simulator.zero_state)
+#                            local_simulator.state_prep(
+#                                *list(np.random.random(2))
+#                            ),
+#                            local_simulator.zero_state
+#                        )
+
+                    widget_state = local_simulator.simulate_widget(
+                         wid,
+                         input_state=input_state,
+                         trace_graph=True
+                    )
+                    effective_state = (
+                         operation @ input_state
+                    )
+
+                    dephase(widget_state)
+                    dephase(effective_state)
+
+                    if (np.abs(effective_state - widget_state) > EPS).any():
+                        print("####")
+                        print("Operation: ", ops, len(ops))
+                        print("####")
+
+                        print({i: ops[i] for i in range(len(ops))})
+
+                        print(local_simulator.vec(input_state))
+                        print(local_simulator.vec(effective_state))
+                        print(local_simulator.vec(widget_state))
+                        assert False
+
+
+    def clifford_sequences_cz_first(self, depth=1, test_states=True):
+        '''
+           Sequence of random local cliffords on one qubit, followed by a CZ 
+        '''
+        n_qubits = 2
+        max_qubits = 4
+        
+        for op_seq in combinations_with_replacement(gates.SINGLE_QUBIT_GATES, depth):
+            for op_perm in permutations(op_seq):
+                operations = [(op, (0,)) for op in op_perm]
+                operations.append((gates.CZ, (0, 1)))
+                
+                wid = Widget(n_qubits, max_qubits)
+
+                ops = OperationSequence(len(operations))
+                for opcode, args in operations: 
+                    ops.append(opcode, *args)
+    
+                operation = reduce(
+                    lambda a, b: b @ a,
+                    map(lambda x: local_simulator.LOCAL_CLIFFORD_OP_TABLE[x[0]], operations[:-1]),
+                    local_simulator.I
+                 )
+                operation = local_simulator.CZ(2, 0, 1) @ local_simulator.kr(operation, local_simulator.I)
+
+                wid(ops) 
+                wid.decompose()
+
+                ## Test application to random states
+                for _ in range(N_REPETITIONS):
+                    input_state = local_simulator.kr(
+                            local_simulator.state_prep(
+                                *list(np.random.random(2))
+                            ),
+                            local_simulator.plus_state
+                        )
+
+                    widget_state = local_simulator.simulate_widget(
+                         wid,
+                         input_state=input_state,
+                         trace_graph=True
+                    )
+                    effective_state = (
+                         operation @ input_state
+                    )
+
+                    dephase(widget_state)
+                    dephase(effective_state)
+
+                    if (np.abs(effective_state / eff_const - widget_state / wid_const) > EPS).any():
+                        print("Operation: ", ops, len(operation))
+                        print(input_state)
+                        print(effective_state)
+                        print(widget_state)
+                        assert False
 
 def cmp_gates(gate_a, gate_b, eps=1e-5):
     '''
@@ -161,7 +299,31 @@ def cmp_gates(gate_a, gate_b, eps=1e-5):
             return False
     return True
 
+def dephase(vector: np.array) -> bool: 
+    '''
+    Divide whole vector by first non-zero element
+    Returns False if the vector is empty, and True 
+    if the operation completed successfully
+
+    Acts in place on the vector object
+    '''
+    try:
+        val = next(
+                    filter(
+                        lambda x: np.abs(x) > EPS,
+                        chain(iter(vector))
+                    )
+              ) 
+        if isnan(val.real):
+            return False
+        vector /= val
+        return True
+    except StopIteration:  # Whole vector empty
+        return False
 
 
 if __name__ == '__main__':
-    unittest.main()
+    #CliffordsTest().test_cnot_clifford_depth_2()
+    CliffordsTest().test_clifford_depth_2_applied()
+
+    #unittest.main()

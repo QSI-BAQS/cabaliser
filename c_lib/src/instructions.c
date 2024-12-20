@@ -59,3 +59,16 @@ void clifford_queue_local_clifford_right(clifford_queue_t* que, const instructio
 {
     que->table[target] = LOCAL_CLIFFORD_RIGHT(cliff, que->table[target]);
 }
+
+/*
+ * clifford_queue_local_clifford_left 
+ * Applies clifford operator from the left of the expression  
+ * This is used when extracting Clifford terms from the graph state preparation
+ * :: que : clifford_queue_t* :: The clifford queue
+ * :: cliff : instruction_t :: The instruction 
+ * :: target : size_t :: The target qubit 
+ */
+void clifford_queue_local_clifford_left(clifford_queue_t* que, const instruction_t cliff, const size_t target)
+{
+    que->table[target] = LOCAL_CLIFFORD_LEFT(cliff, que->table[target]);
+}

@@ -41,7 +41,7 @@ class WidgetType(Structure):
         ('__tableau', POINTER(c_size_t)),
         ('queue', POINTER(CliffordQueueType)),
         ('map', POINTER(IOMapType)),
-        ('pauli_tracker', POINTER(MappedPauliTrackerType))
+        ('pauli_tracker', POINTER(MappedPauliTrackerType)),
     ]
 
 

@@ -9,38 +9,36 @@
  */
 void test_tableau_transpose(const size_t n_qubits)
 {
+
+
     tableau_t* tab = tableau_random_create(n_qubits); 
 
     tableau_t* tab_cmp = tableau_copy(tab);  
 
+
     // Confirm initial slices
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
-        for (size_t j = 0; j < tab->slice_len; j++)
+        for (size_t j = 0; j < (tab->slice_len / CHUNK_SIZE); j++)
          {
             assert(tab->slices_x[i][j] == tab_cmp->slices_x[i][j]);
             assert(tab->slices_z[i][j] == tab_cmp->slices_z[i][j]);
         }
     } 
 
-//    test_tableau_print(tab->slices_x, 16, 0, 2, 0);
-//    test_tableau_print(tab_cmp->slices_x, 16, 0, 2, 0);
-
     tableau_transpose(tab);  
-    tableau_transpose_naive(tab_cmp);
 
-//    test_tableau_print(tab->slices_x, 16, 128, 0, 0);
-//    test_tableau_print(tab_cmp->slices_x, 16, 128, 0, 0);
+    tableau_transpose_naive(tab_cmp);
 
 
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
-        for (size_t j = 0; j < tab->slice_len; j++)
+        for (size_t j = 0; j < tab->slice_len / CHUNK_SIZE; j++)
          {
             if (tab->slices_x[i][j] != tab_cmp->slices_x[i][j])
             {
                printf("\tFailed: %lu %lu\n", i, j); 
-               j += tab->slice_len; 
+               j += tab->slice_len / CHUNK_SIZE; 
                i += 64;
             }
 
@@ -54,6 +52,8 @@ void test_tableau_transpose(const size_t n_qubits)
 
 int main()
 {
+    test_tableau_transpose(8);
+
     // Single inplace transpose
     for (size_t i = 0; i < 1000; i++)
     {
@@ -82,7 +82,6 @@ int main()
         srand(i);
         test_tableau_transpose(64 * i + i);
     }
-
 
     return 0;
 }

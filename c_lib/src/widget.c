@@ -16,7 +16,6 @@ widget_t* widget_create(const size_t initial_qubits, const size_t max_qubits)
     wid->queue = clifford_queue_create(max_qubits);
     wid->q_map = qubit_map_create(initial_qubits, max_qubits); 
     wid->pauli_tracker = pauli_tracker_create(max_qubits);
-
     return wid;
 }
 
@@ -70,8 +69,9 @@ struct adjacency_obj widget_get_adjacencies(const widget_t* wid, const size_t ta
 
     tableau_slice_p slice = wid->tableau->slices_z[target_qubit];
      
-    #pragma omp parallel for 
-    for (size_t i = 0; i < wid->tableau->slice_len; i++)  
+    for (size_t i = 0;
+         i < SLICE_LEN_SIZE_T(wid->tableau->n_qubits);
+         i++)  
     {
         if (slice[i] > 0 )
         {
@@ -153,44 +153,45 @@ void widget_decompose(widget_t* wid)
 
     // Phase operation to set Z diagonal to zero 
     // Loop acts on separate cache line entries for each element
-    #pragma omp parallel for
     for (size_t i = 0; i < wid->n_qubits; i++)
     {
         if (__inline_slice_get_bit(wid->tableau->slices_z[i], i))
         {
+            DPRINT(DEBUG_3, "Applying S to %lu\n", i); 
+            // Applies the Sdag gate
+            // X and Zbit is always 1 
+            // Operation is r ^= x~z; z ^= x
+            // x is 1 via prior diagonalisation, z is 1 by switch invariant 
+            // Operation is:
+            // r ^= 0 -> r
+            // z = x.~z = 1.~1 -> 0 
+            // Hence operation is performed by zeroing the z bit  
             __inline_slice_set_bit(wid->tableau->slices_z[i], i, 0);
+            // Applies a corresponding S gate
             clifford_queue_local_clifford_right(wid->queue, _S_, i);
-
         }
     }
 
     // Z to set phases to 0
-    #pragma omp parallel for
     for (size_t i = 0; i < wid->n_qubits; i++)
     {
+        //
+        // Action of Z gate
+        // r ^= x 
+        // As X is diagonal, this only acts on one bit
         if (__inline_slice_get_bit(wid->tableau->phases, i))
         {
-             clifford_queue_local_clifford_right(wid->queue, _Z_, i);
+            DPRINT(DEBUG_3, "Applying Z to %lu\n", i); 
+            clifford_queue_local_clifford_right(wid->queue, _Z_, i);
         }
     }
-    // The previous loop zeros the phases, this loop just does it faster
-    #pragma omp parallel for
-    for (size_t i = 0; i < wid->tableau->slice_len; i++)
-    {
-        wid->tableau->phases[i] = 0;    
-    }
 
-//    // TODO double check that this is doing something
-//    #pragma omp parallel for
-//    for (size_t i = 0; i < wid->n_qubits; i++)
-//    {
-//        if (__inline_slice_get_bit(wid->tableau->slices_z[i], i))
-//        {
-//            __inline_slice_set_bit(wid->tableau->slices_z[i], i, 0);
-//            clifford_queue_local_clifford_right(wid->queue, _S_, i);
-//        }
-//    }
-//    
+    // The previous loop zeros the phases, this loop just does it faster
+    // Effective action of a Z gate
+    for (size_t i = 0; i < wid->tableau->slice_len; i += CHUNK_STRIDE)
+    {
+        wid->tableau->phases[i] = 0; 
+    }
 
     return;
 }

@@ -9,7 +9,6 @@
 void test_tableau_ctz(const size_t n_qubits)
 {
     tableau_t* tab = tableau_create(n_qubits);
-
     for (size_t i = 0; i < n_qubits; i++)
     {   
         tableau_ctz(tab->slices_z[i], tab->n_qubits);
@@ -20,14 +19,11 @@ void test_tableau_ctz(const size_t n_qubits)
     tableau_destroy(tab);
 }
 
-
-
 int main()
 {
-    
-    test_tableau_ctz(64);
-    test_tableau_ctz(128);
-    test_tableau_ctz(256);
-
+    for (size_t i = 8; i < 1024; i += 7)
+    {
+        test_tableau_ctz(i);
+    }
     return 0;
 }

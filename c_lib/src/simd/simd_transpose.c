@@ -2,7 +2,7 @@
 
 // Transposes two blocks
 static inline
-void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
+void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict targ)
 {
     __m256i msrc = _mm256_set_epi16(
             *(uint16_t*)src[15],
@@ -25,6 +25,7 @@ void __inline_simd_transpose_2x16(uint8_t** src, uint8_t** targ)
 
     // Transpose high and low bytes
     // This shuffle is within each 128 byte lane
+    // Better unrolling will skip this setr operation 
     __m256i shuffle_mask = _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15, 16, 18, 20, 22, 24, 26, 28, 30, 17, 19, 21, 23, 25, 27, 29, 31); 
     msrc = _mm256_shuffle_epi8(msrc, shuffle_mask); 
     
@@ -209,7 +210,7 @@ void simd_transpose_2x16(uint8_t** src, uint8_t** targ)
 }
 
 
-void simd_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
+void simd_transpose_64x64(uint64_t* restrict block_a[64], uint64_t* restrict block_b[64])
 {
      uint64_t src_block[64] = {0};
      uint64_t targ_block[64] = {0};
@@ -257,20 +258,23 @@ void simd_transpose_64x64_inplace(uint64_t* block_a[64])
 {
      uint64_t targ_block[64] = {0};
     
-     uint64_t* src_ptr[16];
-     uint64_t* targ_ptr[16] = {NULL};
+     uint64_t* restrict src_ptr[16];
+     uint64_t* restrict targ_ptr[16] = {NULL};
 
 
+    #pragma GCC unroll 4
     for (size_t col = 0; col < 4; col++) 
     {
+        #pragma GCC unroll 4
         for (size_t row = 0; row < 4; row++)  
         {
+
+            #pragma GCC unroll 4
             for (size_t i = 0; i < 16; i++)
             {
                 targ_ptr[i] = (uint64_t*)(((uint16_t*)(targ_block + i + 16 * row)) + col);
                 src_ptr[i] = (uint64_t*)(((uint16_t*)(block_a[i + 16 * col])) + row); 
             }
-
             simd_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);                     
         }
     }
@@ -282,13 +286,12 @@ void simd_transpose_64x64_inplace(uint64_t* block_a[64])
     return;
 }
 
-
 /*
  * Scalar implementation of the simd transpose
  * Used for regression testing
  */
 static inline
-void __inline_chunk_transpose_2x16(uint8_t** src, uint8_t** targ)
+void __inline_chunk_transpose_2x16(uint8_t** restrict src, uint8_t** restrict targ)
 {
     for (size_t row = 0; row < 16; row++)  
     {
@@ -301,15 +304,13 @@ void __inline_chunk_transpose_2x16(uint8_t** src, uint8_t** targ)
     } 
 }
 void __attribute__((noinline))
-chunk_transpose_2x16(uint8_t** src, uint8_t** targ)
+chunk_transpose_2x16(uint8_t** restrict src, uint8_t** restrict targ)
 {
     __inline_chunk_transpose_2x16(src, targ); 
 }
 
-
-
 void __attribute__((noinline))
-chunk_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
+chunk_transpose_64x64(uint64_t* restrict block_a[64], uint64_t* restrict block_b[64])
 {
      uint64_t src_block[64] = {0};
      uint64_t targ_block[64] = {0};
@@ -329,7 +330,6 @@ chunk_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
             chunk_transpose_2x16((uint8_t**)src_ptr, (uint8_t**)targ_ptr);
         }
     }
-
 
     for (size_t col = 0; col < 4; col++) 
     {
@@ -354,7 +354,6 @@ chunk_transpose_64x64(uint64_t* block_a[64], uint64_t* block_b[64])
 }
 
 
-
 static inline
 uint8_t __inline_get_bit(
     uint64_t* slice,
@@ -373,7 +372,7 @@ void __inline_set_bit(
     slice[index / 64] |= (1ull & value) << (index % 64); 
 }
 
-void transpose_naive(uint64_t** block, const size_t size)
+void transpose_naive(uint64_t** restrict block, const size_t size)
 {
 
     for (size_t i = 0; i < size; i++)

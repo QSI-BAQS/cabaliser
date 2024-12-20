@@ -311,6 +311,17 @@ class Widget():
         '''
         lib.widget_print_tableau_api(self.widget)
 
+    def tableau_print_phases(self):
+        '''
+            Prints the current state of the underlying tableau
+        '''
+        lib.widget_print_tableau_phases_api(self.widget)
+
+    def apply_local_cliffords(self):
+        '''
+            Forces the resolution of the clifford queue
+        '''
+        lib.apply_local_cliffords(self.widget)
 
 class Adjacency(QubitArray):
     '''
