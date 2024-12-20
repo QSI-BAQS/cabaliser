@@ -48,7 +48,10 @@ tableau_t* tableau_create(const size_t n_qubits)
 
     // The extra chunk is a 64 byte region that we can use for cache line alignment 
     const size_t slice_len_bytes = SLICE_LEN_BYTES(n_qubits, CACHE_SIZE); 
-    const size_t tableau_bytes = slice_len_bytes * (n_qubits) * 2; 
+
+    // Over-allocation of bytes makes 64 byte tile operations easier
+    const size_t tableau_half_bytes = slice_len_bytes * (n_qubits + CACHE_SIZE - (n_qubits % CACHE_SIZE));
+    const size_t tableau_bytes = tableau_half_bytes * 2; 
 
     // Construct memaligned bitmap
     void* tableau_bitmap = NULL;
@@ -63,11 +66,12 @@ tableau_t* tableau_create(const size_t n_qubits)
 
     // Construct start of X and Z segments 
     void* z_start = tableau_bitmap;
-    void* x_start = (uint8_t*)tableau_bitmap + slice_len_bytes * n_qubits; 
+    void* x_start = (uint8_t*)tableau_bitmap + tableau_half_bytes; 
     
+    const size_t n_ptrs = n_qubits + (64 - (n_qubits % 64)); 
     // Slice tracking pointers 
-    void* slice_ptrs_z = malloc(sizeof(void*) * n_qubits); 
-    void* slice_ptrs_x = malloc(sizeof(void*) * n_qubits); 
+    void* slice_ptrs_z = malloc(sizeof(void*) * n_ptrs); 
+    void* slice_ptrs_x = malloc(sizeof(void*) * n_ptrs); 
 
     void* phases = NULL;
     err_code = posix_memalign(&phases, CACHE_SIZE, slice_len_bytes); 
@@ -83,7 +87,7 @@ tableau_t* tableau_create(const size_t n_qubits)
     tab->orientation = COL_MAJOR;
     tab->phases = phases;
 
-    for (size_t i = 0; i < n_qubits; i++)
+    for (size_t i = 0; i < n_ptrs; i++)
     {   
         uint8_t* ptr_z = z_start + (i * slice_len_bytes);
         uint8_t* ptr_x = x_start + (i * slice_len_bytes);
