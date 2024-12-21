@@ -192,26 +192,31 @@ void decomp_local_elim_lower(
     size_t elim_tracer = 0;
     size_t ctrl = 0;
 
+    size_t block_size = () 
+    const final = MIN();
+
     // Clean up to the target 
-    for (size_t i = 0; i < 8; i++)
+    for (size_t i = 0; i < 64; i++)
     {
-        printf("%zu %d\n", i, __builtin_clzll((uint8_t)ctrl_block[i])); 
+        //printf("%zu %d\n", i, __builtin_clzll((uint8_t)ctrl_block[i])); 
+        //size_t n_qubits = wid->tableau->n_qubits;
+        //wid->tableau->n_qubits = 16;
+        //tableau_print(wid->tableau);
+        //wid->tableau->n_qubits = 16;
+
+
         // TODO: broken on 64 byte chunk alloc
         while (
         i < 
-        (ctrl = __builtin_clzll(ctrl_block[i])))
+        (ctrl = 63 - __builtin_clzll(ctrl_block[i])))
         {
-
-            if (ctrl < 8)
-            {
-                ctrl_block[i] ^= ctrl_block[ctrl];
-                printf("%zu -> %zu\n", ctrl, i);
-                tableau_rowsum_offset(
-                        wid->tableau,
-                        ctrl + offset,
-                        i + offset,
-                        offset);
-            }
+            ctrl_block[i] ^= ctrl_block[ctrl];
+            printf("%zu -> %zu\n", ctrl, i);
+            tableau_rowsum_offset(
+                    wid->tableau,
+                    ctrl + offset,
+                    i + offset,
+                    offset);
         }
     }
 }
@@ -377,6 +382,7 @@ void simd_tableau_elim_upper(widget_t* wid)
         tableau_print(wid->tableau);
         printf("Starting Lower\n");
         decomp_local_elim_lower(wid, offset, ctrl_block);
+        printf("Finished Lower\n");
     }
 
 
@@ -416,7 +422,8 @@ void simd_tableau_elim_lower(widget_t* wid)
     uint64_t ctrl_block[BLOCK_STRIDE_BITS] = {0};
     
     // TODO: Pipeline this bit
-    for (size_t i = 0; i < wid->n_qubits; i++)  
+    printf("OPEN LOOP");
+    for (size_t i = 0; i < 64; i++)  
     {
         const size_t offset = (i / 64) * 64; 
         const size_t index = i % 64;
@@ -424,9 +431,12 @@ void simd_tableau_elim_lower(widget_t* wid)
         // Decompose local block
         uint64_t diag = *(uint64_t*)(slices + tableau_stride * i + 64 * offset); 
         uint64_t ctrl = 0;
+        printf("%zu\n", ctrl);
+
         while ((ctrl = __builtin_clzll(diag)) > index)
         { 
-             tableau_rowsum_offset(wid->tableau, ctrl + offset, diag + offset, offset);
+            printf("%zu\n", ctrl);
+            tableau_rowsum_offset(wid->tableau, ctrl + offset, diag + offset, offset);
         }
     }
 }
