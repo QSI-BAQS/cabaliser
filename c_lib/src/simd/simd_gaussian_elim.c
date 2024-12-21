@@ -137,9 +137,16 @@ void decomp_local_elim(
         const size_t end,
         uint64_t ctrl_block[64])
 {
-
-    size_t elim_tracer = 0;
     size_t ctrl = 0;
+    size_t block_end = 64;
+
+    //
+    if (__builtin_expect((wid->n_qubits < offset + 64), 0))
+    {
+        // TODO: Profile whether this branch is better, or having a dedicated
+        // tailing function and unrolling this is better 
+        block_end = wid->n_qubits % 64; 
+    }
 
     // Clean up to the target 
     for (size_t i = start; i < end; i++)
@@ -159,7 +166,7 @@ void decomp_local_elim(
 
     // Clean up to the end 
     // TODO this should be 64
-    for (size_t i = end; i < 8; i++)
+    for (size_t i = end; i < block_end; i++)
     {
         while (
         end > 
