@@ -49,8 +49,8 @@ tableau_t* tableau_create(const size_t n_qubits)
     // The extra chunk is a 64 byte region that we can use for cache line alignment 
     const size_t slice_len_bytes = SLICE_LEN_BYTES(n_qubits, CACHE_SIZE); 
 
-    // Over-allocation of bytes makes 64 byte tile operations easier
-    const size_t tableau_half_bytes = slice_len_bytes * (n_qubits + CACHE_SIZE - (n_qubits % CACHE_SIZE));
+    const size_t n_ptrs = n_qubits + (CACHE_SIZE - (n_qubits % CACHE_SIZE)); 
+    const size_t tableau_half_bytes = slice_len_bytes * n_ptrs;
     const size_t tableau_bytes = tableau_half_bytes * 2; 
 
     // Construct memaligned bitmap
@@ -60,21 +60,18 @@ tableau_t* tableau_create(const size_t n_qubits)
     assert(0 == err_code);
 
     // Set map to all zeros
+    // TODO: fast memset
     memset(tableau_bitmap, 0x00, tableau_bytes);
     DPRINT(DEBUG_2, "\tAllocated %ld bytes for tableau\n", tableau_bytes);
     DPRINT(DEBUG_2, "\tSlices contain %zu bytes\n", slice_len_bytes);
-
-    // Construct start of X and Z segments 
-    void* z_start = tableau_bitmap;
-    void* x_start = (uint8_t*)tableau_bitmap + tableau_half_bytes; 
     
-    const size_t n_ptrs = n_qubits + (64 - (n_qubits % 64)); 
     // Slice tracking pointers 
     void* slice_ptrs_z = malloc(sizeof(void*) * n_ptrs); 
     void* slice_ptrs_x = malloc(sizeof(void*) * n_ptrs); 
 
     void* phases = NULL;
     err_code = posix_memalign(&phases, CACHE_SIZE, slice_len_bytes); 
+    // TODO: fast memset
     memset(phases, 0x00, slice_len_bytes);
 
     // Create the tableau struct and assign variables   
@@ -87,6 +84,11 @@ tableau_t* tableau_create(const size_t n_qubits)
     tab->orientation = COL_MAJOR;
     tab->phases = phases;
 
+    // Construct start of X and Z segments 
+    void* x_start = tableau_bitmap; 
+    void* z_start = (uint8_t*)tableau_bitmap + tableau_half_bytes;
+
+    // TODO: eliminate this and just use pointer arithmetic
     for (size_t i = 0; i < n_ptrs; i++)
     {   
         uint8_t* ptr_z = z_start + (i * slice_len_bytes);
@@ -96,6 +98,9 @@ tableau_t* tableau_create(const size_t n_qubits)
         // One write per cache line entry, should be collision free 
         slice_set_bit(tab->slices_z[i], i, 1); 
         tab->slices_x[i] = (tableau_slice_p)ptr_x; 
+
+        // TODO: Remove
+        assert(tab->slices_x[i][0] == 0ull);
     }
     return tab;
 }
@@ -418,7 +423,8 @@ size_t tableau_ctz(CHUNK_OBJ* slice, const size_t slice_len)
            
         if (0 < CHUNK_IDX(slice, i))
         {
-            return CHUNK_SIZE_BITS * (i / CHUNK_STRIDE) + __CHUNK_CTZ(CHUNK_IDX(slice, i));
+            register uint64_t* chunk = (uint64_t*)((uint8_t*)slice + i); 
+            return CHUNK_SIZE_BITS * (i / CHUNK_STRIDE) + __CHUNK_CTZ(*chunk);
         }
     }
     return CTZ_SENTINEL;
@@ -442,9 +448,9 @@ void tableau_idx_swap(tableau_t* tab, const size_t i, const size_t j)
 
     printf("SWAPPING: %zu %zu\n", i, j);
 
-    const size_t term = SLICE_LEN_BYTES(tab->n_qubits, sizeof(uint64_t));
+    const size_t term = SLICE_LEN(tab->n_qubits, sizeof(uint64_t));
     #pragma GCC unroll 8
-    for (size_t idx = 0; idx < term; idx++)
+    for (size_t idx = 0; idx < term; idx += sizeof(uint64_t))
     {
         slice_x_i[idx] ^= slice_x_j[idx];
         slice_x_j[idx] ^= slice_x_i[idx];
@@ -509,8 +515,9 @@ void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
 
     printf("SWAPPING: %zu %zu\n", i, j);
 
-    const size_t term = SLICE_LEN_BYTES(tab->n_qubits, sizeof(uint64_t));
-    #pragma GCC unroll 8
+    const size_t term = SLICE_LEN(tab->n_qubits, sizeof(uint64_t));
+    
+    // TODO stride this
     for (size_t idx = 0; idx < term; idx++)
     {
         slice_x_i[idx] ^= slice_x_j[idx];

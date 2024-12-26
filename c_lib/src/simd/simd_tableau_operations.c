@@ -14,7 +14,7 @@ void tableau_H(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += sizeof(__m256i))
     {
         __m256i x = _mm256_load_si256(slice_x + i);   
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -38,7 +38,7 @@ void tableau_S(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -67,7 +67,7 @@ void tableau_Z(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -102,7 +102,7 @@ void tableau_R(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -148,7 +148,7 @@ void tableau_X(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i z = _mm256_load_si256(slice_z + i);
         __m256i r = _mm256_load_si256(slice_r + i);
@@ -175,7 +175,7 @@ void tableau_Y(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -206,7 +206,7 @@ void tableau_HX(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -238,7 +238,7 @@ void tableau_SX(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -273,7 +273,7 @@ void tableau_RX(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -307,7 +307,7 @@ void tableau_HZ(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -343,7 +343,7 @@ void tableau_HY(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -380,7 +380,7 @@ void tableau_SH(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);   
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -415,7 +415,7 @@ void tableau_RH(tableau_t* restrict tab, const size_t targ)
      *
      */
     // DONE
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);   
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -451,7 +451,7 @@ void tableau_HS(tableau_t* restrict tab, const size_t targ)
      * x_2 = z_1 = z ^ x  
      *
      */
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);   
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -486,7 +486,7 @@ void tableau_HR(tableau_t* restrict tab, const size_t targ)
      *
      */
     // DONE
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);   
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -522,7 +522,7 @@ void tableau_HSX(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -563,7 +563,7 @@ void tableau_HRX(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -581,7 +581,7 @@ void tableau_SHY(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -599,7 +599,7 @@ void tableau_RHY(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -618,7 +618,7 @@ void tableau_HSH(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -640,7 +640,7 @@ void tableau_HRH(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -663,7 +663,7 @@ void tableau_RHS(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -686,7 +686,7 @@ void tableau_SHR(tableau_t* restrict tab, const size_t targ)
     void* restrict slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i x = _mm256_load_si256(slice_x + i);
         __m256i z = _mm256_load_si256(slice_z + i);
@@ -718,7 +718,7 @@ void tableau_CNOT(tableau_t* restrict tab, const size_t ctrl, const size_t targ)
     void* restrict targ_slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i ctrl_x = _mm256_load_si256(ctrl_slice_x + i);
         __m256i ctrl_z = _mm256_load_si256(ctrl_slice_z + i);
@@ -783,7 +783,7 @@ void tableau_CZ(tableau_t* restrict tab, const size_t ctrl, const size_t targ)
     void* restrict targ_slice_z = (void*)(tab->slices_z[targ]); 
     void* restrict slice_r = (void*)(tab->phases); 
 
-    for (size_t i = 0; i < tab->n_qubits / 8; i += TABLEAU_SIMD_STRIDE)
+    for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
         __m256i ctrl_x = _mm256_load_si256(ctrl_slice_x + i);
         __m256i ctrl_z = _mm256_load_si256(ctrl_slice_z + i);

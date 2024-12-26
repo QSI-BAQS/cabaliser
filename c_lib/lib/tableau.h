@@ -21,7 +21,8 @@ typedef struct tableau_t tableau_t;
 
 #define CTZ_SENTINEL (~0ll)
 
-#define SLICE_LEN_BYTES(n_qubits, stride_bytes) (size_t)(((n_qubits) / 8) + ((stride_bytes) - (n_qubits / 8) % (stride_bytes)))
+#define SLICE_LEN_BYTES(n_qubits, stride_bytes) (size_t)(((n_qubits) / 8) + (!!(n_qubits % (stride_bytes * 8))) * ((stride_bytes) - (n_qubits / 8) % (stride_bytes)))
+
 #define SLICE_LEN(n_qubits, stride_bytes) (SLICE_LEN_BYTES(n_qubits, stride_bytes) / (stride_bytes))
 
 #define SLICE_LEN_CACHE(n_qubits) (SLICE_LEN(n_qubits, CACHE_SIZE))
