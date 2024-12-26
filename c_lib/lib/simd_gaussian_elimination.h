@@ -43,6 +43,24 @@ void simd_tableau_elim_lower(widget_t* wid);
 void tableau_elim_lower(widget_t* wid);
 
 
+void decomp_load_block(
+    uint64_t block[64],
+    void* slices, 
+    const size_t slice_len,
+    const size_t row_offset,
+    const size_t col_offset 
+);
+
+void decomp_store_block(
+    uint64_t block[64],
+    void* slices, 
+    const size_t slice_len,
+    const size_t row_offset,
+    const size_t col_offset 
+);
+
+void debug_print_block(uint64_t block[64]);
+
 #endif
 
 

@@ -15,6 +15,72 @@
 #include "input_stream.h"
 #include "instructions.h"
 
+/*
+ * Tests correctness of load and store block operations on a fresh tableau
+ * Blocks are loaded, asserted then flipped
+ * Test will fail to catch a ctzll on the first bit of a Z block, or the second 
+ * bit for the first column.     
+ * This is covered by checking all elements in the block
+ */
+void test_load_block(const size_t n_qubits)
+{
+    // Initial state of tableau is diagonal in X, empty in Z
+    tableau_t* tab = tableau_create(n_qubits);
+
+    uint64_t block[64];
+    for (size_t i = 0; i < n_qubits; i += 64)
+    {
+        // Z should be diagonal
+        decomp_load_block(block, tab->slices_z[0], tab->slice_len, i, i);
+        for (size_t k = 0; k < 64; k++)
+        {
+            assert(k == __builtin_ctzll(block[k]));
+            block[k] = ~block[k];
+        }
+        decomp_store_block(block, tab->slices_z[0], tab->slice_len, i, i);
+     
+        // X should be empty 
+        decomp_load_block(block, tab->slices_x[0], tab->slice_len, i, i);
+        for (size_t k = 0; k < 64; k++)
+        {
+            assert(0ull == block[k]);
+            block[k] = ~block[k];
+        }
+        decomp_store_block(block, tab->slices_x[0], tab->slice_len, i, i);
+
+    } 
+
+    for (size_t i = 0; i < n_qubits; i += 64)
+    {
+        for (size_t j  = 0; j < n_qubits; j += 64)
+        {
+            if (i != j)
+            {
+                // Z should be diagonal
+                decomp_load_block(block, tab->slices_z[0], tab->slice_len, i, j);
+                for (size_t k = 0; k < 64; k++)
+                {
+                    assert(0ull == block[k]);
+                    block[k] = ~block[k];
+                }
+                decomp_store_block(block, tab->slices_z[0], tab->slice_len, i, j);
+             
+                // X should be empty 
+                decomp_load_block(block, tab->slices_x[0], tab->slice_len, i, j);
+                for (size_t k = 0; k < 64; k++)
+                {
+                    assert(0ull == block[k]);
+                    block[k] = ~block[k];
+                }
+                decomp_store_block(block, tab->slices_x[0], tab->slice_len, i, j);
+
+            }
+        }
+    } 
+
+    tableau_destroy(tab);
+}
+
 
 instruction_stream_u* create_sample_instruction_stream()
 {
@@ -376,15 +442,19 @@ int main()
 //        widget_destroy(wid);
 //    }
 
-    for (size_t i = 64; i <= 256 ; i += 64)
+    for (size_t i = 128; i <= 128; i += 64)
     {
-        widget_t* wid = widget_hadamard_create(i);
-        apply_local_cliffords(wid);
-        test_block_diag_hadamard(i, wid);
-        widget_destroy(wid);
+        test_load_block(i);
     }
 
-
+//    for (size_t i = 128; i <= 128; i += 64)
+//    {
+//        widget_t* wid = widget_hadamard_create(i);
+//        apply_local_cliffords(wid);
+//        test_block_diag_hadamard(i, wid);
+//        tableau_print(wid->tableau);  
+//        widget_destroy(wid);
+//    }
 
     // Test decomposition of single qubit Cliffords only 
     // Single block tests

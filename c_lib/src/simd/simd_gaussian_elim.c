@@ -27,6 +27,7 @@ void debug_print_block(uint64_t block[64])
 }
 
 
+
 void debug_dense_print(tableau_t* tab)
 {
     for (size_t i = 0; i < tab->n_qubits; i++)
@@ -125,7 +126,7 @@ void tableau_elim_upper(widget_t* wid)
 
 #define BLOCK_STRIDE_BITS 64
 static inline
-void decomp_load_block(
+void __inline_decomp_load_block(
     uint64_t block[64],
     void* slices, 
     const size_t slice_len,
@@ -139,16 +140,58 @@ void decomp_load_block(
         {
            block[j] = *(uint64_t*)(
                 slices  
-                + slice_len * (row_offset + j) 
-                + col_offset / 8
+                + slice_len * (col_offset + j) 
+                + row_offset / 8
             );
            printf("%p ", (void*)(
                 slices  
-                + slice_len * (row_offset + j) 
-                + col_offset / 8
+                + slice_len * (col_offset + j) 
+                + row_offset / 8
             ));
         }
        printf("\n");
+}
+void decomp_load_block(
+    uint64_t block[64],
+    void* slices, 
+    const size_t slice_len,
+    const size_t row_offset,
+    const size_t col_offset 
+)
+{
+    printf("Loading \n");
+    __inline_decomp_load_block(block, slices, slice_len, row_offset, col_offset);
+    debug_print_block(block);
+}
+static inline
+void __inline_decomp_store_block(
+    uint64_t block[64],
+    void* slices, 
+    const size_t slice_len,
+    const size_t row_offset,
+    const size_t col_offset 
+)
+{
+        #pragma GCC unroll 64 
+        for (size_t j = 0; j < BLOCK_STRIDE_BITS; j++)
+        {
+           *(uint64_t*)(
+                slices  
+                + slice_len * (col_offset + j) 
+                + row_offset / 8) = block[j];
+        }
+}
+void decomp_store_block(
+    uint64_t block[64],
+    void* slices, 
+    const size_t slice_len,
+    const size_t row_offset,
+    const size_t col_offset 
+)
+{
+    printf("Storing\n");
+    __inline_decomp_store_block(block, slices, slice_len, row_offset, col_offset);
+    debug_print_block(block);
 }
 
 static inline
