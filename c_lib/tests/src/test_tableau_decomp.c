@@ -442,19 +442,19 @@ int main()
 //        widget_destroy(wid);
 //    }
 
-    for (size_t i = 128; i <= 128; i += 64)
-    {
-        test_load_block(i);
-    }
-
 //    for (size_t i = 128; i <= 128; i += 64)
 //    {
-//        widget_t* wid = widget_hadamard_create(i);
-//        apply_local_cliffords(wid);
-//        test_block_diag_hadamard(i, wid);
-//        tableau_print(wid->tableau);  
-//        widget_destroy(wid);
+//        test_load_block(i);
 //    }
+
+    for (size_t i = 128; i <= 128; i += 64)
+    {
+        widget_t* wid = widget_hadamard_create(i);
+        apply_local_cliffords(wid);
+        test_block_diag_hadamard(i, wid);
+        tableau_print(wid->tableau);  
+        widget_destroy(wid);
+    }
 
     // Test decomposition of single qubit Cliffords only 
     // Single block tests

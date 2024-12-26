@@ -125,6 +125,11 @@ void tableau_elim_upper(widget_t* wid)
 
 
 #define BLOCK_STRIDE_BITS 64
+/*
+ * Loads a tile from memory
+ * TODO: rename to tile
+ * TODO: Comment blocks 
+ */
 static inline
 void __inline_decomp_load_block(
     uint64_t block[64],
@@ -163,6 +168,11 @@ void decomp_load_block(
     __inline_decomp_load_block(block, slices, slice_len, row_offset, col_offset);
     debug_print_block(block);
 }
+
+/*
+ * Stores a block in memory
+ * Primarily used for testing the load block function
+ */
 static inline
 void __inline_decomp_store_block(
     uint64_t block[64],
@@ -482,7 +492,9 @@ void simd_tableau_elim_upper(widget_t* wid)
     {
         // Constant control block
         // Allows for quick in-place inspection of the local impact of an xor 
+
         decomp_load_block(ctrl_block, slices, slice_len_bytes, offset, offset);
+        tableau_print(tab);
 
         printf("New Block\n");
         debug_print_block(ctrl_block);
@@ -528,8 +540,6 @@ void simd_tableau_elim_upper(widget_t* wid)
                     ctrl_block
                 );
 
-                debug_print_block(ctrl_block);
-
                 // Local search failed  
                 if (SENTINEL == prog)
                 {
@@ -538,20 +548,21 @@ void simd_tableau_elim_upper(widget_t* wid)
                     // Strategy #2 - Try a Hadamard
                     if (1 == __inline_slice_get_bit(tab->slices_z[offset + j], offset + j))
                     {
-                        printf("Performing Hadamard\n "); 
                         DPRINT(DEBUG_3, "Strategy 2: Applying Hadamard to %lu\n", idx);
-                        // This operation is quite slow
+                        
+                        // TODO: This operation is quite slow
                         tableau_transverse_hadamard(tab, offset + j);
                         clifford_queue_local_clifford_right(wid->queue, _H_, offset + j);
-
+                    
+                        // Trigger a row reload after the operation
                         ctrl_block[j] = *(uint64_t*)(
-                            slices  
-                            + tableau_stride * j
-                            + (offset / 64) * 64 
+                            slices 
+                            + slice_len_bytes * (offset + j)
+                            + offset / 8 
                         );
-                        debug_print_block(ctrl_block);
-                    } else {
 
+                    } else {
+                    printf("Giving up on Hadamard\n");
                         DPRINT(DEBUG_3, "Strategy 3: Search Column", idx);
 
                         //debug_print_block(ctrl_block);
