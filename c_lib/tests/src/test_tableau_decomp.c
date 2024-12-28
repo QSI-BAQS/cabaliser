@@ -187,8 +187,6 @@ instruction_stream_u* create_instruction_stream_out_of_block(const size_t n_qubi
     { 
         blocks--;
     }
-    printf("Blocks: %zu\n", blocks);
-
 
     for (size_t i = 0; i < n_gates; i++)
     {
@@ -205,9 +203,6 @@ instruction_stream_u* create_instruction_stream_out_of_block(const size_t n_qubi
 
         ctrl += ctrl_block * 64;
         targ += targ_block * 64;
-
-        printf("Gate: %zu %zu\n", ctrl, targ);
-
 
         inst[i].multi.opcode = opcode;
         inst[i].multi.ctrl = ctrl;
@@ -509,23 +504,23 @@ int main()
 //    {
 //        test_load_block(i);
 //    }
-
-    // Test decomposition of in-block two-qubit Cliffords only 
-    // These paths should all be caught by local elim
-//    for (size_t i = 64; i <= 256; i += 64)
-//    {
 //
-//        widget_t* wid = widget_create_from_stream(
-//            i,
-//            i * i,
-//            create_instruction_stream_in_block);
-//
-//        apply_local_cliffords(wid);
-//        test_block_diag(i, wid);
-//        widget_destroy(wid);
-//    }
+  // Test decomposition of in-block two-qubit Cliffords only 
+  // These paths should all be caught by local elim
+    for (size_t i = 64; i <= 256; i += 64)
+    {
 
-    
+        widget_t* wid = widget_create_from_stream(
+            i,
+            i * i,
+            create_instruction_stream_in_block);
+
+        apply_local_cliffords(wid);
+        test_block_diag(i, wid);
+        widget_destroy(wid);
+    }
+//
+//  
     // Testing Hadamard strategy
     // These paths should all be caught by Hadamard
     for (size_t i = 64; i <= 256; i += 64)
@@ -533,116 +528,36 @@ int main()
         widget_t* wid = widget_hadamard_create(i);
         apply_local_cliffords(wid);
         test_block_diag_hadamard(i, wid);
-        tableau_print(wid->tableau);  
         widget_destroy(wid);
     }
 
-//    // Test decomposition of single qubit Cliffords only 
-//    // This should test local decompositions, mostly Hadamards and phases 
-//    for (size_t i = 64; i <= 256; i += 64)
-//    {
-//
-//        widget_t* wid = widget_create_from_stream(
-//            i,
-//            i * i,
-//            create_instruction_stream_local);
-//
-//        apply_local_cliffords(wid);
-//        test_block_diag(i, wid);
-//        widget_destroy(wid);
-//    }
-//
-//    // Testing where all operations are across blocks
-//    // This should test the column search
-//    {
-//        widget_t* wid = widget_create_from_stream(
-//            128,
-//            128,
-//            create_instruction_stream_out_of_block);
-//
-//        test_block_diag(128, wid);
-//        widget_destroy(wid);
-//    }
+    // Test decomposition of single qubit Cliffords only 
+    // This should test local decompositions, mostly Hadamards and phases 
+    for (size_t i = 64; i <= 256; i += 64)
+    {
 
+        widget_t* wid = widget_create_from_stream(
+            i,
+            i * i,
+            create_instruction_stream_local);
 
+        apply_local_cliffords(wid);
+        test_block_diag(i, wid);
+        widget_destroy(wid);
+    }
 
+    // Testing where all operations are across blocks
+    // This should test the column search
+    for (size_t i = 128; i < 256; i += 64)
+    {
+        widget_t* wid = widget_create_from_stream(
+            i,
+            i * 2,
+            create_instruction_stream_out_of_block);
 
-//    // Larger and more irregular tableau sizes
-//    for (size_t i = 10; i < 1280; i += 17)
-//    {
-//        widget_t* wid = widget_random_create_local(i, i * i);
-//        apply_local_cliffords(wid);
-//        test_block_diag(i, wid);
-//        widget_destroy(wid);
-//    }
-
-    // Solved by application of local cliffords
-
-//    for (size_t i = 10; i < 1280; i+=10)
-//    {
-//      test_block_diag_cliffords(i);
-//    }
-
-    // Solveable by hadamard after local elim fails
-//    test_block_diag_hadamard(8);
-//    test_block_diag_hadamard(17);
-//    test_block_diag_hadamard(64);
-
-    // Solveable by non-local elimination
-//    for (size_t i = 10; i < 1280; i+=10)
-//    {
-//      test_block_diag_hadamard(i);
-//    }
-
-    // Solved by local elimination 
-//    test_block_diag_local(8);
-//    test_block_diag_local(17);
-//    test_block_diag_local(64);
-//    test_block_diag_non_local(128);
-
-//
-//    for (size_t i = 10; i < 1280; i+=10)
-//    {
-//      test_block_diag_local(i);
-//    }
-
-
-    // Testing in-block elimination
-//    for (size_t i = 10; i < 1280; i+=10)
-//    {
-//      test_block_diag_non_local(i);
-//    }
-
-//    test_block_diag_non_local(128);
-//    test_block_diag_non_local(256);
-//
-//    test_block_diag_non_local(128);
-//    test_block_diag_non_local(256);
-
-//    test_block_diag_non_local(128);
-//    test_block_diag_non_local(128);
-//    test_block_diag_non_local(128);
-//    test_block_diag_non_local(128);
-
-
-
-    //for (size_t i = 10; i < 128; i+=10)
-    //{
-    //    test_idx_swap(i);
-    //}
-    //
-    //test_ghz();
-    //for (size_t i = 0; i < 100; i++)
-    //{
-    //    srand(i);
-    //    test_random(8);
-    //}
-
-    //for (size_t i = 10; i < 100; i+= 10)
-    //{
-    //    srand(i);
-    //    test_random(i * 64);
-    //}
+        test_block_diag(i, wid);
+        widget_destroy(wid);
+    }
 
     return 0;
 }

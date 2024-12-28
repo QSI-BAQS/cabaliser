@@ -446,8 +446,6 @@ void tableau_idx_swap(tableau_t* tab, const size_t i, const size_t j)
     uint64_t* slice_z_i = tab->slices_z[i];
     uint64_t* slice_z_j = tab->slices_z[j];
 
-    printf("SWAPPING: %zu %zu\n", i, j);
-
     const size_t term = SLICE_LEN(tab->n_qubits, sizeof(uint64_t));
     #pragma GCC unroll 8
     for (size_t idx = 0; idx < term; idx += sizeof(uint64_t))
@@ -512,8 +510,6 @@ void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
     uint64_t* slice_x_j = tab->slices_x[j];
     uint64_t* slice_z_i = tab->slices_z[i];
     uint64_t* slice_z_j = tab->slices_z[j];
-
-    printf("SWAPPING: %zu %zu\n", i, j);
 
     const size_t term = SLICE_LEN(tab->n_qubits, sizeof(uint64_t));
     

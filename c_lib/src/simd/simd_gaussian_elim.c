@@ -153,6 +153,12 @@ void __inline_decomp_load_block(
         for (size_t j = 0; j < BLOCK_STRIDE_BITS; j++)
         {
            block[j] = GET_CHUNK(slices, slice_len, row_offset, col_offset + j);
+              
+//               *(uint64_t*)(
+//                slices  
+//                + slice_len * (col_offset + j) 
+//                + row_offset / 8
+//            );
         }
 }
 void decomp_load_block(
@@ -210,6 +216,7 @@ void decomp_local_elim_upper(
     size_t ctrl = 0;
     size_t block_end = 64;
 
+
     // Clean up to the target 
     for (size_t i = start; i < end; i++)
     {
@@ -266,10 +273,10 @@ void decomp_local_elim_lower(
     {
         while ((63 - __builtin_clzll(mask & ctrl_block[i])) > i)
         {
+
             ctrl = 63 - __builtin_clzll(mask & ctrl_block[i]);
 
             ctrl_block[i] ^= ctrl_block[ctrl];
-
             tableau_rowsum_offset(
                     wid->tableau,
                     ctrl + offset,
@@ -337,12 +344,13 @@ size_t decomp_non_local_search_and_elim(
         return SENTINEL;
     }
 
+
+    uint64_t targ_block[64];
     for (size_t i = offset + 64; i < block_end; i += 64) 
     {
-        uint64_t targ_block[64];
         uint64_t ctrl;
-
-        decomp_load_block(targ_block, slices, slice_len_bytes, i, offset);
+        
+        decomp_load_block(targ_block, slices, slice_len_bytes, offset, i);
 
         #pragma GCC unroll 64 
         for (size_t j = 0; j < 64; j++)
@@ -359,7 +367,7 @@ size_t decomp_non_local_search_and_elim(
                 
                 // Reload block
                 
-                targ_block[j] = GET_CHUNK(slices, slice_len_bytes, i + j, offset); 
+                targ_block[j] = GET_CHUNK(slices, slice_len_bytes, offset, i + j); 
             }
             if (__builtin_expect(targ_block[j] & mask, 0))
             {
@@ -367,8 +375,6 @@ size_t decomp_non_local_search_and_elim(
             }
         }
     }
-
-    // TODO: Tail
 
     return SENTINEL;
 }
@@ -411,6 +417,7 @@ void decomp_col_elim_upper(
             while (targ_block[j])
             {
                 ctrl = __builtin_ctzll(targ_block[j]);
+
                 // Rowsum to unset bit
                 tableau_rowsum_offset(
                     wid->tableau,
@@ -454,6 +461,7 @@ void decomp_col_elim_lower(
             while (targ_block[j])
             {
                 ctrl = __builtin_ctzll(targ_block[j]);
+
                 // Rowsum to unset bit
                 tableau_rowsum_offset(
                     wid->tableau,
@@ -500,7 +508,6 @@ void simd_tableau_elim_upper(widget_t* wid)
 
         __inline_decomp_load_block(ctrl_block, slices, slice_len_bytes, offset, offset);
 
-
         size_t start_local = 0;
         size_t start = 0;
 
@@ -512,7 +519,6 @@ void simd_tableau_elim_upper(widget_t* wid)
             // Trigger a decomposition
             if (__builtin_ctzll(ctrl_block[j]) != j)
             {
-                
                 // Try to eliminate elements in the local column
                 decomp_local_elim_upper(
                     wid,
@@ -548,7 +554,6 @@ void simd_tableau_elim_upper(widget_t* wid)
                 // Local search failed  
                 if (SENTINEL == prog)
                 {
-
                     // Strategy #2 - Try a Hadamard
                     if (1 == __inline_slice_get_bit(tab->slices_z[offset + j], offset + j))
                     {
@@ -588,7 +593,6 @@ void simd_tableau_elim_upper(widget_t* wid)
                                 wid->tableau,
                                 prog,
                                 j + offset);
-
                         }
                     }
                 }
@@ -615,6 +619,7 @@ void simd_tableau_elim_upper(widget_t* wid)
 
 
     }
+
 
     // TODO: Debug info
     for (size_t i = 0; i < tab->n_qubits; i += 64)
