@@ -26,6 +26,16 @@ void debug_print_block(uint64_t block[64])
     printf("\n");
 }
 
+void debug_print_chunk(uint64_t chunk)
+{
+    printf("|");
+    for (size_t i = 0; i < 64; i++)
+    {
+        printf("%d", !!(chunk & (1ull << i))); 
+    }
+    printf("|\n");
+}
+
 
 
 void debug_dense_print(tableau_t* tab)
@@ -143,11 +153,13 @@ void __inline_decomp_load_block(
         #pragma GCC unroll 64 
         for (size_t j = 0; j < BLOCK_STRIDE_BITS; j++)
         {
-           block[j] = *(uint64_t*)(
-                slices  
-                + slice_len * (col_offset + j) 
-                + row_offset / 8
-            );
+           block[j] = GET_CHUNK(slices, slice_len, row_offset, col_offset + j);
+              
+//               *(uint64_t*)(
+//                slices  
+//                + slice_len * (col_offset + j) 
+//                + row_offset / 8
+//            );
            printf("%p ", (void*)(
                 slices  
                 + slice_len * (col_offset + j) 
@@ -215,13 +227,7 @@ void decomp_local_elim_upper(
     size_t ctrl = 0;
     size_t block_end = 64;
 
-    if (__builtin_expect((wid->n_qubits < offset + 64), 0))
-    {
-        // TODO: Profile whether this branch is better, 
-        // or having a dedicated tailing function and unroll
-        // the loop is better
-        block_end = wid->n_qubits % 64; 
-    }
+    debug_print_block(ctrl_block);
 
     // Clean up to the target 
     for (size_t i = start; i < end; i++)
@@ -230,7 +236,7 @@ void decomp_local_elim_upper(
         i > 
         (ctrl = __builtin_ctzll(ctrl_block[i])))
         {
-            //printf("Prior: %zu %zu\n", ctrl, i);
+            printf("Prior: %zu %zu\n", ctrl, i);
             ctrl_block[i] ^= ctrl_block[ctrl];
             tableau_rowsum_offset(
                     wid->tableau,
@@ -261,40 +267,53 @@ void decomp_local_elim_upper(
 
 /*
  * Performs an elimination on the lower portion of the local block
+ * TODO: Comment
  */
 static inline
 void decomp_local_elim_lower(
         widget_t* wid,
         const size_t offset,
+        const size_t start,
+        const size_t end,
         uint64_t ctrl_block[64])
 {
 
-    size_t elim_tracer = 0;
     size_t ctrl = 0;
+    uint64_t mask = ((1ull << end) - 1ull);
 
-    size_t block_end = 64;
-    if (__builtin_expect((wid->n_qubits < offset + 64), 0))
-    {
-        // TODO: Profile whether this branch is better, or having a dedicated
-        // tailing function and unrolling this is better 
-        block_end = wid->n_qubits % 64; 
-    }
+    //debug_print_block(ctrl_block);
 
+    printf("ELIM LOCAL LOWER: offset %zu start %zu end %zu\n",  offset, start, end); 
+    debug_print_chunk(mask);
+    printf("---\n"); 
     // Clean up to the target 
-    for (size_t i = 0; i < block_end; i++)
+    for (size_t i = 0; i < end; i++)
     {
-        while (
-        i < 
-        (ctrl = 63 - __builtin_clzll(ctrl_block[i])))
+        printf("%zu %u\n", i, 63 - __builtin_clzll(mask & ctrl_block[i]));
+        debug_print_chunk(ctrl_block[i]);
+        debug_print_chunk(mask);
+
+        while ((63 - __builtin_clzll(mask & ctrl_block[i])) > i)
         {
+
+            ctrl = 63 - __builtin_clzll(mask & ctrl_block[i]);
+            printf("LOWER: %zu %zu %lu %zu\n", i, ctrl, mask, end);
+
             ctrl_block[i] ^= ctrl_block[ctrl];
+            printf("ROWSUM: %zu %zu\n", ctrl, i); 
             tableau_rowsum_offset(
                     wid->tableau,
                     ctrl + offset,
                     i + offset,
                     offset);
         }
+        debug_print_chunk(ctrl_block[i]);
+        printf("###\n");
+
     }
+    printf("FINISHED\n");
+    debug_print_block(ctrl_block);
+
 }
 
 
@@ -333,6 +352,7 @@ size_t decomp_local_search(
 /*
  * Performs a search and progressive elimination as one step 
  * This search is non-local, it begins on the tile subsequent to the diagonal 
+ * TODO: comment header
  */
 static inline
 size_t decomp_non_local_search_and_elim(
@@ -354,28 +374,17 @@ size_t decomp_non_local_search_and_elim(
         return SENTINEL;
     }
 
-    for (size_t i = offset + stride; i < block_end; i += stride) 
+    for (size_t i = offset + 64; i < block_end; i += 64) 
     {
         uint64_t targ_block[64];
         uint64_t ctrl;
         
-        // Pipeline load to cache line
-        #pragma GCC unroll 64 
-        for (size_t j = 0; j < 64; j++)
-        {
-            targ_block[j] = *(uint64_t*)(
-                slices  
-                + (i + j) * slice_len_bytes // Row 
-                + column // Column
-            );
-        }
-
         printf("Column State Initial\n");
         printf("Start: %zu\n", i);
         printf("Target: %zu\n", index);
         printf("Offset: %zu\n", offset);
 
-        debug_print_block(targ_block);
+        decomp_load_block(targ_block, slices, slice_len_bytes, i, offset);
 
         #pragma GCC unroll 64 
         for (size_t j = 0; j < 64; j++)
@@ -383,6 +392,7 @@ size_t decomp_non_local_search_and_elim(
             // While not all bits unset
             while ((ctrl = __builtin_ctzll(targ_block[j])) < index)
             {
+                printf("Ctrl: %zu Targ: %zu\n", ctrl, j); 
                 // Rowsum to unset bit
                 tableau_rowsum_offset(
                     wid->tableau,
@@ -391,11 +401,8 @@ size_t decomp_non_local_search_and_elim(
                     offset); 
                 
                 // Reload block
-                targ_block[j] = *(uint64_t*)(
-                    slices  
-                    + (i + j) * stride // Row 
-                    + column // Column 
-                );
+                
+                targ_block[j] = GET_CHUNK(slices, slice_len_bytes, i + j, offset); 
             }
             if (__builtin_expect(targ_block[j] & mask, 0))
             {
@@ -410,62 +417,136 @@ size_t decomp_non_local_search_and_elim(
         }
     }
 
-    // Could stride this for more pipelining
-    for (size_t i = block_end; i < wid->tableau->n_qubits; i+= BLOCK_STRIDE_BITS) 
+    // TODO: Tail
+
+    printf("Not found\n");
+
+    return SENTINEL;
+}
+   
+
+/*
+ * Zeros block if previous elements are set 
+ * This search is non-local, it begins on the tile subsequent to the diagonal 
+ * TODO: comment header
+ */
+static inline
+void decomp_col_elim_upper(
+    widget_t* wid,
+    size_t stride,
+    void* slices,
+    const size_t slice_len_bytes,
+    const size_t offset
+    )
+{
+    const size_t block_end = (wid->tableau->n_qubits / 64) * 64;
+    const size_t block_tail = 64 - (wid->tableau->n_qubits % 64);
+
+    // Triggers if block is very small
+    if (__builtin_expect(block_end == 0, 0))
+    {
+        return;
+    }
+    printf("UPPER\n");
+    for (size_t i = offset + 64; i < wid->tableau->n_qubits; i += 64) 
     {
         uint64_t targ_block[64];
         uint64_t ctrl;
         
-        // Pipeline load to cache line
-        #pragma GCC unroll 64 
-        for (size_t j = 0; j < block_tail; j++)
-        {
-            targ_block[j] = *(uint64_t*)(
-                slices  
-                + (i + j) * slice_len_bytes // Row 
-                + (offset / 64) // Column
-            );
-        }
-
         printf("Column State Initial\n");
-        printf("Start: %zu\n", offset);
+        printf("Start: %zu\n", i);
+        printf("Offset: %zu\n", offset);
+
+        decomp_load_block(targ_block, slices, slice_len_bytes, offset, i);
+        printf("Before Col Elim\n");
 
         debug_print_block(targ_block);
 
-        #pragma GCC unroll 64 
-        for (size_t j = 0; j < block_tail; j++)
+        #pragma GCC unroll 8 
+        for (size_t j = 0; j < 64; j++)
         {
             // While not all bits unset
-            while ((ctrl = __builtin_ctzll(targ_block[j])) < index)
+            // TODO: merge this line with the ctzll call, odd infinite loop earlier
+            while (targ_block[j])
             {
+                ctrl = __builtin_ctzll(targ_block[j]);
+                printf("Ctrl: %zu Targ: %zu Val: %lu\n", ctrl, j, targ_block[j]); 
                 // Rowsum to unset bit
-                // Might be better on the stride detector to do this backwards
                 tableau_rowsum_offset(
                     wid->tableau,
                     ctrl + offset,
                     i + j,
                     offset); 
                 
-                // Reload block
-                targ_block[j] = *(uint64_t*)(
-                    slices  
-                    + (i + j) * slice_len_bytes // Row 
-                    + (offset / 64) // Column 
-                );
-            }
-            if (__builtin_expect(targ_block[j] & mask, 0))
-            {
-                printf("Found at end %zu %zu \n", block_end, j);
-                return block_end + j; 
+                
+                targ_block[j] = GET_CHUNK(slices, slice_len_bytes, offset, i + j); 
+                printf("Ctrl: %zu Targ: %zu Val: %lu\n", ctrl, j, targ_block[j]); 
             }
         }
+        printf("After Col Elim\n");
+        debug_print_block(targ_block);
     }
 
-    printf("Not found\n");
+    // TODO: Tail
 
-    return SENTINEL;
+    return;
 }
-    
+
+
+static inline
+void decomp_col_elim_lower(
+    widget_t* wid,
+    size_t stride,
+    void* slices,
+    const size_t slice_len_bytes,
+    const size_t offset
+    )
+{
+    for (size_t i = 0; i < offset; i += 64) 
+    {
+        uint64_t targ_block[64];
+        uint64_t ctrl;
+        
+        printf("LOWER\n");
+        printf("Column State Initial\n");
+        printf("Start: %zu\n", i);
+        printf("Offset: %zu\n", offset);
+
+        decomp_load_block(targ_block, slices, slice_len_bytes, offset, i);
+        printf("Before Col Elim\n");
+
+        debug_print_block(targ_block);
+
+        #pragma GCC unroll 8 
+        for (size_t j = 0; j < 64; j++)
+        {
+            // While not all bits unset
+            // TODO: merge this line with the ctzll call, odd infinite loop earlier
+            while (targ_block[j])
+            {
+                ctrl = __builtin_ctzll(targ_block[j]);
+                printf("Ctrl: %zu Targ: %zu Val: %lu\n", ctrl, j, targ_block[j]); 
+                // Rowsum to unset bit
+                tableau_rowsum_offset(
+                    wid->tableau,
+                    ctrl + offset,
+                    i + j,
+                    offset); 
+                
+                
+                targ_block[j] = GET_CHUNK(slices, slice_len_bytes, offset, i + j); 
+                printf("Ctrl: %zu Targ: %zu Val: %lu\n", ctrl, j, targ_block[j]); 
+            }
+        }
+        printf("After Col Elim\n");
+        debug_print_block(targ_block);
+    }
+
+    // TODO: Tail
+
+    return;
+}
+
 
 
 void simd_tableau_elim_upper(widget_t* wid)
@@ -493,7 +574,7 @@ void simd_tableau_elim_upper(widget_t* wid)
         // Constant control block
         // Allows for quick in-place inspection of the local impact of an xor 
 
-        decomp_load_block(ctrl_block, slices, slice_len_bytes, offset, offset);
+        __inline_decomp_load_block(ctrl_block, slices, slice_len_bytes, offset, offset);
         tableau_print(tab);
 
         printf("New Block\n");
@@ -518,6 +599,7 @@ void simd_tableau_elim_upper(widget_t* wid)
             if (__builtin_ctzll(ctrl_block[j]) != j)
             {
                 printf("Block: %lu %lu %u\n", offset, j, __builtin_ctzll(ctrl_block[j]));
+                
                 // Try to eliminate elements in the local column
                 printf("Attempting elim upper\n");
                 decomp_local_elim_upper(
@@ -526,6 +608,17 @@ void simd_tableau_elim_upper(widget_t* wid)
                     start_local,
                     j,
                     ctrl_block); 
+                debug_print_block(ctrl_block);
+
+                printf("Attempting Elim Lower\n");
+                decomp_local_elim_lower(
+                     wid,
+                     offset,
+                     start_local,
+                     j,
+                     ctrl_block); 
+                debug_print_block(ctrl_block);
+
 
                 start_local = j - 1;
                
@@ -555,12 +648,11 @@ void simd_tableau_elim_upper(widget_t* wid)
                         clifford_queue_local_clifford_right(wid->queue, _H_, offset + j);
                     
                         // Trigger a row reload after the operation
-                        ctrl_block[j] = *(uint64_t*)(
-                            slices 
-                            + slice_len_bytes * (offset + j)
-                            + offset / 8 
-                        );
-
+                        ctrl_block[j] = GET_CHUNK(
+                                slices,
+                                slice_len_bytes,
+                                offset,
+                                offset + j); 
                     } else {
                     printf("Giving up on Hadamard\n");
                         DPRINT(DEBUG_3, "Strategy 3: Search Column", idx);
@@ -598,16 +690,45 @@ void simd_tableau_elim_upper(widget_t* wid)
                     }
                 }
                 printf("After Elim: %d\n", __builtin_ctzll(ctrl_block[j]));
-
             }
 
-            printf("%lu %u\n", j, BLOCK_STRIDE_BITS);
         }
 
-        //printf("Starting Lower\n");
-        //decomp_local_elim_lower(wid, offset, ctrl_block);
-        //printf("Finished Lower\n");
+        debug_print_block(ctrl_block);
+
+        printf("Final local elim\n");
+        decomp_local_elim_upper(
+            wid,
+            offset,
+            start_local,
+            64,
+            ctrl_block); 
+
+        decomp_local_elim_lower(
+            wid,
+            offset,
+            start_local,
+            64,
+            ctrl_block); 
+
+        debug_print_block(ctrl_block);
+
+        decomp_col_elim_upper(wid, tableau_stride, slices, slice_len_bytes, offset);
+        decomp_col_elim_lower(wid, tableau_stride, slices, slice_len_bytes, offset);
+
+
     }
+
+
+    // TODO: Debug info
+    for (size_t i = 0; i < tab->n_qubits; i += 64)
+    {
+        for (size_t j = 0; j < tab->n_qubits; j += 64)
+        {
+            printf("Post decomp block: %zu %zu\n", i, j);
+            decomp_load_block(ctrl_block, slices, slice_len_bytes, i, j);
+        }
+    } 
 
 
     return;

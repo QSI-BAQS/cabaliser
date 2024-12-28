@@ -175,6 +175,50 @@ instruction_stream_u* create_instruction_stream_in_block(const size_t n_qubits, 
     return inst;
 }
 
+// Two qubit gates between non-local blocks
+// Requires at least 128 qubits
+instruction_stream_u* create_instruction_stream_out_of_block(const size_t n_qubits, const size_t n_gates)
+{
+
+    instruction_stream_u* inst = malloc(n_gates * sizeof(instruction_stream_u));  
+
+    size_t blocks = n_qubits / 64 + !!(n_qubits % 64);
+    if ((n_qubits % 64) == 1)
+    { 
+        blocks--;
+    }
+    printf("Blocks: %zu\n", blocks);
+
+
+    for (size_t i = 0; i < n_gates; i++)
+    {
+        uint8_t opcode = NON_LOCAL_CLIFFORD_MASK | (rand() %  2);
+
+
+        size_t ctrl = rand() % 64; 
+        size_t targ = rand() % 64;
+
+        size_t ctrl_block = rand() % blocks;
+        size_t targ_block = 0;
+
+        while ((targ_block = (rand() % blocks)) == ctrl_block){}; 
+
+        ctrl += ctrl_block * 64;
+        targ += targ_block * 64;
+
+        printf("Gate: %zu %zu\n", ctrl, targ);
+
+
+        inst[i].multi.opcode = opcode;
+        inst[i].multi.ctrl = ctrl;
+        inst[i].multi.targ = targ;
+    }
+
+    return inst;
+}
+
+
+
 
 instruction_stream_u* create_instruction_stream(const size_t n_qubits, const size_t n_gates)
 {
@@ -208,6 +252,24 @@ instruction_stream_u* create_instruction_stream(const size_t n_qubits, const siz
 /*
  * Creates and applies single qubit cliffords
  */
+
+widget_t* widget_create_from_stream(
+        size_t n_qubits,
+        size_t n_gates,
+        instruction_stream_u* (*stream_fn)(size_t, size_t)
+ )
+{
+    widget_t* wid = widget_create(n_qubits, n_qubits);
+
+    instruction_stream_u* stream = stream_fn(n_qubits, n_gates);
+    parse_instruction_block(wid, stream, n_gates);
+    free(stream); 
+
+    return wid; 
+}
+
+
+
 widget_t* widget_random_create_local(size_t n_qubits, size_t n_gates)
 {
     widget_t* wid = widget_create(n_qubits, n_qubits);
@@ -243,6 +305,17 @@ widget_t* widget_random_create_in_block(size_t n_qubits, size_t n_gates)
     free(stream); 
     return wid; 
 }
+
+widget_t* widget_random_create_out_of_block(size_t n_qubits, size_t n_gates)
+{
+    widget_t* wid = widget_create(n_qubits, n_qubits);
+
+    instruction_stream_u* stream = create_instruction_stream_out_of_block(n_qubits, n_gates);
+    parse_instruction_block(wid, stream, n_gates);
+    free(stream); 
+    return wid; 
+}
+
 
 widget_t* widget_random_create(size_t n_qubits, size_t n_gates)
 {
@@ -432,22 +505,30 @@ void test_random(const size_t n_qubits)
 int main()
 {
 
-    // Test decomposition of in-block two-qubit Cliffords only 
-    // Single block tests
-//    for (size_t i = 64; i <= 256 ; i += 64)
+//    for (size_t i = 128; i <= 1024; i += 64)
 //    {
-//        widget_t* wid = widget_random_create_in_block(i, i * i);
+//        test_load_block(i);
+//    }
+
+    // Test decomposition of in-block two-qubit Cliffords only 
+    // These paths should all be caught by local elim
+//    for (size_t i = 64; i <= 256; i += 64)
+//    {
+//
+//        widget_t* wid = widget_create_from_stream(
+//            i,
+//            i * i,
+//            create_instruction_stream_in_block);
+//
 //        apply_local_cliffords(wid);
 //        test_block_diag(i, wid);
 //        widget_destroy(wid);
 //    }
 
-//    for (size_t i = 128; i <= 128; i += 64)
-//    {
-//        test_load_block(i);
-//    }
-
-    for (size_t i = 128; i <= 128; i += 64)
+    
+    // Testing Hadamard strategy
+    // These paths should all be caught by Hadamard
+    for (size_t i = 64; i <= 256; i += 64)
     {
         widget_t* wid = widget_hadamard_create(i);
         apply_local_cliffords(wid);
@@ -456,15 +537,35 @@ int main()
         widget_destroy(wid);
     }
 
-    // Test decomposition of single qubit Cliffords only 
-    // Single block tests
-//    for (size_t i = 64; i <= 256 ; i += 64)
+//    // Test decomposition of single qubit Cliffords only 
+//    // This should test local decompositions, mostly Hadamards and phases 
+//    for (size_t i = 64; i <= 256; i += 64)
 //    {
-//        widget_t* wid = widget_random_create_local(i, i * i);
+//
+//        widget_t* wid = widget_create_from_stream(
+//            i,
+//            i * i,
+//            create_instruction_stream_local);
+//
 //        apply_local_cliffords(wid);
 //        test_block_diag(i, wid);
 //        widget_destroy(wid);
 //    }
+//
+//    // Testing where all operations are across blocks
+//    // This should test the column search
+//    {
+//        widget_t* wid = widget_create_from_stream(
+//            128,
+//            128,
+//            create_instruction_stream_out_of_block);
+//
+//        test_block_diag(128, wid);
+//        widget_destroy(wid);
+//    }
+
+
+
 
 //    // Larger and more irregular tableau sizes
 //    for (size_t i = 10; i < 1280; i += 17)
