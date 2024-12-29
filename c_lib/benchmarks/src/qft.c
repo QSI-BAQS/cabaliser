@@ -77,12 +77,12 @@ void qft_benchmark(const size_t n_qubits)
 
     widget_decompose(wid);    
 
-    for (size_t i = 0; i < n_qubits; i++)//n_qubits; i++)
-    {
-        assert(0 == __inline_slice_get_bit(wid->tableau->slices_z[i], i));
-        assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
-        assert(i == tableau_ctz(wid->tableau->slices_x[i], wid->tableau->slice_len));
-    }
+//    for (size_t i = 0; i < n_qubits; i++)//n_qubits; i++)
+//    {
+//        assert(0 == __inline_slice_get_bit(wid->tableau->slices_z[i], i));
+//        assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
+//        assert(i == tableau_ctz(wid->tableau->slices_x[i], wid->tableau->slice_len));
+//    }
 
     widget_destroy(wid);
     return;

@@ -36,10 +36,9 @@ void tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_
 size_t simd_tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, const size_t idx);
 
 
-void simd_tableau_elim_upper(widget_t* wid);
-void tableau_elim_upper(widget_t* wid);
+void simd_tableau_elim(widget_t* wid);
 
-void simd_tableau_elim_lower(widget_t* wid);
+void tableau_elim_upper(widget_t* wid);
 void tableau_elim_lower(widget_t* wid);
 
 
@@ -62,5 +61,3 @@ void decomp_store_block(
 void debug_print_block(uint64_t block[64]);
 
 #endif
-
-

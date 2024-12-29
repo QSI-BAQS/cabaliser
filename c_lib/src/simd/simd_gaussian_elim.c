@@ -104,13 +104,13 @@ void simd_widget_decompose(widget_t* wid)
 
     tableau_transpose(wid->tableau);
 
-    tableau_elim_upper(wid);
+    simd_tableau_elim(wid);
+    //tableau_elim_upper(wid);
+    //tableau_elim_lower(wid);
 
-    tableau_elim_lower(wid);
+    //zero_z_diagonal(wid);
 
-    zero_z_diagonal(wid);
-
-    zero_phases(wid);
+    //zero_phases(wid);
 
     return;
 }
@@ -118,7 +118,7 @@ void simd_widget_decompose(widget_t* wid)
 
 void tableau_elim_upper(widget_t* wid)
 {
-    for (size_t i = 0; i < wid->n_qubits; i++)
+    for (size_t i = 0; i < wid->tableau->n_qubits; i++)
     {
         if (0 == __inline_slice_get_bit(
             wid->tableau->slices_x[i], i)
@@ -286,6 +286,24 @@ void decomp_local_elim_lower(
     }
 }
 
+/*
+ * TODO
+ *
+ */
+static inline
+void decomp_local_elim(
+        widget_t* wid,
+        const size_t offset,
+        const size_t start,
+        const size_t end,
+        uint64_t ctrl_block[64])
+
+{
+    decomp_local_elim_upper(wid, offset, start, end, ctrl_block);
+    decomp_local_elim_lower(wid, offset, start, end, ctrl_block);
+
+}
+
 
 /*
  * Performs a local search
@@ -302,6 +320,7 @@ size_t decomp_local_search(
     const uint64_t mask = (1ull << idx);
     for (size_t i = idx + 1; i < 64; i++)
     {
+        printf("Search %zu\n", i);
         if (mask & ctrl_block[i]) 
         {
             uint64_t tmp = ctrl_block[idx]; 
@@ -312,8 +331,8 @@ size_t decomp_local_search(
                 wid->tableau,
                 idx + offset,
                 i + offset);
-
-            return idx; 
+            printf("Search Success: %zu", i);
+            return i; 
         }
     } 
     return SENTINEL;
@@ -327,7 +346,6 @@ size_t decomp_local_search(
 static inline
 size_t decomp_non_local_search_and_elim(
     widget_t* wid,
-    size_t stride,
     void* slices,
     const size_t slice_len_bytes,
     const size_t offset,
@@ -375,10 +393,53 @@ size_t decomp_non_local_search_and_elim(
             }
         }
     }
-
     return SENTINEL;
 }
-   
+ 
+static inline
+size_t decomp_z_search(
+    widget_t* wid,
+    void* slices,
+    const size_t slice_len_bytes,
+    const size_t offset,
+    const size_t index)
+{
+    const uint64_t mask = (1ull << index);
+    uint64_t targ_block[64];
+
+    decomp_load_block(targ_block, slices, slice_len_bytes, offset, offset);
+
+    debug_print_block(targ_block);
+    printf("\tSearching local\n");
+    // Search local block
+    for (size_t j = index + 1; j < 64; j++)
+    {
+        printf("\t%zu\t%zu\t%u\n", j, mask, !!(targ_block[j] & mask));
+        if (targ_block[j] & mask)
+        {
+            printf("\tFound at %zu\n", j);
+            return offset + j; 
+        }
+    } 
+
+    // Search non-local blocks
+    printf("\tSearching non-local\n");
+    for (size_t i = offset + 64; i < slice_len_bytes; i += 64) 
+    {
+        decomp_load_block(targ_block, slices, slice_len_bytes, offset, i);
+
+        //#pragma GCC unroll 64 
+        for (size_t j = 0; j < 64; j++)
+        {
+            if (__builtin_expect(targ_block[j] & mask, 0))
+            {
+                return i + j; 
+            }
+        }
+    }
+    return SENTINEL;
+}
+
 
 /*
  * Zeros block if previous elements are set 
@@ -388,7 +449,6 @@ size_t decomp_non_local_search_and_elim(
 static inline
 void decomp_col_elim_upper(
     widget_t* wid,
-    size_t stride,
     void* slices,
     const size_t slice_len_bytes,
     const size_t offset
@@ -440,7 +500,6 @@ void decomp_col_elim_upper(
 static inline
 void decomp_col_elim_lower(
     widget_t* wid,
-    size_t stride,
     void* slices,
     const size_t slice_len_bytes,
     const size_t offset
@@ -480,9 +539,7 @@ void decomp_col_elim_lower(
     return;
 }
 
-
-
-void simd_tableau_elim_upper(widget_t* wid)
+void simd_tableau_elim(widget_t* wid)
 {
 
     tableau_t* tab = wid->tableau;
@@ -520,19 +577,12 @@ void simd_tableau_elim_upper(widget_t* wid)
             if (__builtin_ctzll(ctrl_block[j]) != j)
             {
                 // Try to eliminate elements in the local column
-                decomp_local_elim_upper(
+                decomp_local_elim(
                     wid,
                     offset,
                     start_local,
                     j,
                     ctrl_block); 
-
-                decomp_local_elim_lower(
-                     wid,
-                     offset,
-                     start_local,
-                     j,
-                     ctrl_block); 
 
                 start_local = j - 1;
 
@@ -543,79 +593,117 @@ void simd_tableau_elim_upper(widget_t* wid)
                     continue;
                 }
 
-                DPRINT(DEBUG_3, "Strategy 1: Local Search", idx);
+                DPRINT(DEBUG_3, "Applying Strategies: %zu\n", offset + j);
+                //tableau_print(tab);
+                DPRINT(DEBUG_3, "Strategy 1: Local Search\n");
+
                 size_t prog = decomp_local_search(
                     wid,
                     offset,
                     j, 
                     ctrl_block
                 );
+                printf("Finished local search: %zu \n", prog);
 
-                // Local search failed  
-                if (SENTINEL == prog)
+                if (SENTINEL != prog)  // Found row, perform swap  
                 {
-                    // Strategy #2 - Try a Hadamard
-                    if (1 == __inline_slice_get_bit(tab->slices_z[offset + j], offset + j))
-                    {
-                        DPRINT(DEBUG_3, "Strategy 2: Applying Hadamard to %lu\n", idx);
-                        
-                        // TODO: This operation is quite slow
-                        tableau_transverse_hadamard(tab, offset + j);
-                        clifford_queue_local_clifford_right(wid->queue, _H_, offset + j);
-                    
-                        // Trigger a row reload after the operation
-                        ctrl_block[j] = GET_CHUNK(
-                                slices,
-                                slice_len_bytes,
-                                offset,
-                                offset + j); 
-                    } else {
-                        DPRINT(DEBUG_3, "Strategy 3: Search Column", idx);
-
-                        prog = decomp_non_local_search_and_elim(wid, tableau_stride, slices, slice_len_bytes, offset, j);
-                        if (SENTINEL == prog)
-                        {
-                            DPRINT(DEBUG_3, "Strategy 4: Hadamard and Search Column", idx);
-                        }
-                        else
-                        {
-
-                            // Update before swap avoids reloading into a
-                            // cache miss if the row is large enough to flush
-                            // the cache 
-                            ctrl_block[j] = *(uint64_t*)(
-                                slices  
-                                + slice_len_bytes * (offset + prog)
-                                + offset 
-                            );
-
-                            tableau_idx_swap_transverse(
-                                wid->tableau,
-                                prog,
-                                j + offset);
-                        }
-                    }
+                    continue;
                 }
+
+                // Local search failed, try non-local search 
+                DPRINT(DEBUG_3, "Strategy 2: Non-Local Search");
+                prog = decomp_non_local_search_and_elim(wid, slices, slice_len_bytes, offset, j);
+                if (SENTINEL != prog)  // Found row, perform swap  
+                {
+                    tableau_idx_swap_transverse(
+                        wid->tableau,
+                        prog,
+                        j + offset);
+
+                    ctrl_block[j] = GET_CHUNK(
+                            slices,
+                            slice_len_bytes,
+                            offset,
+                            offset + j); 
+
+                    continue;
+                }
+
+                // Check if a bare Hadamard will work
+                DPRINT(DEBUG_3, "Strategy 3: Hadamard\n");
+
+                if (1 == __inline_slice_get_bit(tab->slices_z[offset + j], offset + j))
+                {
+                     debug_print_block(ctrl_block);
+                   
+                    // TODO: This operation is quite slow
+                    tableau_transverse_hadamard(tab, offset + j);
+                    clifford_queue_local_clifford_right(wid->queue, _H_, offset + j);
+                
+                    // Trigger a row reload after the operation
+                    ctrl_block[j] = GET_CHUNK(
+                            slices,
+                            slice_len_bytes,
+                            offset,
+                            offset + j); 
+
+                    tableau_print(tab);
+                    debug_print_block(ctrl_block);
+
+                    decomp_local_elim(
+                        wid,
+                        offset,
+                        j - 1,
+                        j,
+                        ctrl_block); 
+                    
+                    debug_print_block(ctrl_block);
+
+                    continue;
+                }
+
+
+                // Try searching the Z tableau
+                DPRINT(DEBUG_3, "Strategy 4: Hadamard and swap\n");
+                prog = decomp_z_search(wid, slices_z, slice_len_bytes, offset, j);
+                if (SENTINEL != prog)
+                {
+                    printf("Swapping\n");
+
+                    tableau_idx_swap_transverse(tab, offset + prog, offset + j);
+                    tableau_transverse_hadamard(tab, offset + j);
+                    clifford_queue_local_clifford_right(wid->queue, _H_, offset + j);
+
+                    ctrl_block[j] = GET_CHUNK(
+                            slices,
+                            slice_len_bytes,
+                            offset,
+                            offset + j); 
+
+                    printf("Swapped\n");
+                }
+                else
+                {
+                    DPRINT(DEBUG_3, "FAILED\n");
+                    tableau_print(tab);
+                    assert(0);
+                }
+
+
             }
-
         }
-
-        decomp_local_elim_upper(
+        // This should be able to start at start_local
+        decomp_local_elim(
             wid,
             offset,
-            start_local,
+            0,
             64,
             ctrl_block); 
 
-        decomp_local_elim_lower(
-            wid,
-            offset,
-            start_local,
-            64,
-            ctrl_block); 
 
-        decomp_col_elim_upper(wid, tableau_stride, slices, slice_len_bytes, offset);
-        decomp_col_elim_lower(wid, tableau_stride, slices, slice_len_bytes, offset);
+        // TODO: Uncomment
+        //decomp_col_elim_upper(wid, slices, slice_len_bytes, offset);
+        //decomp_col_elim_lower(wid, slices, slice_len_bytes, offset);
 
 
     }
@@ -630,7 +718,8 @@ void simd_tableau_elim_upper(widget_t* wid)
         }
     } 
 
-
+    printf("Finished\n");
+    tableau_print(tab);
     return;
 }
 
@@ -671,7 +760,7 @@ void simd_tableau_elim_lower(widget_t* wid)
  */ 
 void tableau_elim_lower(widget_t* wid)
 {
-    for (size_t i = 0; i < wid->n_qubits; i++)
+    for (size_t i = 0; i < wid->tableau->n_qubits; i++)
     {
         if (0 == __inline_slice_get_bit(wid->tableau->slices_x[i], i))
         {
@@ -689,7 +778,7 @@ void zero_z_diagonal(widget_t* wid)
 {
     // Phase operation to set Z diagonal to zero
     // Loop acts on separate cache line entries for each element
-    for (size_t i = 0; i < wid->n_qubits; i++)
+    for (size_t i = 0; i < wid->tableau->n_qubits; i++)
     {
         if (__inline_slice_get_bit(wid->tableau->slices_z[i], i))
         {
@@ -716,7 +805,7 @@ static inline
 void zero_phases(widget_t* wid)
 {
     // Z to set phases to 0
-    for (size_t i = 0; i < wid->n_qubits; i++)
+    for (size_t i = 0; i < wid->tableau->n_qubits; i++)
     {
         // Action of Z gate
         // r ^= x

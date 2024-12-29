@@ -8,11 +8,15 @@
  */
 widget_t* widget_create(const size_t initial_qubits, const size_t max_qubits)
 {
+    // Max qubits must be a multiple of 64:
+    const size_t aligned_max_qubits = max_qubits + (
+            !!(max_qubits % 64)) * (64 - (max_qubits % 64)); 
+
     widget_t* wid = (widget_t*)malloc(sizeof(widget_t));  
     wid->n_initial_qubits = initial_qubits;
     wid->n_qubits = initial_qubits;
     wid->max_qubits = max_qubits; 
-    wid->tableau = tableau_create(max_qubits);
+    wid->tableau = tableau_create(aligned_max_qubits);
     wid->queue = clifford_queue_create(max_qubits);
     wid->q_map = qubit_map_create(initial_qubits, max_qubits); 
     wid->pauli_tracker = pauli_tracker_create(max_qubits);
@@ -124,6 +128,11 @@ size_t* widget_get_io_map(const widget_t* wid)
  * :: wid : widget_t* :: Widget to decompose 
  * Acts in place on the tableau 
  */
+void __widget_decompose(widget_t* wid)
+{
+    simd_widget_decompose(wid);
+}
+
 void widget_decompose(widget_t* wid)
 {
     tableau_remove_zero_X_columns(wid->tableau, wid->queue);

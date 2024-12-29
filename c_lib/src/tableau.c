@@ -49,7 +49,7 @@ tableau_t* tableau_create(const size_t n_qubits)
     // The extra chunk is a 64 byte region that we can use for cache line alignment 
     const size_t slice_len_bytes = SLICE_LEN_BYTES(n_qubits, CACHE_SIZE); 
 
-    const size_t n_ptrs = n_qubits + (CACHE_SIZE - (n_qubits % CACHE_SIZE)); 
+    const size_t n_ptrs = n_qubits + !!(n_qubits % CACHE_SIZE) * (CACHE_SIZE - (n_qubits % CACHE_SIZE)); 
     const size_t tableau_half_bytes = slice_len_bytes * n_ptrs;
     const size_t tableau_bytes = tableau_half_bytes * 2; 
 
@@ -514,7 +514,8 @@ void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
     const size_t term = SLICE_LEN(tab->n_qubits, sizeof(uint64_t));
     
     // TODO stride this
-    for (size_t idx = 0; idx < term; idx++)
+    // Also TODO this should be simd
+    for (size_t idx = 0; idx < tab->slice_len / sizeof(uint64_t); idx++)
     {
         slice_x_i[idx] ^= slice_x_j[idx];
         slice_x_j[idx] ^= slice_x_i[idx];

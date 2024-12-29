@@ -19,7 +19,7 @@
 struct widget_t {
     size_t n_qubits;
     size_t n_initial_qubits;
-    size_t max_qubits;
+    size_t max_qubits; // Should be a multiple of 64
     struct tableau_t* tableau;
     struct clifford_queue_t* queue;
     qubit_map_t* q_map;

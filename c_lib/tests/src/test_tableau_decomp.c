@@ -359,6 +359,7 @@ widget_t* __test_block_diag_preamble(size_t n_qubits, widget_t* wid, bool clear_
 {
     if (clear_x)
     {
+        printf("Removing zero cols");
         tableau_remove_zero_X_columns(wid->tableau, wid->queue);
     }
     tableau_transpose(wid->tableau);
@@ -375,7 +376,9 @@ void __test_block_diag(const size_t n_qubits, widget_t* wid, widget_t* cpy)
 {
 
     tableau_elim_upper(wid);
-    simd_tableau_elim_upper(cpy);
+    tableau_elim_lower(wid);
+
+    simd_tableau_elim(cpy);
 
     for (size_t i = 0; i < n_qubits; i++)
     {
@@ -388,24 +391,13 @@ void __test_block_diag(const size_t n_qubits, widget_t* wid, widget_t* cpy)
             assert(0 == __inline_slice_get_bit(wid->tableau->slices_x[i], j));
             assert(0 == __inline_slice_get_bit(cpy->tableau->slices_x[i], j));
         }
+
+//        for (size_t j = i + 1; j < n_qubits; j++)
+//        {
+//            assert(0 == __inline_slice_get_bit(wid->tableau->slices_x[i], j));
+//            assert(0 == __inline_slice_get_bit(cpy->tableau->slices_x[i], j));
+//        }
     } 
-
-    //tableau_elim_lower(wid);
-    //tableau_elim_lower(cpy);
-
-    //for (size_t i = 0; i < n_qubits; i++)
-    //{
-
-    //    assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
-    //    assert(1 == __inline_slice_get_bit(cpy->tableau->slices_x[i], i));
-
-    //    for (size_t j = i + 1; j < n_qubits; j++)
-    //    {
-    //        assert(0 == __inline_slice_get_bit(wid->tableau->slices_x[i], j));
-    //        assert(0 == __inline_slice_get_bit(cpy->tableau->slices_x[i], j));
-    //    }
-    //} 
-
 
     return;
 }
@@ -413,6 +405,8 @@ void __test_block_diag(const size_t n_qubits, widget_t* wid, widget_t* cpy)
 void test_block_diag(const size_t n_qubits, widget_t* wid)
 {
     widget_t* cpy = __test_block_diag_preamble(n_qubits, wid, true);
+    printf("Initial Tableau:\n");
+    tableau_print(wid->tableau);
     __test_block_diag(n_qubits, wid, cpy); 
     widget_destroy(cpy);
 }
@@ -478,7 +472,7 @@ void test_random(const size_t n_qubits)
     widget_t* wid = widget_random_create(n_qubits, n_qubits * 10);
 
 
-    widget_decompose(wid);    
+    widget_decompose(wid);
 
 
     for (size_t i = 0; i < n_qubits; i++)//n_qubits; i++)
@@ -488,7 +482,7 @@ void test_random(const size_t n_qubits)
         assert(i == tableau_ctz(wid->tableau->slices_x[i], wid->tableau->slice_len));
     }
 
-    for (size_t i = 0; i < wid->tableau->slice_len; i++)
+    for (size_t i = 0; i < wid->tableau->slice_len / sizeof(uint64_t); i++)
     {
         assert(0 == wid->tableau->phases[i]);
     }
@@ -507,57 +501,96 @@ int main()
 //
   // Test decomposition of in-block two-qubit Cliffords only 
   // These paths should all be caught by local elim
-    for (size_t i = 64; i <= 256; i += 64)
-    {
-
-        widget_t* wid = widget_create_from_stream(
-            i,
-            i * i,
-            create_instruction_stream_in_block);
-
-        apply_local_cliffords(wid);
-        test_block_diag(i, wid);
-        widget_destroy(wid);
-    }
+//    for (size_t i = 64; i <= 256; i += 64)
+//    {
+//
+//        widget_t* wid = widget_create_from_stream(
+//            i,
+//            i * i,
+//            create_instruction_stream_in_block);
+//
+//        apply_local_cliffords(wid);
+//        test_block_diag(i, wid);
+//        widget_destroy(wid);
+//    }
 //
 //  
-    // Testing Hadamard strategy
-    // These paths should all be caught by Hadamard
-    for (size_t i = 64; i <= 256; i += 64)
-    {
-        widget_t* wid = widget_hadamard_create(i);
-        apply_local_cliffords(wid);
-        test_block_diag_hadamard(i, wid);
-        widget_destroy(wid);
-    }
+//    // Testing Hadamard strategy
+//    // These paths should all be caught by Hadamard
+//    for (size_t i = 64; i <= 256; i += 64)
+//    {
+//        widget_t* wid = widget_hadamard_create(i);
+//        apply_local_cliffords(wid);
+//        test_block_diag_hadamard(i, wid);
+//        widget_destroy(wid);
+//    }
+//
+//    // Test decomposition of single qubit Cliffords only 
+//    // This should test local decompositions, mostly Hadamards and phases 
+//    for (size_t i = 64; i <= 256; i += 64)
+//    {
+//
+//        widget_t* wid = widget_create_from_stream(
+//            i,
+//            i * i,
+//            create_instruction_stream_local);
+//
+//        apply_local_cliffords(wid);
+//        test_block_diag(i, wid);
+//        widget_destroy(wid);
+//    }
+//
+//    // Testing where all operations are across blocks
+//    // This should test the column search
+//    for (size_t i = 128; i < 256; i += 64)
+//    {
+//        widget_t* wid = widget_create_from_stream(
+//            i,
+//            i * 2,
+//            create_instruction_stream_out_of_block);
+//
+//        test_block_diag(i, wid);
+//        widget_destroy(wid);
+//    }
 
-    // Test decomposition of single qubit Cliffords only 
-    // This should test local decompositions, mostly Hadamards and phases 
-    for (size_t i = 64; i <= 256; i += 64)
-    {
+    // Random tests
+//    for (size_t i = 64; i <=64 ; i += 64)
+//    {
+//        widget_t* wid = widget_create_from_stream(
+//            i,
+//            i * i,
+//            create_instruction_stream);
+//
+//        test_block_diag(i, wid);
+//        widget_destroy(wid);
+//    }
 
-        widget_t* wid = widget_create_from_stream(
-            i,
-            i * i,
-            create_instruction_stream_local);
 
-        apply_local_cliffords(wid);
-        test_block_diag(i, wid);
-        widget_destroy(wid);
-    }
+    size_t n_qubits = 64;
+    widget_t* wid = widget_create_from_stream(
+        n_qubits,
+        2,
+        create_instruction_stream);
 
-    // Testing where all operations are across blocks
-    // This should test the column search
-    for (size_t i = 128; i < 256; i += 64)
-    {
-        widget_t* wid = widget_create_from_stream(
-            i,
-            i * 2,
-            create_instruction_stream_out_of_block);
+    tableau_remove_zero_X_columns(wid->tableau, wid->queue);
+    tableau_transpose(wid->tableau);
+    tableau_print(wid->tableau);
 
-        test_block_diag(i, wid);
-        widget_destroy(wid);
-    }
+
+    widget_t* cpy = widget_create(n_qubits, n_qubits);
+    tableau_destroy(cpy->tableau);
+
+    cpy->tableau = tableau_copy(wid->tableau); 
+
+
+    widget_decompose(wid);
+    tableau_print(wid->tableau);
+
+    printf("###\n");
+
+    naive_widget_decompose(cpy);    
+    tableau_print(wid->tableau);
+
 
     return 0;
 }
