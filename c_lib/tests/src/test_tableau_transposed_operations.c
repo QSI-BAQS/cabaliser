@@ -3,7 +3,7 @@
 #include "tableau.h"
 #include "test_tableau.h"
 
-void test_transposed_hadamard(size_t n_qubits)
+void test_transposed_hadamard(const size_t n_qubits)
 {
     tableau_t* tab = tableau_random_create(n_qubits); 
     tableau_t* tab_cmp = tableau_copy(tab);  
@@ -65,13 +65,54 @@ void test_transposed_hadamard(size_t n_qubits)
                 (((uint8_t*)(tab->phases))[idx] & mask)
             );
     }
+    tableau_destroy(tab);
+    tableau_destroy(tab_cmp);
+}
+
+
+void test_transverse_swap(const size_t n_qubits)
+{
+    tableau_t* tab = tableau_random_create(n_qubits); 
+    tableau_t* cmp = tableau_copy(tab);  
+    const size_t slice_len = tab->slice_len;
+   
+
+    for (size_t i = 1; i < n_qubits; i++)
+    {
+
+        tableau_idx_swap_transverse(tab, 0, i);
+
+        for (size_t j = 0; j < tab->slice_len; j++)
+        {
+            assert(
+                ((uint8_t*)tab->slices_x[0])[j] 
+                == 
+                ((uint8_t*)cmp->slices_x[i])[j] 
+            );
+
+            assert(
+                ((uint8_t*)tab->slices_z[0])[j] 
+                == 
+                ((uint8_t*)cmp->slices_z[i])[j] 
+            );
+
+        }
+    } 
+
+    tableau_destroy(tab);
+    tableau_destroy(cmp);
 }
 
 int main()
 {
-    for (size_t i = 263; i < 1280; i += 17)
+    for (size_t i = 263; i < 1280; i += 63)
     {
-        printf("%zu\n", i);
+        test_transverse_swap(i);
+    }
+
+
+    for (size_t i = 263; i < 1280; i += 63)
+    {
         test_transposed_hadamard(i);
     }
     return 0;

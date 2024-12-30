@@ -446,7 +446,10 @@ void tableau_idx_swap(tableau_t* tab, const size_t i, const size_t j)
     uint64_t* slice_z_i = tab->slices_z[i];
     uint64_t* slice_z_j = tab->slices_z[j];
 
+    assert(i != j);
+
     const size_t term = SLICE_LEN(tab->n_qubits, sizeof(uint64_t));
+    // No temporary makes pipelining this easier
     #pragma GCC unroll 8
     for (size_t idx = 0; idx < term; idx += sizeof(uint64_t))
     {
@@ -511,12 +514,16 @@ void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
     uint64_t* slice_z_i = tab->slices_z[i];
     uint64_t* slice_z_j = tab->slices_z[j];
 
-    const size_t term = SLICE_LEN(tab->n_qubits, sizeof(uint64_t));
-    
+    assert(i != j);
+
     // TODO stride this
     // Also TODO this should be simd
     for (size_t idx = 0; idx < tab->slice_len / sizeof(uint64_t); idx++)
     {
+        //uint64_t tmp =  slice_x_i[idx];
+        //slice_x_i[idx] = slice_x_j[idx];
+        //slice_x_j[idx] = 0ull;
+
         slice_x_i[idx] ^= slice_x_j[idx];
         slice_x_j[idx] ^= slice_x_i[idx];
         slice_x_i[idx] ^= slice_x_j[idx];
@@ -570,7 +577,7 @@ void tableau_rowsum(tableau_t* tab, const size_t ctrl, const size_t targ)
 static inline
 void __inline_tableau_rowsum_offset(tableau_t* tab, const size_t ctrl, const size_t targ, const size_t offset)
 {
-    const size_t offset_bytes = 8 * (offset / 64); 
+    const size_t offset_bytes = offset / 8; 
 
     tableau_slice* slice_ctrl_x = (tableau_slice*)((void*)(tab->slices_x[ctrl]) + offset_bytes); 
     tableau_slice* slice_ctrl_z = (tableau_slice*)((void*)(tab->slices_z[ctrl]) + offset_bytes); 

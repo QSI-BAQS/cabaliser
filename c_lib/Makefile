@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 CC := gcc 
 OMPFLAG := -fopenmp
-CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG} -pg
+CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG} -flto -pg
 
 # Optimisation Flags
 CFLAGS += -Ofast -fPIC
@@ -14,7 +14,7 @@ SRCDIR := src
 LIBDIR := lib
 BUILDDIR := build
 
-LIBS := -I${LIBDIR}
+LIBS := -I${LIBDIR} -I${LIBDIR}/simd
 
 TESTDIR := tests
 TEST_SRCDIR := ${TESTDIR}/src

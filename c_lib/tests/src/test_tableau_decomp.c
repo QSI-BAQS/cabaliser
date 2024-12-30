@@ -82,19 +82,19 @@ void test_load_block(const size_t n_qubits)
 }
 
 
-instruction_stream_u* create_sample_instruction_stream()
+instruction_stream_u* create_sample_instruction_stream(const size_t n_qubits, const size_t n_gates)
 {
-    instruction_stream_u* inst = malloc(3 * sizeof(instruction_stream_u));  
+    instruction_stream_u* inst = malloc(n_qubits * sizeof(instruction_stream_u));  
     inst[0].single.opcode = _H_;
     inst[0].single.arg = 0;
 
-    inst[1].multi.opcode = _CNOT_;
-    inst[1].multi.ctrl = 0;
-    inst[1].multi.targ = 1;
+    for (size_t i = 0; i < n_gates - 1; i++)
+    {
+        inst[i + 1].multi.opcode = _CNOT_;
+        inst[i + 1].multi.ctrl = i;
+        inst[i + 1].multi.targ = i + 1;
+    }
 
-    inst[2].multi.opcode = _CNOT_;
-    inst[2].multi.ctrl = 1;
-    inst[2].multi.targ = 2;    
     return inst;
 }
 
@@ -213,8 +213,6 @@ instruction_stream_u* create_instruction_stream_out_of_block(const size_t n_qubi
 }
 
 
-
-
 instruction_stream_u* create_instruction_stream(const size_t n_qubits, const size_t n_gates)
 {
 
@@ -222,7 +220,7 @@ instruction_stream_u* create_instruction_stream(const size_t n_qubits, const siz
 
     for (size_t i = 0; i < n_gates / 2; i++)
     {
-        uint8_t opcode = LOCAL_CLIFFORD_MASK | (rand() % N_LOCAL_CLIFFORD_INSTRUCTIONS);
+        uint8_t opcode = _H_; //LOCAL_CLIFFORD_MASK | (rand() % N_LOCAL_CLIFFORD_INSTRUCTIONS);
         size_t arg = rand() % n_qubits; 
         inst[i].single.opcode = opcode;
         inst[i].single.arg = arg;
@@ -230,7 +228,7 @@ instruction_stream_u* create_instruction_stream(const size_t n_qubits, const siz
 
     for (size_t i = n_gates / 2; i < n_gates; i++)
     {
-        uint8_t opcode = NON_LOCAL_CLIFFORD_MASK | (rand() % N_NON_LOCAL_CLIFFORD_INSTRUCTIONS);
+        uint8_t opcode = _CNOT_; //NON_LOCAL_CLIFFORD_MASK | (rand() % N_NON_LOCAL_CLIFFORD_INSTRUCTIONS);
         size_t ctrl = rand() % n_qubits; 
         size_t targ;
 
@@ -263,65 +261,6 @@ widget_t* widget_create_from_stream(
     return wid; 
 }
 
-
-
-widget_t* widget_random_create_local(size_t n_qubits, size_t n_gates)
-{
-    widget_t* wid = widget_create(n_qubits, n_qubits);
-
-    instruction_stream_u* stream = create_instruction_stream_local(n_qubits, n_gates);
-    parse_instruction_block(wid, stream, n_gates);
-    free(stream); 
-    return wid; 
-}
-
-/*
- * Creates and applies two qubit cliffords across all n qubits
- */
-widget_t* widget_random_create_non_local(size_t n_qubits, size_t n_gates)
-{
-    widget_t* wid = widget_create(n_qubits, n_qubits);
-
-    instruction_stream_u* stream = create_instruction_stream_non_local(n_qubits, n_gates);
-    parse_instruction_block(wid, stream, n_gates);
-    free(stream); 
-    return wid; 
-}
-
-/*
- * Creates and applies two qubit cliffords in blocks of 64
- */
-widget_t* widget_random_create_in_block(size_t n_qubits, size_t n_gates)
-{
-    widget_t* wid = widget_create(n_qubits, n_qubits);
-
-    instruction_stream_u* stream = create_instruction_stream_in_block(n_qubits, n_gates);
-    parse_instruction_block(wid, stream, n_gates);
-    free(stream); 
-    return wid; 
-}
-
-widget_t* widget_random_create_out_of_block(size_t n_qubits, size_t n_gates)
-{
-    widget_t* wid = widget_create(n_qubits, n_qubits);
-
-    instruction_stream_u* stream = create_instruction_stream_out_of_block(n_qubits, n_gates);
-    parse_instruction_block(wid, stream, n_gates);
-    free(stream); 
-    return wid; 
-}
-
-
-widget_t* widget_random_create(size_t n_qubits, size_t n_gates)
-{
-    widget_t* wid = widget_create(n_qubits, n_qubits);
-
-    instruction_stream_u* stream = create_instruction_stream(n_qubits, n_gates);
-    parse_instruction_block(wid, stream, n_gates);
-    free(stream); 
-    return wid; 
-} 
-
 widget_t* widget_hadamard_create(size_t n_qubits)
 {
     widget_t* wid = widget_create(n_qubits, n_qubits);
@@ -339,30 +278,21 @@ widget_t* widget_hadamard_create(size_t n_qubits)
     return wid; 
 }
 
-
-widget_t* widget_sample_create()
-{
-    widget_t* wid = widget_create(3, 3);
-
-    instruction_stream_u* stream = create_sample_instruction_stream();
-    parse_instruction_block(wid, stream, 3);
-    free(stream); 
-    
-    return wid;
-}
-
-
-
-
 static inline 
 widget_t* __test_block_diag_preamble(size_t n_qubits, widget_t* wid, bool clear_x)
 {
     if (clear_x)
     {
-        printf("Removing zero cols");
+        printf("Removing zero cols\n");
         tableau_remove_zero_X_columns(wid->tableau, wid->queue);
     }
+
+    tableau_print(wid->tableau);
+
+    printf("Transposing:\n");
     tableau_transpose(wid->tableau);
+
+    tableau_print(wid->tableau);
 
     widget_t* cpy = widget_create(n_qubits, n_qubits);
     tableau_destroy(cpy->tableau);
@@ -420,76 +350,54 @@ void test_block_diag_hadamard(const size_t n_qubits, widget_t* wid)
 
 
 
-void test_idx_swap(size_t n_qubits)
-{
-    widget_t* wid = widget_random_create(n_qubits, n_qubits);
-
-    void* stage_x = malloc(n_qubits / 8 + 1);
-    void* stage_z = malloc(n_qubits / 8 + 1);
-
-    for (size_t i = 0; i < n_qubits; i++)
-    {
-        for (size_t j = 0; j < i; j++)
-        {
-            memcpy(stage_x, wid->tableau->slices_x[i], n_qubits / 8 + 1);
-            memcpy(stage_z, wid->tableau->slices_z[i], n_qubits / 8 + 1);
-
-            tableau_idx_swap_transverse(wid->tableau, i, j);
-            assert(0 == memcmp(stage_x, wid->tableau->slices_x[j], n_qubits / 8 + 1));
-            assert(0 == memcmp(stage_z, wid->tableau->slices_z[j], n_qubits / 8 + 1));
-
-            simd_tableau_idx_swap_transverse(wid->tableau, i, j);
-            assert(0 == memcmp(stage_x, wid->tableau->slices_x[i], n_qubits / 8 + 1));
-            assert(0 == memcmp(stage_z, wid->tableau->slices_z[i], n_qubits / 8 + 1));
-        }
-    } 
-
-    return;
-}
-
-
-void test_ghz(void)
-{
-    const size_t n_qubits = 3;
-    widget_t* wid = widget_sample_create();
-
-    widget_decompose(wid);    
-
-    for (size_t i = 0; i < n_qubits; i++)//n_qubits; i++)
-    {
-        assert(0 == __inline_slice_get_bit(wid->tableau->slices_z[i], i));
-        assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
-        assert(i == tableau_ctz(wid->tableau->slices_x[i], wid->tableau->slice_len));
-    }
-
-    widget_destroy(wid);
-    return;
-}
+//void test_idx_swap(size_t n_qubits)
+//{
+//    widget_t* wid = widget_random_create(n_qubits, n_qubits);
+//
+//    void* stage_x = malloc(n_qubits / 8 + 1);
+//    void* stage_z = malloc(n_qubits / 8 + 1);
+//
+//    for (size_t i = 0; i < n_qubits; i++)
+//    {
+//        for (size_t j = 0; j < i; j++)
+//        {
+//            memcpy(stage_x, wid->tableau->slices_x[i], n_qubits / 8 + 1);
+//            memcpy(stage_z, wid->tableau->slices_z[i], n_qubits / 8 + 1);
+//
+//            tableau_idx_swap_transverse(wid->tableau, i, j);
+//            assert(0 == memcmp(stage_x, wid->tableau->slices_x[j], n_qubits / 8 + 1));
+//            assert(0 == memcmp(stage_z, wid->tableau->slices_z[j], n_qubits / 8 + 1));
+//
+//            simd_tableau_idx_swap_transverse(wid->tableau, i, j);
+//            assert(0 == memcmp(stage_x, wid->tableau->slices_x[i], n_qubits / 8 + 1));
+//            assert(0 == memcmp(stage_z, wid->tableau->slices_z[i], n_qubits / 8 + 1));
+//        }
+//    } 
+//
+//    return;
+//}
 
 
-void test_random(const size_t n_qubits)
-{
-    widget_t* wid = widget_random_create(n_qubits, n_qubits * 10);
+//void test_ghz(void)
+//{
+//    const size_t n_qubits = 3;
+//    widget_t* wid = widget_sample_create();
+//
+//    widget_decompose(wid);    
+//
+//    for (size_t i = 0; i < n_qubits; i++)//n_qubits; i++)
+//    {
+//        assert(0 == __inline_slice_get_bit(wid->tableau->slices_z[i], i));
+//        assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
+//        assert(i == tableau_ctz(wid->tableau->slices_x[i], wid->tableau->slice_len));
+//    }
+//
+//    widget_destroy(wid);
+//    return;
+//}
 
 
-    widget_decompose(wid);
 
-
-    for (size_t i = 0; i < n_qubits; i++)//n_qubits; i++)
-    {
-        assert(0 == __inline_slice_get_bit(wid->tableau->slices_z[i], i));
-        assert(1 == __inline_slice_get_bit(wid->tableau->slices_x[i], i));
-        assert(i == tableau_ctz(wid->tableau->slices_x[i], wid->tableau->slice_len));
-    }
-
-    for (size_t i = 0; i < wid->tableau->slice_len / sizeof(uint64_t); i++)
-    {
-        assert(0 == wid->tableau->phases[i]);
-    }
-
-    widget_destroy(wid);
-    return;
-}
 
 int main()
 {
@@ -554,42 +462,44 @@ int main()
 //    }
 
     // Random tests
-//    for (size_t i = 64; i <=64 ; i += 64)
-//    {
-//        widget_t* wid = widget_create_from_stream(
-//            i,
-//            i * i,
-//            create_instruction_stream);
+    for (size_t i = 64; i <=64 ; i += 64)
+    {
+        widget_t* wid = widget_create_from_stream(
+            i,
+            i * i,
+            create_instruction_stream);
+
+        test_block_diag(i, wid);
+        widget_destroy(wid);
+    }
+
+    //srand(0);
+//    size_t n_qubits = 8;
+//    widget_t* wid = widget_create_from_stream(
+//        n_qubits,
+//        64,
+//        create_instruction_stream);
 //
-//        test_block_diag(i, wid);
-//        widget_destroy(wid);
-//    }
-
-
-    size_t n_qubits = 64;
-    widget_t* wid = widget_create_from_stream(
-        n_qubits,
-        2,
-        create_instruction_stream);
-
-    tableau_remove_zero_X_columns(wid->tableau, wid->queue);
-    tableau_transpose(wid->tableau);
-    tableau_print(wid->tableau);
-
-
-    widget_t* cpy = widget_create(n_qubits, n_qubits);
-    tableau_destroy(cpy->tableau);
-
-    cpy->tableau = tableau_copy(wid->tableau); 
-
-
-    widget_decompose(wid);
-    tableau_print(wid->tableau);
-
+//    tableau_print(wid->tableau);
+//
+//    simd_widget_decompose(wid);
+//    
+//    tableau_print(wid->tableau);
+//
+//
+//    widget_t* cpy = widget_create(n_qubits, n_qubits);
+//    tableau_destroy(cpy->tableau);
+//
+//    cpy->tableau = tableau_copy(wid->tableau); 
+//
+//
+//    tableau_print(wid->tableau);
+//
+//    printf("###\n");
+//
+//    naive_widget_decompose(cpy);    
     printf("###\n");
 
-    naive_widget_decompose(cpy);    
-    tableau_print(wid->tableau);
 
 
     return 0;
