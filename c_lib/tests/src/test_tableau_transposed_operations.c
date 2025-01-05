@@ -95,13 +95,38 @@ void test_transverse_swap(const size_t n_qubits)
                 == 
                 ((uint8_t*)cmp->slices_z[i])[j] 
             );
-
         }
+        simd_swap(
+            ((void*)tab->slices_x[0]),
+            ((void*)tab->slices_z[0]),
+            ((void*)tab->slices_x[0]) + tab->slice_len * i,
+            ((void*)tab->slices_z[0]) + tab->slice_len * i,
+            tab->slice_len);
+
+        for (size_t j = 0; j < tab->slice_len; j++)
+        {
+            assert(
+                ((uint8_t*)tab->slices_x[0])[j] 
+                == 
+                ((uint8_t*)cmp->slices_x[0])[j] 
+            );
+
+            assert(
+                ((uint8_t*)tab->slices_z[0])[j] 
+                == 
+                ((uint8_t*)cmp->slices_z[0])[j] 
+            );
+        }
+
+
     } 
 
     tableau_destroy(tab);
     tableau_destroy(cmp);
 }
+
+
+
 
 int main()
 {

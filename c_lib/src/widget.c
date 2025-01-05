@@ -128,12 +128,12 @@ size_t* widget_get_io_map(const widget_t* wid)
  * :: wid : widget_t* :: Widget to decompose 
  * Acts in place on the tableau 
  */
-void __widget_decompose(widget_t* wid)
+void widget_decompose(widget_t* wid)
 {
     simd_widget_decompose(wid);
 }
 
-void widget_decompose(widget_t* wid)
+void __widget_decompose(widget_t* wid)
 {
     tableau_remove_zero_X_columns(wid->tableau, wid->queue);
 

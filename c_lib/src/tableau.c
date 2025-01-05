@@ -243,12 +243,19 @@ void tableau_transpose_slices(tableau_t* tab, uint64_t** slices)
     {
         for (size_t row = col + 1; row < chunk_elements; row++) 
         {
-             // TODO Vectorise this
+            // Break this up to improve stride detection
+            #pragma GCC unroll 64
             for (size_t i = 0; i < 64; i++)
             {
                 src_ptr[i] = slices[i + (64 * col)] + row;
-                targ_ptr[i] = slices[i + (64 * row)] + col;
             }
+
+            #pragma GCC unroll 64
+            for (size_t i = 0; i < 64; i++)
+            {
+               targ_ptr[i] = slices[i + (64 * row)] + col;            
+            }
+            
             simd_transpose_64x64(src_ptr, targ_ptr);
         }
     }
@@ -264,6 +271,7 @@ void tableau_transpose_slices(tableau_t* tab, uint64_t** slices)
     }
 
     // Doing the remainder naively
+    // This is only hit if (n_qubits % 64) != 0
     for (size_t i = chunk_elements * 64; i < tab->n_qubits; i++)
     {
         // Inner loop should run along the current orientation, and hence along the cache lines 
@@ -501,7 +509,6 @@ void tableau_idx_swap_ptr(tableau_t* tab, const size_t i, const size_t j)
 /*
  * tableau_idx_swap_transverse 
  * Swaps indicies over both the X and Z slices  
- * Also swaps associated phases
  * :: tab : tableau_t* :: Tableau object to swap over 
  * :: i :: const size_t :: Index to swap 
  * :: j :: const size_t :: Index to swap
@@ -520,17 +527,21 @@ void tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
     // Also TODO this should be simd
     for (size_t idx = 0; idx < tab->slice_len / sizeof(uint64_t); idx++)
     {
-        //uint64_t tmp =  slice_x_i[idx];
-        //slice_x_i[idx] = slice_x_j[idx];
-        //slice_x_j[idx] = 0ull;
+        uint64_t tmp =  slice_x_i[idx];
+        slice_x_i[idx] = slice_x_j[idx];
+        slice_x_j[idx] = tmp; 
 
-        slice_x_i[idx] ^= slice_x_j[idx];
-        slice_x_j[idx] ^= slice_x_i[idx];
-        slice_x_i[idx] ^= slice_x_j[idx];
+        tmp =  slice_z_i[idx];
+        slice_z_i[idx] = slice_z_j[idx];
+        slice_z_j[idx] = tmp; 
 
-        slice_z_i[idx] ^= slice_z_j[idx];
-        slice_z_j[idx] ^= slice_z_i[idx];
-        slice_z_i[idx] ^= slice_z_j[idx];
+        //slice_x_i[idx] ^= slice_x_j[idx];
+        //slice_x_j[idx] ^= slice_x_i[idx];
+        //slice_x_i[idx] ^= slice_x_j[idx];
+
+        //slice_z_i[idx] ^= slice_z_j[idx];
+        //slice_z_j[idx] ^= slice_z_i[idx];
+        //slice_z_i[idx] ^= slice_z_j[idx];
     }
 
     return;
@@ -577,7 +588,7 @@ void tableau_rowsum(tableau_t* tab, const size_t ctrl, const size_t targ)
 static inline
 void __inline_tableau_rowsum_offset(tableau_t* tab, const size_t ctrl, const size_t targ, const size_t offset)
 {
-    const size_t offset_bytes = offset / 8; 
+    const size_t offset_bytes = (offset / 256) * 8; 
 
     tableau_slice* slice_ctrl_x = (tableau_slice*)((void*)(tab->slices_x[ctrl]) + offset_bytes); 
     tableau_slice* slice_ctrl_z = (tableau_slice*)((void*)(tab->slices_z[ctrl]) + offset_bytes); 

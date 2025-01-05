@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 CC := gcc 
 OMPFLAG := -fopenmp
-CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG} -flto -pg
+CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG} 
 
 # Optimisation Flags
 CFLAGS += -Ofast -fPIC

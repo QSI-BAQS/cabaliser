@@ -56,10 +56,10 @@ void debug_dense_print(tableau_t* tab)
 
 }
 
-static inline
+
 void zero_z_diagonal(widget_t* wid);
 
-static inline
+
 void zero_phases(widget_t* wid);
 
 /*
@@ -97,13 +97,11 @@ void naive_widget_decompose(widget_t* wid)
  */
 void simd_widget_decompose(widget_t* wid)
 {
-    tableau_print(wid->tableau);
 
     tableau_remove_zero_X_columns(
         wid->tableau,
         wid->queue
     );
-    tableau_print(wid->tableau);
 
     tableau_transpose(wid->tableau);
 
@@ -143,7 +141,7 @@ void tableau_elim_upper(widget_t* wid)
  * TODO: rename to tile
  * TODO: Comment blocks 
  */
-static inline
+
 void __inline_decomp_load_block(
     uint64_t block[64],
     void* slices, 
@@ -175,11 +173,39 @@ void decomp_load_block(
     __inline_decomp_load_block(block, slices, slice_len, row_offset, col_offset);
 }
 
+
+/*
+ * TODO
+ */
+void debug_print_X_blocks(tableau_t* tab)
+{
+    uint64_t block[64];
+    for (size_t offset = 0;
+         offset < tab->n_qubits;
+         offset += BLOCK_STRIDE_BITS)
+    {
+        for (size_t idx = 0;
+             idx < tab->n_qubits;
+             idx += BLOCK_STRIDE_BITS)
+        {
+            __inline_decomp_load_block(
+                block,
+                tab->slices_x[0], 
+                tab->slice_len,
+                offset,
+                idx);
+            printf(":: %zu, %zu ::\n", offset, idx); 
+            debug_print_block(block);
+        }
+    }
+}
+
+
 /*
  * Stores a block in memory
  * Primarily used for testing the load block function
  */
-static inline
+
 void __inline_decomp_store_block(
     uint64_t block[64],
     void* slices, 
@@ -208,7 +234,7 @@ void decomp_store_block(
     __inline_decomp_store_block(block, slices, slice_len, row_offset, col_offset);
 }
 
-static inline
+
 void decomp_local_elim_upper(
         widget_t* wid,
         const size_t offset,
@@ -219,7 +245,6 @@ void decomp_local_elim_upper(
     size_t ctrl = 0;
     size_t block_end = 64;
 
-
     // Clean up to the target 
     for (size_t i = start; i < end; i++)
     {
@@ -227,6 +252,11 @@ void decomp_local_elim_upper(
         i > 
         (ctrl = __builtin_ctzll(ctrl_block[i])))
         {
+            DPRINT(
+                DEBUG_3, 
+                "Upper Elim on %zu -> %zu\n", 
+                i, ctrl);
+
             ctrl_block[i] ^= ctrl_block[ctrl];
             tableau_rowsum_offset(
                     wid->tableau,
@@ -259,7 +289,7 @@ void decomp_local_elim_upper(
  * Performs an elimination on the lower portion of the local block
  * TODO: Comment
  */
-static inline
+
 void decomp_local_elim_lower(
         widget_t* wid,
         const size_t offset,
@@ -271,13 +301,24 @@ void decomp_local_elim_lower(
     size_t ctrl = 0;
     uint64_t mask = ((1ull << end) - 1ull);
 
+    // If end is 64 then mask is zeroed
+    // This operation avoids that in a branch-free manner
+    mask = (!!(mask) * mask) | (!(mask) * (~mask));
+
     // Clean up to the target 
     for (size_t i = 0; i < end; i++)
     {
-        while ((63 - __builtin_clzll(mask & ctrl_block[i])) > i)
+        // Optimising compiler notices that this should always be bounded 
+        // Problem is that it can throw INT_MAX as an output and overflow
+        ctrl = 63 - __builtin_clzll(mask & ctrl_block[i]);
+
+        while ((mask & ctrl_block[i]) && (ctrl > i))
         {
 
-            ctrl = 63 - __builtin_clzll(mask & ctrl_block[i]);
+            DPRINT(
+                DEBUG_3, 
+                "Lower Elim on %zu -> %zu\n", 
+                i, ctrl);
 
             ctrl_block[i] ^= ctrl_block[ctrl];
             tableau_rowsum_offset(
@@ -285,6 +326,9 @@ void decomp_local_elim_lower(
                     ctrl + offset,
                     i + offset,
                     offset);
+
+            ctrl = 63 - __builtin_clzll(mask & ctrl_block[i]);
+
         }
     }
 }
@@ -293,7 +337,7 @@ void decomp_local_elim_lower(
  * TODO
  *
  */
-static inline
+
 void decomp_local_elim(
         widget_t* wid,
         const size_t offset,
@@ -302,6 +346,9 @@ void decomp_local_elim(
         uint64_t ctrl_block[64])
 
 {
+    DPRINT(DEBUG_3, "Performing Local elim on block: %zu from %zu to %zu\n", 
+            offset, start, end);
+
     decomp_local_elim_upper(wid, offset, start, end, ctrl_block);
     decomp_local_elim_lower(wid, offset, start, end, ctrl_block);
 }
@@ -312,31 +359,30 @@ void decomp_local_elim(
  * Attempts to find a valid index on the control block
  * Strategy 1
  */
-static inline
+
 size_t decomp_local_search(
         widget_t* wid,
         const size_t offset,
         const size_t idx,
         uint64_t ctrl_block[64])
 {
-    debug_print_block(ctrl_block);
-
     const uint64_t mask = (1ull << idx);
     for (size_t i = idx + 1; i < 64; i++)
     {
-        printf("Search %zu\n", i);
         if (mask & ctrl_block[i]) 
         {
             uint64_t tmp = ctrl_block[idx]; 
             ctrl_block[idx] = ctrl_block[i]; 
             ctrl_block[i] = tmp; 
 
-            tableau_idx_swap_transverse(
-                wid->tableau,
-                idx + offset,
-                i + offset);
-            printf("Search Success: %zu\n", i);
-            debug_print_block(ctrl_block);
+            simd_swap(
+                    ((void*)wid->tableau->slices_x[0]) + wid->tableau->slice_len * (offset + idx), 
+                    ((void*)wid->tableau->slices_z[0]) + wid->tableau->slice_len * (offset + idx), 
+                    ((void*)wid->tableau->slices_x[0]) + wid->tableau->slice_len * (offset + i), 
+                    ((void*)wid->tableau->slices_z[0]) + wid->tableau->slice_len * (offset + i), 
+                    wid->tableau->slice_len
+                    );
+
             return i; 
         }
     } 
@@ -348,7 +394,6 @@ size_t decomp_local_search(
  * This search is non-local, it begins on the tile subsequent to the diagonal 
  * TODO: comment header
  */
-static inline
 size_t decomp_non_local_search_and_elim(
     widget_t* wid,
     void* slices,
@@ -367,8 +412,10 @@ size_t decomp_non_local_search_and_elim(
         return SENTINEL;
     }
 
-
     uint64_t targ_block[64];
+
+    uint64_t ctrl_block[64];
+
     for (size_t i = offset + 64; i < block_end; i += 64) 
     {
         uint64_t ctrl;
@@ -381,6 +428,7 @@ size_t decomp_non_local_search_and_elim(
             // While not all bits unset
             while ((ctrl = __builtin_ctzll(targ_block[j])) < index)
             {
+
                 // Rowsum to unset bit
                 tableau_rowsum_offset(
                     wid->tableau,
@@ -389,9 +437,9 @@ size_t decomp_non_local_search_and_elim(
                     offset); 
                 
                 // Reload block
-                
                 targ_block[j] = GET_CHUNK(slices, slice_len_bytes, offset, i + j); 
             }
+
             if (__builtin_expect(targ_block[j] & mask, 0))
             {
                 return i + j; 
@@ -401,7 +449,7 @@ size_t decomp_non_local_search_and_elim(
     return SENTINEL;
 }
  
-static inline
+
 size_t decomp_z_search(
     widget_t* wid,
     void* slices,
@@ -414,21 +462,16 @@ size_t decomp_z_search(
 
     decomp_load_block(targ_block, slices, slice_len_bytes, offset, offset);
 
-    debug_print_block(targ_block);
-    printf("\tSearching local\n");
     // Search local block
     for (size_t j = index + 1; j < 64; j++)
     {
-        printf("\t%zu\t%zu\t%u\n", j, mask, !!(targ_block[j] & mask));
         if (targ_block[j] & mask)
         {
-            printf("\tFound at %zu\n", j);
             return offset + j; 
         }
     } 
 
     // Search non-local blocks
-    printf("\tSearching non-local\n");
     for (size_t i = offset + 64; i < slice_len_bytes; i += 64) 
     {
         decomp_load_block(targ_block, slices, slice_len_bytes, offset, i);
@@ -451,7 +494,7 @@ size_t decomp_z_search(
  * This search is non-local, it begins on the tile subsequent to the diagonal 
  * TODO: comment header
  */
-static inline
+
 void decomp_col_elim_upper(
     widget_t* wid,
     void* slices,
@@ -459,26 +502,18 @@ void decomp_col_elim_upper(
     const size_t offset
     )
 {
-    const size_t block_end = (wid->tableau->n_qubits / 64) * 64;
-    const size_t block_tail = 64 - (wid->tableau->n_qubits % 64);
-
-    // Triggers if block is very small
-    if (__builtin_expect(block_end == 0, 0))
-    {
-        return;
-    }
     for (size_t i = offset + 64; i < wid->tableau->n_qubits; i += 64) 
     {
         uint64_t targ_block[64];
         uint64_t ctrl;
-        
+    
         decomp_load_block(targ_block, slices, slice_len_bytes, offset, i);
 
         #pragma GCC unroll 8 
         for (size_t j = 0; j < 64; j++)
         {
             // While not all bits unset
-            // TODO: merge this line with the ctzll call, odd infinite loop earlier
+
             while (targ_block[j])
             {
                 ctrl = __builtin_ctzll(targ_block[j]);
@@ -490,19 +525,16 @@ void decomp_col_elim_upper(
                     i + j,
                     offset); 
                 
-                
                 targ_block[j] = GET_CHUNK(slices, slice_len_bytes, offset, i + j); 
             }
         }
     }
 
-    // TODO: Tail
-
     return;
 }
 
 
-static inline
+
 void decomp_col_elim_lower(
     widget_t* wid,
     void* slices,
@@ -533,13 +565,10 @@ void decomp_col_elim_lower(
                     i + j,
                     offset); 
                 
-                
                 targ_block[j] = GET_CHUNK(slices, slice_len_bytes, offset, i + j); 
             }
         }
     }
-
-    // TODO: Tail
 
     return;
 }
@@ -582,9 +611,6 @@ void simd_tableau_elim(widget_t* wid)
             if (__builtin_ctzll(ctrl_block[j]) != j)
             {
                 DPRINT(DEBUG_3, "Triggering Decomposition: %zu\n", offset + j);
-                tableau_print(tab);
-                debug_print_block(ctrl_block);
-                printf("###\n");
                 // Try to eliminate elements in the local column
                 decomp_local_elim(
                     wid,
@@ -597,14 +623,14 @@ void simd_tableau_elim(widget_t* wid)
 
                 // Resolved by local elim
                 // TODO: Try to avoid a hard switch here  
-                printf("ctzll: %u\n", __builtin_ctzll(ctrl_block[j])); 
                 if (__builtin_ctzll(ctrl_block[j]) == j)
                 {
                     continue;
                 }
 
                 DPRINT(DEBUG_3, "Applying Strategies: %zu\n", offset + j);
-                //tableau_print(tab);
+                __inline_decomp_load_block(ctrl_block, slices, slice_len_bytes, offset, offset);
+
                 DPRINT(DEBUG_3, "Strategy 1: Local Search\n");
 
                 size_t prog = decomp_local_search(
@@ -613,28 +639,44 @@ void simd_tableau_elim(widget_t* wid)
                     j, 
                     ctrl_block
                 );
-                printf("Finished local search: %zu \n", prog);
 
-                if (SENTINEL != prog)  // Found row, perform swap  
+                if (prog < 64)  // Found row, perform swap  
                 {
                     continue;
                 }
 
                 // Local search failed, try non-local search 
+                // TODO: remove reload
+                __inline_decomp_load_block(ctrl_block, slices, slice_len_bytes, offset, offset);
+
                 DPRINT(DEBUG_3, "Strategy 2: Non-Local Search\n");
                 prog = decomp_non_local_search_and_elim(wid, slices, slice_len_bytes, offset, j);
                 if (SENTINEL != prog)  // Found row, perform swap  
                 {
-                    tableau_idx_swap_transverse(
-                        wid->tableau,
-                        prog,
-                        j + offset);
+                    //tableau_idx_swap_transverse(
+                    //    wid->tableau,
+                    //    prog,
+                    //    j + offset);
+                    simd_swap(
+                        ((void*)(tab->slices_x[0])) + tab->slice_len * (prog), 
+                        ((void*)(tab->slices_z[0])) + tab->slice_len * (prog),
+                        ((void*)(tab->slices_x[0])) + tab->slice_len * (offset + j),
+                        ((void*)(tab->slices_z[0])) + tab->slice_len * (offset + j),
+                        tab->slice_len
+                        );
+
 
                     ctrl_block[j] = GET_CHUNK(
                             slices,
                             slice_len_bytes,
                             offset,
                             offset + j); 
+
+                        DPRINT(DEBUG_3, "Strategy 2 Succeeded\n");
+
+                    // TODO: remove reload
+                    __inline_decomp_load_block(ctrl_block, slices, slice_len_bytes, offset, offset);
+
 
                     continue;
                 }
@@ -644,8 +686,6 @@ void simd_tableau_elim(widget_t* wid)
 
                 if (1 == __inline_slice_get_bit(tab->slices_z[offset + j], offset + j))
                 {
-                     debug_print_block(ctrl_block);
-                   
                     // TODO: This operation is quite slow
                     tableau_transverse_hadamard(tab, offset + j);
                     clifford_queue_local_clifford_right(wid->queue, _H_, offset + j);
@@ -660,8 +700,6 @@ void simd_tableau_elim(widget_t* wid)
                         j,
                         ctrl_block); 
                     
-                    debug_print_block(ctrl_block);
-
                     continue;
                 }
 
@@ -671,12 +709,7 @@ void simd_tableau_elim(widget_t* wid)
                 prog = decomp_z_search(wid, slices_z, slice_len_bytes, offset, j);
                 if (SENTINEL != prog)
                 {
-                    printf("Swapping %zu %zu\n", prog, j);
-
-                    tableau_print(tab);
-                    printf("###\n");
-
-                    tableau_idx_swap_transverse(tab, offset + prog, offset + j);
+                    tableau_idx_swap_transverse(tab, prog, offset + j);
                     tableau_transverse_hadamard(tab, offset + j);
 
                     // Hadamard requires a block reload
@@ -684,41 +717,29 @@ void simd_tableau_elim(widget_t* wid)
 
                     clifford_queue_local_clifford_right(wid->queue, _H_, offset + j);
 
-                    debug_print_block(ctrl_block);
-                    tableau_print(tab);
-
-                    printf("Hadamarded\n");
-
                     continue;
                 }
                 else
                 {
                     DPRINT(DEBUG_3, "FAILED\n");
-                    tableau_print(tab);
                     assert(0);
                 }
 
             }
         }
 
-        tableau_print(tab);
-        printf("Performing local elim\n"); 
-        // This should be able to start at start_local
+        DPRINT(DEBUG_3, "Local Block Diagonally decomposable\n");
+
+        // TODO This should be able to start at start_local
         decomp_local_elim(
             wid,
             offset,
-            0,
+            start_local,
             64,
             ctrl_block); 
 
-        tableau_print(tab);
-
-
-        // TODO: Uncomment
         decomp_col_elim_upper(wid, slices, slice_len_bytes, offset);
         decomp_col_elim_lower(wid, slices, slice_len_bytes, offset);
-
-
     }
 
 
@@ -731,8 +752,6 @@ void simd_tableau_elim(widget_t* wid)
         }
     } 
 
-    printf("Finished\n");
-    tableau_print(tab);
     return;
 }
 
@@ -749,7 +768,6 @@ void simd_tableau_elim_lower(widget_t* wid)
     uint64_t ctrl_block[BLOCK_STRIDE_BITS] = {0};
     
     // TODO: Pipeline this bit
-    printf("OPEN LOOP");
     for (size_t i = 0; i < 64; i++)  
     {
         const size_t offset = (i / 64) * 64; 
@@ -758,11 +776,9 @@ void simd_tableau_elim_lower(widget_t* wid)
         // Decompose local block
         uint64_t diag = *(uint64_t*)(slices + tableau_stride * i + 64 * offset); 
         uint64_t ctrl = 0;
-        printf("%zu\n", ctrl);
 
         while ((ctrl = __builtin_clzll(diag)) > index)
         { 
-            printf("%zu\n", ctrl);
             tableau_rowsum_offset(wid->tableau, ctrl + offset, diag + offset, offset);
         }
     }
@@ -786,7 +802,7 @@ void tableau_elim_lower(widget_t* wid)
 /*
  *
  */
-static inline
+
 void zero_z_diagonal(widget_t* wid)
 {
     // Phase operation to set Z diagonal to zero
@@ -814,7 +830,7 @@ void zero_z_diagonal(widget_t* wid)
 /*
  *
  */
-static inline
+
 void zero_phases(widget_t* wid)
 {
     // Z to set phases to 0
@@ -920,7 +936,7 @@ size_t simd_tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, cons
         if (1 == __inline_slice_get_bit(tab->slices_x[j], idx))
         {
             DPRINT(DEBUG_3, "Strategy 1: Swapping %lu <-> %lu\n", j, idx);
-            simd_tableau_idx_swap_transverse(tab, idx, j);
+            tableau_idx_swap_transverse(tab, idx, j);
             return j;
         }
     }
@@ -940,7 +956,7 @@ size_t simd_tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, cons
         if (1 == __inline_slice_get_bit(tab->slices_z[j], idx))
         {
             // Backup Strategy
-            simd_tableau_idx_swap_transverse(tab, idx, j);
+            tableau_idx_swap_transverse(tab, idx, j);
 
             DPRINT(DEBUG_3, "Strategy 3: Applying Hadamard to %lu\n", idx);
 
@@ -988,7 +1004,6 @@ void tableau_X_diag_col_lower(tableau_t* tab, const size_t idx)
 }
 
 
-#define SCALE 4
 void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
 {
     const uint32_t stride = TABLEAU_STRIDE(tab);
@@ -1012,7 +1027,7 @@ void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
     {
         
         // Gathers 8 chunks
-        __m256i chunks = _mm256_and_si256(v_mask, _mm256_i32gather_epi32(ptr, pointer_offset, SCALE));
+        __m256i chunks = _mm256_and_si256(v_mask, _mm256_i32gather_epi32(ptr, pointer_offset, 4));
         uint32_t dst[8];
         _mm256_storeu_si256((void*)dst, chunks);
 
@@ -1056,7 +1071,8 @@ void simd_tableau_X_diag_col_lower(tableau_t* tab, const size_t idx)
 }
 
 /*
- * simd_tableau_idx_swap_transverse
+ * simd_swap
+ * TODO: Fix
  * Swaps indicies over both the X and Z slices
  * Also swaps associated phases
  * :: tab : tableau_t* :: Tableau object to swap over
@@ -1064,32 +1080,69 @@ void simd_tableau_X_diag_col_lower(tableau_t* tab, const size_t idx)
  * :: j :: const size_t :: Index to swap
  * Acts in place on the tableau
  */
-void simd_tableau_idx_swap_transverse(tableau_t* restrict tab, const size_t i, const size_t j)
+void simd_swap(
+    void* slice_i_x,
+    void* slice_i_z,
+    void* slice_j_x,
+    void* slice_j_z,
+    size_t slice_len)
 {
-    void* restrict ptr_i_x = tab->slices_x[i];
-    void* restrict ptr_j_x = tab->slices_x[j];
-    void* restrict ptr_i_z = tab->slices_z[i];
-    void* restrict ptr_j_z = tab->slices_z[j];
-
-    for (size_t step = 0; step < tab->slice_len * sizeof(CHUNK_OBJ); step += ROWSUM_STRIDE)
+    for (size_t step = 0; step < slice_len; step += 32)
     {
-        __m256i v_i_x = _mm256_load_si256(ptr_i_x + step);
-        __m256i v_j_x = _mm256_load_si256(ptr_j_x + step);
+        __m256i v_i_x = _mm256_loadu_si256(slice_i_x + step);
+        __m256i v_j_x = _mm256_loadu_si256(slice_j_x + step);
 
-        __m256i v_i_z = _mm256_load_si256(ptr_i_z + step);
-        __m256i v_j_z = _mm256_load_si256(ptr_j_z + step);
+        __m256i v_i_z = _mm256_loadu_si256(slice_i_z + step);
+        __m256i v_j_z = _mm256_loadu_si256(slice_j_z + step);
 
-        _mm256_store_si256(ptr_i_x + step, v_j_x);
-        _mm256_store_si256(ptr_j_x + step, v_i_x);
+        _mm256_storeu_si256(slice_i_x + step, v_j_x);
+        _mm256_storeu_si256(slice_j_x + step, v_i_x);
 
-        _mm256_store_si256(ptr_i_z + step, v_j_z);
-        _mm256_store_si256(ptr_j_z + step, v_i_z);
+        _mm256_storeu_si256(slice_i_z + step, v_j_z);
+        _mm256_storeu_si256(slice_j_z + step, v_i_z);
+
     }
 
-//    uint8_t phase_i = slice_get_bit(tab->phases, i);
-//    uint8_t phase_j = slice_get_bit(tab->phases, j);
-//    slice_set_bit(tab->phases, i, phase_j);
-//    slice_set_bit(tab->phases, j, phase_i);
+    return;
+}
+
+/*
+ * tableau_idx_swap_transverse 
+ * Swaps indicies over both the X and Z slices  
+ * :: tab : tableau_t* :: Tableau object to swap over 
+ * :: i :: const size_t :: Index to swap 
+ * :: j :: const size_t :: Index to swap
+ * Acts in place on the tableau 
+ */
+void naive_tableau_idx_swap_transverse(tableau_t* tab, const size_t i, const size_t j)
+{
+    uint64_t* slice_x_i = tab->slices_x[i];
+    uint64_t* slice_x_j = tab->slices_x[j];
+    uint64_t* slice_z_i = tab->slices_z[i];
+    uint64_t* slice_z_j = tab->slices_z[j];
+
+    assert(i != j);
+
+    // TODO stride this
+    // Also TODO this should be simd
+    for (size_t idx = 0; idx < tab->slice_len / sizeof(uint64_t); idx++)
+    {
+        uint64_t tmp =  slice_x_i[idx];
+        slice_x_i[idx] = slice_x_j[idx];
+        slice_x_j[idx] = tmp; 
+
+        tmp =  slice_z_i[idx];
+        slice_z_i[idx] = slice_z_j[idx];
+        slice_z_j[idx] = tmp; 
+
+        //slice_x_i[idx] ^= slice_x_j[idx];
+        //slice_x_j[idx] ^= slice_x_i[idx];
+        //slice_x_i[idx] ^= slice_x_j[idx];
+
+        //slice_z_i[idx] ^= slice_z_j[idx];
+        //slice_z_j[idx] ^= slice_z_i[idx];
+        //slice_z_i[idx] ^= slice_z_j[idx];
+    }
 
     return;
 }

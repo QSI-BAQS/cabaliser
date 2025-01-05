@@ -31,7 +31,7 @@ typedef struct tableau_t tableau_t;
 #define SLICE_LEN__m256(n_qubits) (SLICE_LEN(n_qubits, sizeof(__m256)))
 
 
-#define GET_CHUNK_PTR(slice, slice_len_bytes, row_idx, col_idx) ((uint64_t*)((slices) + ((slice_len_bytes) * (col_idx) + ((row_idx) / 8))))
+#define GET_CHUNK_PTR(slice, slice_len_bytes, row_idx, col_idx) ((uint64_t*)(((void*)slices) + ((slice_len_bytes) * (col_idx) + ((row_idx) / 8))))
 #define GET_CHUNK(slice, slice_len_bytes, row_idx, col_idx) (*GET_CHUNK_PTR(slice, slice_len_bytes, row_idx, col_idx))
 
 

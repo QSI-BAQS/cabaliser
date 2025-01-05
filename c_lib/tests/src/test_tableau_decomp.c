@@ -283,16 +283,11 @@ widget_t* __test_block_diag_preamble(size_t n_qubits, widget_t* wid, bool clear_
 {
     if (clear_x)
     {
-        printf("Removing zero cols\n");
         tableau_remove_zero_X_columns(wid->tableau, wid->queue);
     }
 
-    tableau_print(wid->tableau);
-
-    printf("Transposing:\n");
     tableau_transpose(wid->tableau);
 
-    tableau_print(wid->tableau);
 
     widget_t* cpy = widget_create(n_qubits, n_qubits);
     tableau_destroy(cpy->tableau);
@@ -335,8 +330,7 @@ void __test_block_diag(const size_t n_qubits, widget_t* wid, widget_t* cpy)
 void test_block_diag(const size_t n_qubits, widget_t* wid)
 {
     widget_t* cpy = __test_block_diag_preamble(n_qubits, wid, true);
-    printf("Initial Tableau:\n");
-    tableau_print(wid->tableau);
+
     __test_block_diag(n_qubits, wid, cpy); 
     widget_destroy(cpy);
 }
@@ -407,8 +401,8 @@ int main()
 //        test_load_block(i);
 //    }
 //
-  // Test decomposition of in-block two-qubit Cliffords only 
-  // These paths should all be caught by local elim
+//// Test decomposition of in-block two-qubit Cliffords only 
+//// These paths should all be caught by local elim
 //    for (size_t i = 64; i <= 256; i += 64)
 //    {
 //
@@ -460,9 +454,9 @@ int main()
 //        test_block_diag(i, wid);
 //        widget_destroy(wid);
 //    }
-
+//
     // Random tests
-    for (size_t i = 64; i <=64 ; i += 64)
+    for (size_t i = 128; i <=128 ; i += 64)
     {
         widget_t* wid = widget_create_from_stream(
             i,
@@ -480,7 +474,6 @@ int main()
 //        64,
 //        create_instruction_stream);
 //
-//    tableau_print(wid->tableau);
 //
 //    simd_widget_decompose(wid);
 //    
@@ -498,9 +491,6 @@ int main()
 //    printf("###\n");
 //
 //    naive_widget_decompose(cpy);    
-    printf("###\n");
-
-
 
     return 0;
 }

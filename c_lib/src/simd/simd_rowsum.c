@@ -353,7 +353,6 @@ int8_t rowsum_cnf(
 {
     uint64_t pos = 0;
     uint64_t neg = 0;
-    size_t n_bits = n_bytes * 8;
 
     for (size_t i = 0; i < n_bytes / sizeof(uint64_t); i++) {
         uint64_t plus = 0;
