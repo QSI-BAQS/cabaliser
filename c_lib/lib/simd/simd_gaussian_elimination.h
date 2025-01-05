@@ -5,6 +5,8 @@
 #include "widget.h"
 #include "tableau_operations.h"
 
+#include "simd_headers.h"
+
 typedef struct widget_t widget_t;
 
 /*
@@ -59,5 +61,26 @@ void decomp_store_block(
 );
 
 void debug_print_block(uint64_t block[64]);
+
+
+
+/*
+ * simd_swap
+ * TODO: Fix
+ * Swaps indicies over both the X and Z slices
+ * Also swaps associated phases
+ * :: tab : tableau_t* :: Tableau object to swap over
+ * :: i :: const size_t :: Index to swap
+ * :: j :: const size_t :: Index to swap
+ * Acts in place on the tableau
+ */
+void simd_swap(
+    void* slice_i_x,
+    void* slice_i_z,
+    void* slice_j_x,
+    void* slice_j_z,
+    size_t slice_len);
+
+
 
 #endif

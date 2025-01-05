@@ -9,11 +9,7 @@
 
 #include <assert.h>
 
-#include <emmintrin.h>
-#include <smmintrin.h>
-#include <immintrin.h>
-
-#include <x86gprintrin.h>
+#include "simd_headers.h"
 
 // 16 Byte cache line aligned elements
 typedef uint8_t uint8_ta16 __attribute__((aligned(16))); 

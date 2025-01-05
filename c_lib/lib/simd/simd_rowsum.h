@@ -3,14 +3,10 @@
 
 #include <string.h>
 
-#include <emmintrin.h>
-#include <smmintrin.h>
-#include <immintrin.h>
-#include <x86gprintrin.h>
-
 #include "tableau.h"
 
-#define ROWSUM_STRIDE (256 / 8) 
+#include "simd_headers.h"
+
 
 /*
  * simd_rowsum 
