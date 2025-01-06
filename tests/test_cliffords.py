@@ -41,15 +41,15 @@ class CliffordsTest(unittest.TestCase):
         self.clifford_sequences(depth=3, apply=True, test_gates=False, test_states=True) # Floating point kicks in around here
 
 
-#    def test_cnot_clifford_depth_1(self):
-#        self.clifford_sequences_cnot_first(depth=1)
-#
-#    def test_cnot_clifford_depth_2(self):
-#        self.clifford_sequences_cnot_first(depth=2)
-#
-#    def test_cz_clifford_depth_1(self):
-#        self.clifford_sequences_cz_first(depth=1)
-#
+    def test_cnot_clifford_depth_1(self):
+        self.clifford_sequences_cnot_first(depth=1)
+
+    def test_cnot_clifford_depth_2(self):
+        self.clifford_sequences_cnot_first(depth=2)
+
+    def test_cz_clifford_depth_1(self):
+        self.clifford_sequences_cz_first(depth=1)
+
     def clifford_sequences(self, depth=1, test_states=True, test_gates=True, apply=False):
         '''
            Sequence of random local cliffords 
@@ -168,8 +168,6 @@ class CliffordsTest(unittest.TestCase):
         for op_seq in combinations_with_replacement(gates.SINGLE_QUBIT_GATES, depth):
             for op_perm in permutations(op_seq):
                 operations = [(op, (0,)) for op in op_perm]
-                print(len(operations), operations)
-                print("####")
                 operations.append((gates.CNOT, (0, 1)))
 
                 wid = Widget(n_qubits, max_qubits)
@@ -189,13 +187,8 @@ class CliffordsTest(unittest.TestCase):
                 wid.decompose()
 
                 ## Test application to random states
-                for _ in range(1): #N_REPETITIONS):
+                for _ in range(N_REPETITIONS):
                     input_state = local_simulator.kr(local_simulator.zero_state, local_simulator.zero_state)
-#                            local_simulator.state_prep(
-#                                *list(np.random.random(2))
-#                            ),
-#                            local_simulator.zero_state
-#                        )
 
                     widget_state = local_simulator.simulate_widget(
                          wid,
@@ -271,7 +264,7 @@ class CliffordsTest(unittest.TestCase):
                     dephase(widget_state)
                     dephase(effective_state)
 
-                    if (np.abs(effective_state / eff_const - widget_state / wid_const) > EPS).any():
+                    if (np.abs(effective_state - widget_state) > EPS).any():
                         print("Operation: ", ops, len(operation))
                         print(input_state)
                         print(effective_state)
@@ -314,7 +307,7 @@ def dephase(vector: np.array) -> bool:
                         chain(iter(vector))
                     )
               ) 
-        if isnan(val.real):
+        if isnan(val[0].real):
             return False
         vector /= val
         return True
@@ -324,6 +317,6 @@ def dephase(vector: np.array) -> bool:
 
 if __name__ == '__main__':
     #CliffordsTest().test_cnot_clifford_depth_2()
-    CliffordsTest().test_clifford_depth_2_applied()
+    #CliffordsTest().test_clifford_depth_3_applied()
 
-    #unittest.main()
+    unittest.main()
