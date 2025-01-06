@@ -138,4 +138,3 @@ void tableau_CZ(tableau_t* tab, const size_t ctrl, const size_t targ);
 
 
 #endif
-

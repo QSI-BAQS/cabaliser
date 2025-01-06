@@ -828,10 +828,37 @@ void zero_z_diagonal(widget_t* wid)
 }
 
 /*
- *
+ * TODO: ctzll 
  */
-
 void zero_phases(widget_t* wid)
+{
+    const size_t slice_len = wid->tableau->slice_len;
+    // Z to set phases to 0
+
+    uint64_t offset = 0;
+    for (size_t i = 0; i < slice_len; i += 8)
+    {
+        uint64_t* block = (void*)(wid->tableau->phases) + i;
+         
+        while (*block)
+        {
+            uint64_t targ = __builtin_ctzll(*block) + offset;
+            *block ^= 1 << targ; 
+
+            // Action of Z gate
+            // r ^= x
+            // As X is diagonal, this only acts on one bit
+            DPRINT(DEBUG_3, "Applying Z to %lu\n", i);
+            clifford_queue_local_clifford_right(wid->queue, _Z_, offset + targ);
+        }
+        offset += 64;
+    }
+}
+
+/*
+ * Naive implementation
+ */
+void naive_zero_phases(widget_t* wid)
 {
     // Z to set phases to 0
     for (size_t i = 0; i < wid->tableau->n_qubits; i++)
@@ -848,7 +875,7 @@ void zero_phases(widget_t* wid)
 
     // The previous loop zeros the phases, this loop just does it faster
     // Effective action of a Z gate
-    for (size_t i = 0; i < wid->tableau->slice_len; i++)
+    for (size_t i = 0; i < wid->tableau->slice_len / 8; i += 1)
     {
         wid->tableau->phases[i] = 0;
     }
