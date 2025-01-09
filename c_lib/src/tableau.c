@@ -152,6 +152,7 @@ void tableau_transverse_hadamard(tableau_t const* tab, const size_t targ)
     uint8_t bit_x = 0;
     uint8_t bit_z = 0;
     // TODO Vectorise this
+    // Use the strided load to do this faster
 
     // TODO SIMD this by chunks  
     for (size_t i = 0; i < tab->n_qubits; i++)
