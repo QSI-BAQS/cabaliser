@@ -108,9 +108,9 @@ void test_toffoli()
         assert(i == tableau_ctz(wid->tableau->slices_x[i], wid->tableau->slice_len));
     }
 
-    for (size_t i = 0; i < wid->tableau->slice_len; i++)
+    for (size_t i = 0; i < wid->tableau->n_qubits; i += 64)
     {
-        assert(0 == wid->tableau->phases[i]);
+        assert(0 == *(wid->tableau->phases + (i / 64)));
     }
 
     // For arguments about these numbers see the toffoli function above

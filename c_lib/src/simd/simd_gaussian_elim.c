@@ -656,7 +656,7 @@ void simd_tableau_elim(widget_t* wid)
                 if (1 == __inline_slice_get_bit(tab->slices_z[offset + j], offset + j))
                 {
                     // TODO: This operation is quite slow
-                    tableau_transverse_hadamard(tab, offset + j);
+                    simd_tableau_transverse_hadamard(tab, offset + j);
                     clifford_queue_local_clifford_right(wid->queue, _H_, offset + j);
                 
                     // Hadamard requires a block reload 
@@ -679,7 +679,7 @@ void simd_tableau_elim(widget_t* wid)
                 if (SENTINEL != prog)
                 {
                     tableau_idx_swap_transverse(tab, prog, offset + j);
-                    tableau_transverse_hadamard(tab, offset + j);
+                    simd_tableau_transverse_hadamard(tab, offset + j);
 
                     // Hadamard requires a block reload
                     __inline_decomp_load_block(ctrl_block, slices, slice_len_bytes, offset, offset);
@@ -899,7 +899,7 @@ size_t simd_tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, cons
     if (1 == __inline_slice_get_bit(tab->slices_z[idx], idx))
     {
         DPRINT(DEBUG_3, "Strategy 2: Applying Hadamard to %lu\n", idx);
-        tableau_transverse_hadamard(tab, idx);
+        simd_tableau_transverse_hadamard(tab, idx);
         clifford_queue_local_clifford_right(queue, _H_, idx);
         return SENTINEL;
     }
@@ -914,7 +914,7 @@ size_t simd_tableau_X_diag_element(tableau_t* tab, clifford_queue_t* queue, cons
 
             DPRINT(DEBUG_3, "Strategy 3: Applying Hadamard to %lu\n", idx);
 
-            tableau_transverse_hadamard(tab, idx);
+            simd_tableau_transverse_hadamard(tab, idx);
             clifford_queue_local_clifford_right(queue, _H_, idx);
             return j;
         }

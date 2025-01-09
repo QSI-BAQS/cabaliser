@@ -9,7 +9,6 @@ void test_transposed_hadamard(const size_t n_qubits)
     tableau_t* tab_cmp = tableau_copy(tab);  
     const size_t slice_len = tab->slice_len;
 
-
     for (size_t i = 0; i < tab->n_qubits; i++)
     {
         tableau_H(tab, i);
@@ -64,6 +63,49 @@ void test_transposed_hadamard(const size_t n_qubits)
                 ==
                 (((uint8_t*)(tab->phases))[idx] & mask)
             );
+    }
+    tableau_destroy(tab);
+    tableau_destroy(tab_cmp);
+}
+
+void test_simd_transposed_hadamard(const size_t n_qubits)
+{
+    tableau_t* tab = tableau_random_create(n_qubits); 
+    tableau_t* tab_cmp = tableau_copy(tab);  
+    const size_t slice_len = tab->slice_len;
+
+    for (size_t i = 0; i < tab->n_qubits; i++)
+    {
+        tableau_H(tab, i);
+
+
+        tableau_transpose(tab);
+
+        simd_tableau_transverse_hadamard(tab, i); 
+
+        tableau_transpose(tab);
+
+        for (size_t j = 0; j < n_qubits / 8; j++)
+        {
+            assert(
+                    ((uint8_t*)(tab_cmp->slices_x[i]))[j] 
+                    ==
+                    ((uint8_t*)(tab->slices_x[i]))[j]
+                );
+
+            assert(
+                    ((uint8_t*)(tab_cmp->slices_z[i]))[j] 
+                    ==
+                    ((uint8_t*)(tab->slices_z[i]))[j]
+                );
+
+            assert(
+                    ((uint8_t*)(tab_cmp->phases))[j] 
+                    ==
+                    ((uint8_t*)(tab->phases))[j]
+                );
+
+        }
     }
     tableau_destroy(tab);
     tableau_destroy(tab_cmp);
@@ -127,7 +169,6 @@ void test_transverse_swap(const size_t n_qubits)
 
 
 
-
 int main()
 {
     for (size_t i = 263; i < 1280; i += 63)
@@ -135,10 +176,16 @@ int main()
         test_transverse_swap(i);
     }
 
-
-    for (size_t i = 263; i < 1280; i += 63)
+    for (size_t i = 16; i < 1280; i += 64)
     {
         test_transposed_hadamard(i);
     }
+
+    for (size_t i = 16; i < 1280; i += 64)
+    {
+        test_simd_transposed_hadamard(i);
+    }
+
+
     return 0;
 }

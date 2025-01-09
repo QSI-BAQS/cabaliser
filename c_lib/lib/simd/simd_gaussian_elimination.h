@@ -81,6 +81,6 @@ void simd_swap(
     void* slice_j_z,
     size_t slice_len);
 
-
+void simd_tableau_transverse_hadamard(tableau_t const* tab, const size_t targ);
 
 #endif

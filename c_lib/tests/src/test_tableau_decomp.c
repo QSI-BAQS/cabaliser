@@ -467,30 +467,6 @@ int main()
         widget_destroy(wid);
     }
 
-    //srand(0);
-//    size_t n_qubits = 8;
-//    widget_t* wid = widget_create_from_stream(
-//        n_qubits,
-//        64,
-//        create_instruction_stream);
-//
-//
-//    simd_widget_decompose(wid);
-//    
-//    tableau_print(wid->tableau);
-//
-//
-//    widget_t* cpy = widget_create(n_qubits, n_qubits);
-//    tableau_destroy(cpy->tableau);
-//
-//    cpy->tableau = tableau_copy(wid->tableau); 
-//
-//
-//    tableau_print(wid->tableau);
-//
-//    printf("###\n");
-//
-//    naive_widget_decompose(cpy);    
 
     return 0;
 }
