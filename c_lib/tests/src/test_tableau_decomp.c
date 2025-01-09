@@ -401,60 +401,60 @@ int main()
 //        test_load_block(i);
 //    }
 //
-//// Test decomposition of in-block two-qubit Cliffords only 
-//// These paths should all be caught by local elim
-//    for (size_t i = 64; i <= 256; i += 64)
-//    {
-//
-//        widget_t* wid = widget_create_from_stream(
-//            i,
-//            i * i,
-//            create_instruction_stream_in_block);
-//
-//        apply_local_cliffords(wid);
-//        test_block_diag(i, wid);
-//        widget_destroy(wid);
-//    }
-//
-//  
-//    // Testing Hadamard strategy
-//    // These paths should all be caught by Hadamard
-//    for (size_t i = 64; i <= 256; i += 64)
-//    {
-//        widget_t* wid = widget_hadamard_create(i);
-//        apply_local_cliffords(wid);
-//        test_block_diag_hadamard(i, wid);
-//        widget_destroy(wid);
-//    }
-//
-//    // Test decomposition of single qubit Cliffords only 
-//    // This should test local decompositions, mostly Hadamards and phases 
-//    for (size_t i = 64; i <= 256; i += 64)
-//    {
-//
-//        widget_t* wid = widget_create_from_stream(
-//            i,
-//            i * i,
-//            create_instruction_stream_local);
-//
-//        apply_local_cliffords(wid);
-//        test_block_diag(i, wid);
-//        widget_destroy(wid);
-//    }
-//
-//    // Testing where all operations are across blocks
-//    // This should test the column search
-//    for (size_t i = 128; i < 256; i += 64)
-//    {
-//        widget_t* wid = widget_create_from_stream(
-//            i,
-//            i * 2,
-//            create_instruction_stream_out_of_block);
-//
-//        test_block_diag(i, wid);
-//        widget_destroy(wid);
-//    }
-//
+// Test decomposition of in-block two-qubit Cliffords only 
+// These paths should all be caught by local elim
+    for (size_t i = 64; i <= 256; i += 64)
+    {
+
+        widget_t* wid = widget_create_from_stream(
+            i,
+            i * i,
+            create_instruction_stream_in_block);
+
+        apply_local_cliffords(wid);
+        test_block_diag(i, wid);
+        widget_destroy(wid);
+    }
+
+  
+    // Testing Hadamard strategy
+    // These paths should all be caught by Hadamard
+    for (size_t i = 64; i <= 256; i += 64)
+    {
+        widget_t* wid = widget_hadamard_create(i);
+        apply_local_cliffords(wid);
+        test_block_diag_hadamard(i, wid);
+        widget_destroy(wid);
+    }
+
+    // Test decomposition of single qubit Cliffords only 
+    // This should test local decompositions, mostly Hadamards and phases 
+    for (size_t i = 64; i <= 256; i += 64)
+    {
+
+        widget_t* wid = widget_create_from_stream(
+            i,
+            i * i,
+            create_instruction_stream_local);
+
+        apply_local_cliffords(wid);
+        test_block_diag(i, wid);
+        widget_destroy(wid);
+    }
+
+    // Testing where all operations are across blocks
+    // This should test the column search
+    for (size_t i = 128; i < 256; i += 64)
+    {
+        widget_t* wid = widget_create_from_stream(
+            i,
+            i * 2,
+            create_instruction_stream_out_of_block);
+
+        test_block_diag(i, wid);
+        widget_destroy(wid);
+    }
+
     // Random tests
     for (size_t i = 128; i <=128 ; i += 64)
     {
