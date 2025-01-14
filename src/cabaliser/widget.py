@@ -175,6 +175,9 @@ class Widget():
                      Please call `Widget.decompose()` before extracting the adjacencies"""
                 )
             return fn(self, *args, **kwargs)
+
+        # Inject doc strings
+        _wrap.__doc__ = fn.__doc__
         return _wrap
 
     @staticmethod
@@ -186,6 +189,9 @@ class Widget():
             if self.decomposed:
                 raise WidgetDecomposedException("Attempted to decompose twice")
             return fn(self, *args, **kwargs)
+
+        # Inject doc strings
+        _wrap.__doc__ = fn.__doc__
         return _wrap
 
     def get_local_cliffords(self):

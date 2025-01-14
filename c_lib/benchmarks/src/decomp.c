@@ -54,7 +54,11 @@ void decomp_benchmark(const size_t n_qubits, const size_t n_gates)
 {
     widget_t* wid = widget_random_create(n_qubits, n_gates);
 
+    printf("Created\n");
+
     widget_decompose(wid);    
+
+    printf("Asserting\n");
 
     for (size_t i = 0; i < n_qubits; i++)//n_qubits; i++)
     {

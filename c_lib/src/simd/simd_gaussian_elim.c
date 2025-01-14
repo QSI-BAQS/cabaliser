@@ -57,6 +57,7 @@ void simd_widget_decompose(widget_t* wid)
     );
 
     // Transpose the tableau for aligned rowsum operations 
+
     tableau_transpose(wid->tableau);
 
     // Perform the elimination
@@ -769,7 +770,7 @@ void zero_phases(widget_t* wid)
         while (*block)
         {
             uint64_t targ = __builtin_ctzll(*block) + offset;
-            *block ^= 1 << targ; 
+            *block ^= 1ull << targ; 
 
             // Action of Z gate
             // r ^= x
