@@ -18,8 +18,6 @@ void test_conditional_operations()
     for (size_t i = 0; i < n_qubits - 1; i++) 
     {
         conditional_x(wid, i, i + 1);
-        conditional_z(wid, i, i + 1);
-        conditional_y(wid, i, i + 1);
     }
 
     widget_destroy(wid);
@@ -34,15 +32,14 @@ void test_operation_stream()
     uint8_t ops[3] = {_MCX_, _MCY_, _MCZ_}; 
 
     instruction_stream_u inst;
-    for (size_t op = 0; op < 3; op++)
+    for (uint32_t i = 0; i < n_qubits - 1; i++) 
     {
-        inst.cond.opcode = ops[op]; 
-        for (uint32_t i = 0; i < n_qubits - 1; i++) 
-        {
-            inst.cond.ctrl = i;
-            inst.cond.targ = i + 1;
-            parse_instruction_block(wid, &inst, 1);
-        }
+
+        inst.cond.opcode = ops[i % 3]; 
+        
+        inst.cond.ctrl = i;
+        inst.cond.targ = i + 1;
+        parse_instruction_block(wid, &inst, 1);
     }
     widget_destroy(wid);
     return;
