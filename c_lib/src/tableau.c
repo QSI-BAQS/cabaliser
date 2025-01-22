@@ -70,7 +70,7 @@ tableau_t* tableau_create(const size_t n_qubits)
     void* slice_ptrs_x = malloc(sizeof(void*) * n_ptrs); 
 
     void* phases = NULL;
-    err_code = posix_memalign(&phases, CACHE_SIZE, slice_len_bytes); 
+    err_code = posix_memalign(&phases, CACHE_SIZE, slice_len_bytes);
     // TODO: fast memset
     memset(phases, 0x00, slice_len_bytes);
 

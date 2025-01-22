@@ -451,7 +451,7 @@ size_t decomp_z_search(
     } 
 
     // Search non-local blocks
-    for (size_t i = offset + 64; i < slice_len_bytes; i += 64) 
+    for (size_t i = offset + 64; i < slice_len_bytes * 8; i += 64) 
     {
         decomp_load_block(targ_block, slices, slice_len_bytes, offset, i);
 
@@ -691,6 +691,8 @@ void simd_tableau_elim(widget_t* wid)
                 }
                 else
                 {
+                    tableau_print(tab);
+                    debug_print_block(ctrl_block);
                     DPRINT(DEBUG_3, "FAILED\n");
                     assert(0);
                 }
@@ -761,15 +763,17 @@ void zero_phases(widget_t* wid)
     const size_t slice_len = wid->tableau->slice_len;
     // Z to set phases to 0
 
-    uint64_t offset = 0;
+    printf("Slice Len: %zu\n", slice_len);
+
     // Zero an eight byte block of 64 elements at a time
     for (size_t i = 0; i < slice_len; i += sizeof(uint64_t))
     {
+        uint64_t offset = i * 8;
         uint64_t* block = (void*)(wid->tableau->phases) + i;
          
         while (*block)
         {
-            uint64_t targ = __builtin_ctzll(*block) + offset;
+            uint64_t targ = __builtin_ctzll(*block);
             *block ^= 1ull << targ; 
 
             // Action of Z gate
@@ -779,7 +783,6 @@ void zero_phases(widget_t* wid)
             clifford_queue_local_clifford_right(wid->queue, _Z_, offset + targ);
         }
         // Jump offset by 64
-        offset += 64;
     }
 }
 

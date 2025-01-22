@@ -31,7 +31,7 @@ def main(n_qubits=100, max_qubits=16000):
 
     seq_time = time.time()    
     # Create widget, do not teleport input
-    wid = Widget(n_qubits, max_qubits, teleport_input=False)
+    wid = Widget(n_qubits, max_qubits)
 
     # Apply operation on widget
     wid(ops)
@@ -40,8 +40,12 @@ def main(n_qubits=100, max_qubits=16000):
 
     widget_io_time = time.time()
     ## Decompose widget
-    #wid.decompose()
-    
+    wid.decompose()
+    print("####")
+
+    wid.tableau_print()
+
+
     decomposition_time = time.time()
 
     #json = wid.json()

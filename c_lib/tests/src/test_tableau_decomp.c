@@ -82,7 +82,7 @@ void test_load_block(const size_t n_qubits)
 }
 
 
-instruction_stream_u* create_sample_instruction_stream(const size_t n_qubits, const size_t n_gates)
+instruction_stream_u* create_ghz(const size_t n_qubits, const size_t n_gates)
 {
     instruction_stream_u* inst = malloc(n_qubits * sizeof(instruction_stream_u));  
     inst[0].single.opcode = _H_;
@@ -396,6 +396,20 @@ void test_block_diag_hadamard(const size_t n_qubits, widget_t* wid)
 int main()
 {
 
+    // GHZ 
+    for (size_t i = 64; i <=128 ; i += 64)
+    {
+        widget_t* wid = widget_create_from_stream(
+            i,
+            i,
+            create_ghz);
+
+        test_block_diag(i, wid);
+        widget_destroy(wid);
+    }
+
+    return 0;
+
 //    for (size_t i = 128; i <= 1024; i += 64)
 //    {
 //        test_load_block(i);
@@ -444,7 +458,7 @@ int main()
 
     // Testing where all operations are across blocks
     // This should test the column search
-    for (size_t i = 128; i < 256; i += 64)
+    for (size_t i = 128; i <= 256; i += 64)
     {
         widget_t* wid = widget_create_from_stream(
             i,
@@ -456,7 +470,7 @@ int main()
     }
 
     // Random tests
-    for (size_t i = 128; i <=128 ; i += 64)
+    for (size_t i = 64; i <= 128 ; i += 64)
     {
         widget_t* wid = widget_create_from_stream(
             i,
