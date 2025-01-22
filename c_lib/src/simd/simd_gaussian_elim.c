@@ -691,8 +691,6 @@ void simd_tableau_elim(widget_t* wid)
                 }
                 else
                 {
-                    tableau_print(tab);
-                    debug_print_block(ctrl_block);
                     DPRINT(DEBUG_3, "FAILED\n");
                     assert(0);
                 }
@@ -762,8 +760,6 @@ void zero_phases(widget_t* wid)
 {
     const size_t slice_len = wid->tableau->slice_len;
     // Z to set phases to 0
-
-    printf("Slice Len: %zu\n", slice_len);
 
     // Zero an eight byte block of 64 elements at a time
     for (size_t i = 0; i < slice_len; i += sizeof(uint64_t))
