@@ -4,6 +4,7 @@
     Exposes these sequences to the C api
 '''
 from itertools import chain, repeat
+import ctypes
 
 from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ_GATES, CONDITIONAL_OPERATION_GATES, RZ 
 from cabaliser.operations import (
@@ -182,3 +183,38 @@ class OperationSequence():
                 seq.n_rz_operations += 1
             seq[j] = self[start + j]
         return seq
+
+    @staticmethod
+    def op_dump(ops):
+        array_type = type(ops)
+        array_len = ops._length_
+        elem_type = ops._type_
+        
+        array_byte_size = ctypes.sizeof(array_type)
+        buffer = ctypes.create_string_buffer(array_byte_size)
+        ctypes.memmove(buffer, ops, array_byte_size)
+
+        return (elem_type, array_len, buffer.raw)
+
+    @staticmethod
+    def op_load(ops_pickled):
+        elem_type, array_len, buffer_raw = ops_pickled
+        ops_obj = (elem_type * array_len)()
+        ctypes.memmove(ops_obj, buffer_raw, len(buffer_raw))
+        return ops_obj
+
+    def __getstate__(self):
+        return {
+            "n_instructions": self.n_instructions,
+            "ops": self.op_dump(self.ops),
+            "curr_instructions": self.curr_instructions,
+            "max_qubit_index": self.max_qubit_index,
+            "n_rz_operations": self.n_rz_operations
+        }
+    
+    def __setstate__(self, state):
+        self.n_instructions = state['n_instructions']
+        self.ops = self.op_load(state["ops"])
+        self.curr_instructions = state['curr_instructions']
+        self.max_qubit_index = state['max_qubit_index']
+        self.n_rz_operations = state['n_rz_operations']
