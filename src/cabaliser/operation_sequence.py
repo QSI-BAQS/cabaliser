@@ -6,7 +6,8 @@
 from itertools import chain, repeat
 import ctypes
 
-from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ_GATES, CONDITIONAL_OPERATION_GATES, RZ, MEASUREMENT_GATE 
+from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES
+from cabaliser.gates import RZ_GATES, CONDITIONAL_OPERATION_GATES, RZ, MEASUREMENT_GATE
 from cabaliser.operations import (
     OperationType, SingleQubitOperation,
     TwoQubitOperation, RzOperation,
@@ -33,7 +34,7 @@ class OperationSequence():
         zip(MEASUREMENT_GATE, repeat(SingleQubitOperation)),
         zip(CONDITIONAL_OPERATION_GATES, repeat(ConditionalOperation))
         ):
-        CONSTRUCTOR_MAP[idx] = fn 
+        CONSTRUCTOR_MAP[idx] = fn
 
     def __init__(self, n_instructions: int):
         '''
@@ -149,7 +150,10 @@ class OperationSequence():
         '''
         self.max_qubit_index = max(self.max_qubit_index, *params)
 
-    def split(self, rz_threshold):     
+    def split(self, rz_threshold):
+        '''
+        Splits sequence on an rz threshold
+        '''
         if self.n_rz_operations < rz_threshold:
             return [self,]
 
@@ -157,40 +161,43 @@ class OperationSequence():
 
         rz_instructions = 0
         start_ops = 0
-        for i in range(self.n_instructions): 
+        for i in range(self.n_instructions):
             if self.ops[i].is_rz():
                 if rz_instructions < rz_threshold:
                     rz_instructions += 1
                 else:
-                    sequences.append(self._subsequence(start_ops, i)) 
+                    sequences.append(self._subsequence(start_ops, i))
                     rz_instructions = 1
                     start_ops = i
 
         # Final Sequence
-        sequences.append(self._subsequence(start_ops, i)) 
+        sequences.append(self._subsequence(start_ops, i))
         return sequences
-       
-    def _subsequence(self, start, end): 
+
+    def _subsequence(self, start, end):
         '''
             Copies a subsequence from self to a new sequence
         '''
         sequence_length = end - start
-        seq = OperationSequence(sequence_length)  
+        seq = OperationSequence(sequence_length)
         seq.curr_instructions = sequence_length
         seq.n_instructions = sequence_length
-        seq.max_qubits_index = self.max_qubit_index
+        seq.max_qubit_index = self.max_qubit_index
         for j in range(sequence_length):
-            if self[start + j].is_rz(): 
+            if self[start + j].is_rz():
                 seq.n_rz_operations += 1
             seq[j] = self[start + j]
         return seq
 
     @staticmethod
     def op_dump(ops):
+        '''
+            Dumps operations
+        '''
         array_type = type(ops)
         array_len = ops._length_
         elem_type = ops._type_
-        
+
         array_byte_size = ctypes.sizeof(array_type)
         buffer = ctypes.create_string_buffer(array_byte_size)
         ctypes.memmove(buffer, ops, array_byte_size)
@@ -199,6 +206,9 @@ class OperationSequence():
 
     @staticmethod
     def op_load(ops_pickled):
+        '''
+            Loads operations
+        '''
         elem_type, array_len, buffer_raw = ops_pickled
         ops_obj = (elem_type * array_len)()
         ctypes.memmove(ops_obj, buffer_raw, len(buffer_raw))
@@ -212,7 +222,7 @@ class OperationSequence():
             "max_qubit_index": self.max_qubit_index,
             "n_rz_operations": self.n_rz_operations
         }
-    
+
     def __setstate__(self, state):
         self.n_instructions = state['n_instructions']
         self.ops = self.op_load(state["ops"])

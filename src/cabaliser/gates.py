@@ -6,11 +6,11 @@ from typing import Final
 from ctypes import c_int8
 
 # Gate constants
-OPCODE_TYPE_MASK = 0xe0 
+OPCODE_TYPE_MASK = 0xe0
 LOCAL_CLIFFORD_MASK: Final[c_int8] = 1 << 5
 NON_LOCAL_CLIFFORD_MASK: Final[c_int8] = 1 << 6
 RZ_MASK: Final[c_int8] = 1 << 7
-CONDITIONAL_OPERATION_MASK = (1 << 6) | (1 << 7) 
+CONDITIONAL_OPERATION_MASK = (1 << 6) | (1 << 7)
 
 # Set of legal gates
 I: Final[c_int8] = 0x00 | LOCAL_CLIFFORD_MASK
@@ -54,14 +54,14 @@ _SHR_: Final[c_int8] = 0x17 | LOCAL_CLIFFORD_MASK
 CNOT: Final[c_int8] = 0x00 | NON_LOCAL_CLIFFORD_MASK
 CZ: Final[c_int8] = 0x01 | NON_LOCAL_CLIFFORD_MASK
 
-# Arbitrary rotation gate 
+# Arbitrary rotation gate
 RZ: Final[c_int8] = RZ_MASK
 
 # Measurement Gates
 MEAS: Final[c_int8] = 0x00 | CONDITIONAL_OPERATION_MASK  # Simple qubit measurement
-MCX: Final[c_int8] = 0x01 | CONDITIONAL_OPERATION_MASK 
-MCY: Final[c_int8] = 0x02 | CONDITIONAL_OPERATION_MASK 
-MCZ: Final[c_int8] = 0x03 | CONDITIONAL_OPERATION_MASK 
+MCX: Final[c_int8] = 0x01 | CONDITIONAL_OPERATION_MASK
+MCY: Final[c_int8] = 0x02 | CONDITIONAL_OPERATION_MASK
+MCZ: Final[c_int8] = 0x03 | CONDITIONAL_OPERATION_MASK
 
 SINGLE_QUBIT_GATES = {
     I,
