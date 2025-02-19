@@ -28,12 +28,12 @@ class OperationSequence():
     '''
     CONSTRUCTOR_MAP = [unbound_table_element for _ in range(256)]
     for idx, fn in chain(
-        zip(SINGLE_QUBIT_GATES, repeat(SingleQubitOperation)),
-        zip(TWO_QUBIT_GATES, repeat(TwoQubitOperation)),
-        zip(RZ_GATES, repeat(RzOperation)),
-        zip(MEASUREMENT_GATE, repeat(SingleQubitOperation)),
-        zip(CONDITIONAL_OPERATION_GATES, repeat(ConditionalOperation))
-        ):
+            zip(SINGLE_QUBIT_GATES, repeat(SingleQubitOperation)),
+            zip(TWO_QUBIT_GATES, repeat(TwoQubitOperation)),
+            zip(RZ_GATES, repeat(RzOperation)),
+            zip(MEASUREMENT_GATE, repeat(SingleQubitOperation)),
+            zip(CONDITIONAL_OPERATION_GATES, repeat(ConditionalOperation))
+            ):
         CONSTRUCTOR_MAP[idx] = fn
 
     def __init__(self, n_instructions: int):
@@ -73,7 +73,7 @@ class OperationSequence():
             they will NOT index from the end of the array
         '''
         self.ops[idx] = value
-        #self.max_qubit_index = max(self.max_qubit_index, value.max_qubit_index)
+        #  self.max_qubit_index = max(self.max_qubit_index, value.max_qubit_index)
 
     def __iter__(self):
         '''

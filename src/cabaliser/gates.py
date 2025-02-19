@@ -58,7 +58,7 @@ CZ: Final[c_int8] = 0x01 | NON_LOCAL_CLIFFORD_MASK
 RZ: Final[c_int8] = RZ_MASK
 
 # Measurement Gates
-MEAS: Final[c_int8] = 0x00 | CONDITIONAL_OPERATION_MASK  # Simple qubit measurement
+MEAS: Final[c_int8] = 0x00 | CONDITIONAL_OPERATION_MASK
 MCX: Final[c_int8] = 0x01 | CONDITIONAL_OPERATION_MASK
 MCY: Final[c_int8] = 0x02 | CONDITIONAL_OPERATION_MASK
 MCZ: Final[c_int8] = 0x03 | CONDITIONAL_OPERATION_MASK
@@ -108,29 +108,29 @@ SINGLE_QUBIT_GATE_TABLE = {
     _SHSd_: "SHSd"
 }
 
-SINGLE_QUBIT_GATE_ARR = [None] * LOCAL_CLIFFORD_MASK  + [
-"I",
-"X",
-"Y",
-"Z",
-"H",
-"S",
-"Sd",
-"HX",
-"SX",
-"SdX",
-"HY",
-"HZ",
-"SH",
-"SdH",
-"HS",
-"HSd",
-"HSX",
-"HSdX",
-"SHY",
-"SdHY",
-"HSH",
-"HSdH",
-"SdHS",
-"SHSd"
+SINGLE_QUBIT_GATE_ARR = [None] * LOCAL_CLIFFORD_MASK + [
+    "I",
+    "X",
+    "Y",
+    "Z",
+    "H",
+    "S",
+    "Sd",
+    "HX",
+    "SX",
+    "SdX",
+    "HY",
+    "HZ",
+    "SH",
+    "SdH",
+    "HS",
+    "HSd",
+    "HSX",
+    "HSdX",
+    "SHY",
+    "SdHY",
+    "HSH",
+    "HSdH",
+    "SdHS",
+    "SHSd"
 ]
