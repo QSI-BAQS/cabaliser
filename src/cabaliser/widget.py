@@ -292,17 +292,6 @@ class Widget():
         '''
         return self.pauli_tracker.to_list()
 
-    @require_not_decomposed
-    def load_pandora(self, db_name: str):
-        '''
-            load_pandora
-            Loads gates from a pandora database
-        '''
-        db_name = c_buffer(db_name.encode('ascii'))
-        lib.pandora_n_qubits(db_name)
-
-        lib.pandora_load_db(self.widget, db_name)
-
     @require_decomposed
     def to_sim(self, *input_states, table=None):
         '''

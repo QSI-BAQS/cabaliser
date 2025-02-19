@@ -67,21 +67,11 @@ BENCHMARK_RUNNERS := $(patsubst ${BENCHMARK_SRCDIR}/%.c, ${BENCHMARK_DIR}/%.out,
 .PHONY: test tests
 .PHONY: run_tests 
 .PHONY: benchmark benchmarks
-.PHONY: pandora_api
 .PHONY: ${PAULI_TRACKER}
 
 
 # Build Rules
 all : ${TARGET} ${BUILDDIR}
-
-
-
-include pandora_api/Makefile 
-pandora : LIBS += ${PANDORA_LIBS} 
-pandora : PANDORA_LIBS += -I${PAULI_TRACKER_HEADERS} 
-pandora : COND_OBJFILES += ${PANDORA_OBJFILES} 
-pandora : pandora_api all
-	@echo ${LIBS}
 
 debug_L3: CFLAGS += -DDEBUG -DDEBUG_LEVEL=3
 debug_L3: test 
@@ -98,7 +88,6 @@ debug: test
 tests: test pauli_tracker
 test: all
 test : CFLAGS += -g
-#tests : test pandora_test ${PAULI_TRACKER_LIB}
 test: ${BUILDDIR} ${OBJFILES} ${TEST_RUNNERS} ${PANDORA_TEST_RUNNERS} 
 
 run_tests: test 
