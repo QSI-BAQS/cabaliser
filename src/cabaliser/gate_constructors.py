@@ -10,7 +10,7 @@ def measure(targ: int) -> tuple:
     '''
         Measure a target qubit
     '''
-    return (MEAS, (targ, targ))
+    return (MEAS, (targ,))
 
 def measure_seq(*targs) -> list:
     '''

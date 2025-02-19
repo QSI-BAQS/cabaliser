@@ -6,7 +6,7 @@
 from itertools import chain, repeat
 import ctypes
 
-from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ_GATES, CONDITIONAL_OPERATION_GATES, RZ 
+from cabaliser.gates import SINGLE_QUBIT_GATES, TWO_QUBIT_GATES, RZ_GATES, CONDITIONAL_OPERATION_GATES, RZ, MEASUREMENT_GATE 
 from cabaliser.operations import (
     OperationType, SingleQubitOperation,
     TwoQubitOperation, RzOperation,
@@ -30,6 +30,7 @@ class OperationSequence():
         zip(SINGLE_QUBIT_GATES, repeat(SingleQubitOperation)),
         zip(TWO_QUBIT_GATES, repeat(TwoQubitOperation)),
         zip(RZ_GATES, repeat(RzOperation)),
+        zip(MEASUREMENT_GATE, repeat(SingleQubitOperation)),
         zip(CONDITIONAL_OPERATION_GATES, repeat(ConditionalOperation))
         ):
         CONSTRUCTOR_MAP[idx] = fn 
