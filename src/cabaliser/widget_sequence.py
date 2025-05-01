@@ -6,7 +6,6 @@ from cabaliser.widget import Widget
 from cabaliser.operation_sequence import OperationSequence
 from cabaliser import exceptions
 
-
 class WidgetSequence:
     """
     Creates a sequence of widget objects

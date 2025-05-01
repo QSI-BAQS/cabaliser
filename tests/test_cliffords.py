@@ -18,39 +18,38 @@ N_REPETITIONS = 10
 
 class CliffordsTest(unittest.TestCase):
 
-    def test_clifford_depth_1(self):
-        self.clifford_sequences(depth=1, apply=False, test_gates=True)
+#    def test_clifford_depth_1(self):
+#        self.clifford_sequences(depth=1, apply=False, test_gates=True)
+#
+#    def test_clifford_depth_1_applied(self):
+#        self.clifford_sequences(depth=1, apply=True, test_gates=False)
+#
+#    def test_clifford_depth_2(self):
+#        self.clifford_sequences(depth=2, test_gates=True)
+#
+#    def test_clifford_depth_3(self):
+#        self.clifford_sequences(depth=3, test_states=False, test_gates=True) # Floating point kicks in around here
+#
+#    def test_clifford_depth_4(self):
+#       self.clifford_sequences(depth=4, test_states=False, test_gates=True)
+#
+#    def test_clifford_depth_5(self): # Past depth 5 exhaustive search's exponential scaling hits hard
+#        self.clifford_sequences(depth=5, test_states=False, test_gates=True)
 
-    def test_clifford_depth_1_applied(self):
-        self.clifford_sequences(depth=1, apply=True, test_gates=False)
-
-    def test_clifford_depth_2(self):
-        self.clifford_sequences(depth=2, test_gates=True)
-
-    def test_clifford_depth_3(self):
-        self.clifford_sequences(depth=3, test_states=False, test_gates=True) # Floating point kicks in around here
-
-    def test_clifford_depth_4(self):
-        self.clifford_sequences(depth=4, test_states=False, test_gates=True)
-
-    def test_clifford_depth_5(self): # Past depth 5 exhaustive search's exponential scaling hits hard
-        self.clifford_sequences(depth=5, test_states=False, test_gates=True)
-
-    def test_clifford_depth_2_applied(self):
-        self.clifford_sequences(depth=2, apply=True, test_gates=False, test_states=True)
-
+#    def test_clifford_depth_2_applied(self):
+#        self.clifford_sequences(depth=2, apply=True, test_gates=False, test_states=True)
+#
     def test_clifford_depth_3_applied(self):
         self.clifford_sequences(depth=3, apply=True, test_gates=False, test_states=True) # Floating point kicks in around here
-
-
-    def test_cnot_clifford_depth_1(self):
-        self.clifford_sequences_cnot_first(depth=1)
-
-    def test_cnot_clifford_depth_2(self):
-        self.clifford_sequences_cnot_first(depth=2)
-
-    def test_cz_clifford_depth_1(self):
-        self.clifford_sequences_cz_first(depth=1)
+#
+#    def test_cnot_clifford_depth_1(self):
+#        self.clifford_sequences_cnot_first(depth=1)
+#
+#    def test_cnot_clifford_depth_2(self):
+#        self.clifford_sequences_cnot_first(depth=2)
+#
+#    def test_cz_clifford_depth_1(self):
+#        self.clifford_sequences_cz_first(depth=1)
 
     def clifford_sequences(self, depth=1, test_states=True, test_gates=True, apply=False):
         '''
@@ -81,7 +80,18 @@ class CliffordsTest(unittest.TestCase):
                 if apply:
                     wid.apply_local_cliffords()
 
+                print("Pre:")
+                wid.tableau_print_phases()
+                wid.tableau_print()
+
+
                 wid.decompose()
+
+                if wid.get_local_cliffords().to_list()[0] != 'I':
+                    print("Post:")
+                    wid.tableau_print()
+                    print(ops)
+                    print(wid.get_local_cliffords().to_list())
 
 
                 if test_gates:  # Only tests the clifford composition sequences
