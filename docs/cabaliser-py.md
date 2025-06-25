@@ -24,9 +24,9 @@ Simulate the resulting circuit
 
 For example, to run Cabaliser for the circuit
 ``` <TODO - Format with nice ASCII>
-       /-\ 
-q -----|H|------>>
-       \-/
+         /-\ 
+|q> -----|H|------>>
+         \-/
 ```
 and inspect the result, you could do:
 
@@ -44,7 +44,8 @@ ops = OperationSequence(10)
 ops.append(gates.H, 0)
 
 # Create a widget <TODO - Describe n_qubits and max_qubits>
-wid = Widget(n_qubits, max_qubits <TODO)
+# Teleportation of inputs is disabled by default
+wid = Widget(1, 64)
 
 # Apply the operations to the widget
 wid(ops)
@@ -66,7 +67,6 @@ An `OperationSequence` is initialised with `OperationSequence(n_instructions: in
 
 Operations can be added to an `OperationSequence` with the `.append(opcode, *args)` method.
 The opcode must be the code of a valid gate (see below), and the arguments consist of any arguments to be passed to that gate.  Instructions should be appended in the order in which they are to be carried out.
-
 
 ### Gates
 
@@ -90,3 +90,32 @@ The legal gates are:
 | `MCX` | `control_id, targets_id` | <TODO> |
 | `MCY` | `control_id, targets_id` | <TODO> |
 | `MCZ` | `control_id, targets_id` | <TODO> |
+
+
+## Widgets
+
+A Widget provides a means of loading an OperationSequence, and decomposing it into a graph specifying the compiled quantum circuit <TODO - Reword>.
+
+At minimum, all that is required with a Widget is to create it (specifying some initial properties), load an OperationSequence, and then decompose the Widget into a graph.
+
+### Creation
+
+To create a widget, the number of initial qubits, and the maximum number of qubits, must be specified. Additional optional parameters can be provided.
+
+```
+Widget(n_qubits: int, n_qubits_max: int, ...)
+```
+
+Widgets are to be created with the following parameters:
+| Parameter | Default | Description |
+|-|-|-|
+| `n_qubits : int` | N/A (required) | The number of initial qubits, the "width" of the Widget |
+| `n_qubits_max : int` | N/A (required) | The maximum number of qubits within the entire Widget |
+| `teleport_input : bool` | False | Whether the inputs should be teleported <TODO - Describe> | 
+| `n_inputs : int` | `n_qubits` | Specifies the number of input qubits (defaults to `n_qubits`, the size of the qubit register). Only required if the number of inputs differs from the register size. |
+
+
+### Decomposition and Inspection
+
+Before inspection, a Widget must be decomposed <TODO - Describe what this does>. Once decomposed, the entire state of the Widget can be accessed (as JSON data), with `<Widget>.json()`.
+
