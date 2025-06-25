@@ -35,6 +35,18 @@ uint8_t slice_get_bit(
     return __inline_slice_get_bit(slice, index);
 }
 
+size_t* tableau_get_slice_x(tableau_t* tab, size_t index) {
+ return SLICE_X_IDX(tab, index); 
+}
+
+
+size_t* tableau_get_slice_z(tableau_t* tab, size_t index) {
+ return SLICE_Z_IDX(tab, index); 
+}
+
+size_t tableau_get_slice_len(tableau_t* tab) {
+    return tab->slice_len;
+}
 
 /*
  * tableau_create 
