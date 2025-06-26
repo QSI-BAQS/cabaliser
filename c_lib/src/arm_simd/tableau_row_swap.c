@@ -10,26 +10,26 @@ void simd_row_swap(
 {
     for (size_t i = 0; i < n_bytes; i += ROWSUM_STRIDE)
     {
-        __m256i v_targ_x = _mm256_loadu_si256(
+        TABLEAU_SIMD_VEC v_targ_x = vld1q_NEON_SUF(
             targ_x + i 
         );
 
-        __m256i v_ctrl_x = _mm256_loadu_si256(
+        TABLEAU_SIMD_VEC v_ctrl_x = vld1q_NEON_SUF(
             ctrl_x + i 
         );
 
-        __m256i v_targ_z = _mm256_loadu_si256(
+        TABLEAU_SIMD_VEC v_targ_z = vld1q_NEON_SUF(
             targ_z + i 
         );
 
-        __m256i v_ctrl_z = _mm256_loadu_si256(
+        TABLEAU_SIMD_VEC v_ctrl_z = vld1q_NEON_SUF(
             ctrl_z + i 
         );
 
-        _mm256_storeu_si256(targ_x + i, v_ctrl_x);
-        _mm256_storeu_si256(targ_z + i, v_ctrl_z);
-        _mm256_storeu_si256(ctrl_x + i, v_targ_x);
-        _mm256_storeu_si256(ctrl_z + i, v_targ_z);
+        vst1q_NEON_SUF(targ_x + i, v_ctrl_x);
+        vst1q_NEON_SUF(targ_z + i, v_ctrl_z);
+        vst1q_NEON_SUF(ctrl_x + i, v_targ_x);
+        vst1q_NEON_SUF(ctrl_z + i, v_targ_z);
 
     }
 }
