@@ -353,7 +353,7 @@ void tableau_HY(tableau_t* restrict tab, const size_t targ)
         _mm256_store_si256(slice_z + i, x);
         _mm256_store_si256(slice_r + i, 
             _mm256_xor_si256(r, 
-                _mm256_xor_si256(z, x)
+                _mm256_or_si256(z, x)
             )
         );
     }
