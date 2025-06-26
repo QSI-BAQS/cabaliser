@@ -58,8 +58,6 @@ class ToffoliTest(unittest.TestCase):
 
         wid = Widget(n_qubits, max_qubits)
         ops = self.toffoli_ops(0, 1, 2) 
-        for op in ops:
-            print(op)
 
         # Apply operation on widget
         wid(ops)
