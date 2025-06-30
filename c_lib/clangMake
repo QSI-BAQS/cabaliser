@@ -5,7 +5,7 @@ CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLA
 
 # Optimisation Flags
 ifeq ($(CC),clang)
-	CFLAGS += -O3 -ffast-math
+	CFLAGS += -O3 -ffast-math -fPIC
 else
 	CFLAGS += -Ofast -fPIC
 endif
@@ -44,7 +44,7 @@ OBJFILES += ${SIMD_OBJFILES}
 # The loop vectorisation flags don't mesh well with the casts between pointer types
 SIMD_TESTS := test_transpose test_rowsum
 ifeq ($(CC),clang)
-    SIMD_CFLAGS := -march=native -O1
+    SIMD_CFLAGS := -march=native -O2
 else
     SIMD_CFLAGS := -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
     SIMD_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
