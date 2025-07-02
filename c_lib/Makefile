@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-CC := gcc 
+CC := clang
 OMPFLAG := -fopenmp
 CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG} 
 
@@ -44,8 +44,6 @@ OBJFILES += ${SIMD_OBJFILES}
 # The loop vectorisation flags don't mesh well with the casts between pointer types
 SIMD_TESTS := test_transpose test_rowsum
 ifeq ($(CC),clang)
-	# TODO: Currently passes all tests at O0, fails python cliffords at 
-	# O2
     SIMD_CFLAGS := -march=native -O2
     SIMD_CFLAGS += -mllvm -enable-loopinterchange -fno-slp-vectorize -fno-vectorize
 else
