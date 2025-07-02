@@ -4,7 +4,11 @@ OMPFLAG := -fopenmp
 CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG} 
 
 # Optimisation Flags
-CFLAGS += -Ofast -fPIC
+ifeq ($(CC),clang)
+	CFLAGS += -O3 -ffast-math -fPIC
+else
+	CFLAGS += -Ofast -fPIC
+endif
 CFLAGS += -mavx2 -mlzcnt -mbmi2 
 
 TARGET := lib_cabaliser.so
@@ -39,9 +43,15 @@ OBJFILES += ${SIMD_OBJFILES}
 # Transpose requires disabling some loop mangling
 # The loop vectorisation flags don't mesh well with the casts between pointer types
 SIMD_TESTS := test_transpose test_rowsum
-SIMD_CFLAGS := -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
-SIMD_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
-SIMD_CFLAGS_CLANG := -march=native -O1
+ifeq ($(CC),clang)
+	# TODO: Currently passes all tests at O0, fails python cliffords at 
+	# O2
+    SIMD_CFLAGS := -march=native -O2
+    SIMD_CFLAGS += -mllvm -enable-loopinterchange -fno-slp-vectorize -fno-vectorize
+else
+	SIMD_CFLAGS := -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
+	SIMD_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
+endif
 
 # Test Files
 TEST_SRCFILES := $(wildcard ${TEST_SRCDIR}/*.c)
@@ -107,21 +117,23 @@ ${TARGET} : ${BUILDDIR} ${OBJFILES} ${SIMD_OBJFILES} ${COND_OBJFILES} ${PAULI_TR
 	${CC} ${CFLAGS} ${TARGET_FLAGS} -o $@ ${COND_OBJFILES} ${SIMD_OBJFILES} ${LINK_LIBS} ${LIBS}  
 
 # Compilation of the transpose operation
+# TODO: TRANSPOSE and TRANSPOSE_CFLAGS is currently unset
+# 		(switch at definition for clang vs gcc as needed)
 ${BUILDDIR}/${TRANSPOSE}.o : ${SRCDIR}/${TRANSPOSE}.c
-ifeq ($(CC),gcc) # Clang doesn't support some of the optimisation flags
-		${CC} ${CFLAGS} ${TRANSPOSE_CFLAGS} ${LIBS} -c -o $@ $^
-else
-		${CC} ${CFLAGS} ${TRANSPOSE_CFLAGS_CLANG} ${LIBS} -c -o $@ $^
-endif
+	${CC} ${CFLAGS} ${TRANSPOSE_CFLAGS} ${LIBS} -c -o $@ $^
 
 # Dependent libraries
 pauli_tracker: ${PAULI_TRACKER_LIB}
 
 ${PAULI_TRACKER_LIB}: 
-	cd ${PAULI_TRACKER_DIR}; make all
+	cd ${PAULI_TRACKER_DIR}; make all CC=$(CC) # Pass active CC along
 
 ${BUILDDIR}/%.o : ${SRCDIR}/%.c
+ifeq ($(CC),clang) # Clang errors for unused linker flags
+	${CC} $^ ${CFLAGS} ${LIBS} -c -o $@
+else
 	${CC} $^ ${CFLAGS} ${LINK_LIBS} ${LIBS} -c -o $@
+endif
 
 ${BUILDDIR}/simd/%.o : ${SRCDIR}/simd/%.c
 	${CC} $^ ${CFLAGS} ${SIMD_CFLAGS} ${LIBS} -c -o $@
