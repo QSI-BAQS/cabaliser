@@ -5,7 +5,7 @@ CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLA
 
 # Optimisation Flags
 ifeq ($(CC),clang)
-	CFLAGS += -O3 -fPIC
+	CFLAGS += -O3 -ffast-math -fPIC
 else
 	CFLAGS += -Ofast -fPIC
 endif
