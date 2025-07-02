@@ -5,7 +5,7 @@ CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLA
 
 # Optimisation Flags
 ifeq ($(CC),clang)
-	CFLAGS += -O3 -ffast-math -fPIC
+	CFLAGS += -O3 -fPIC
 else
 	CFLAGS += -Ofast -fPIC
 endif
@@ -125,8 +125,9 @@ ${BUILDDIR}/${TRANSPOSE}.o : ${SRCDIR}/${TRANSPOSE}.c
 # Dependent libraries
 pauli_tracker: ${PAULI_TRACKER_LIB}
 
+# Pass active CC along to the pauli_tracker compilation
 ${PAULI_TRACKER_LIB}: 
-	cd ${PAULI_TRACKER_DIR}; make all CC=$(CC) # Pass active CC along
+	cd ${PAULI_TRACKER_DIR}; make all CC=$(CC)
 
 ${BUILDDIR}/%.o : ${SRCDIR}/%.c
 ifeq ($(CC),clang) # Clang errors for unused linker flags
