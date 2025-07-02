@@ -44,7 +44,7 @@ OBJFILES += ${SIMD_OBJFILES}
 # The loop vectorisation flags don't mesh well with the casts between pointer types
 SIMD_TESTS := test_transpose test_rowsum
 ifeq ($(CC),clang)
-    SIMD_CFLAGS := -march=native -O1 -mllvm -print-pipeline-passes
+    SIMD_CFLAGS := -march=native -O1
     SIMD_CFLAGS += -mllvm -enable-loopinterchange -fno-slp-vectorize -fno-vectorize -fno-unroll-loops -fno-inline -mllvm -enable-unroll-and-jam -mllvm -enable-nontrivial-unswitch 
 else
 	SIMD_CFLAGS := -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
