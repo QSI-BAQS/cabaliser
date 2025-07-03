@@ -12,7 +12,7 @@
 #include <arm_neon.h>
 // The suffix for Neon function calls (must match TABLEAU_SIMD_VEC type)
 // u8 is for vectors of uint8s (ie. a uint8x16_t)
-#define NEON_SUF u8
+#define NEON_SUFFIX u8
 // Halved ROWSUM_STRIDE for Neon
 #define ROWSUM_STRIDE (128 / 8) 
 #endif

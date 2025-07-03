@@ -16,13 +16,13 @@ void tableau_H(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);   
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);   
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);   
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);   
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);   
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);   
 
-        vst1q_NEON_SUF(slice_x + i, z);
-        vst1q_NEON_SUF(slice_z + i, x);
-        vst1q_NEON_SUF(slice_r + i, veorq_NEON_SUF(r, vandq_NEON_SUF(x, z)));
+        vst1q_NEON_SUFFIX(slice_x + i, z);
+        vst1q_NEON_SUFFIX(slice_z + i, x);
+        vst1q_NEON_SUFFIX(slice_r + i, veorq_NEON_SUFFIX(r, vandq_NEON_SUFFIX(x, z)));
     }  
 }
 
@@ -40,14 +40,14 @@ void tableau_S(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_z + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r,
-                vandq_NEON_SUF(x, z)
+        vst1q_NEON_SUFFIX(slice_z + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r,
+                vandq_NEON_SUFFIX(x, z)
             )
         );
     }
@@ -69,13 +69,13 @@ void tableau_Z(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(
+        vst1q_NEON_SUFFIX(
             slice_r + i, 
-            veorq_NEON_SUF(r, x)
+            veorq_NEON_SUFFIX(r, x)
         );
     }
 }
@@ -104,15 +104,15 @@ void tableau_R(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_z + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(
+        vst1q_NEON_SUFFIX(slice_z + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(
             r,
-			vandq_NEON_SUF(vmvnq_NEON_SUF(z), x)
+			vandq_NEON_SUFFIX(vmvnq_NEON_SUFFIX(z), x)
             )
         );
     }
@@ -150,10 +150,10 @@ void tableau_X(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_r + i, veorq_NEON_SUF(r, z));
+        vst1q_NEON_SUFFIX(slice_r + i, veorq_NEON_SUFFIX(r, z));
     }
 }
 
@@ -177,13 +177,13 @@ void tableau_Y(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r,
-                veorq_NEON_SUF(x, z)
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r,
+                veorq_NEON_SUFFIX(x, z)
             )
         );
     }
@@ -208,15 +208,15 @@ void tableau_HX(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, z);
-        vst1q_NEON_SUF(slice_z + i, x);
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r, 
-				vandq_NEON_SUF(vmvnq_NEON_SUF(x), z)
+        vst1q_NEON_SUFFIX(slice_x + i, z);
+        vst1q_NEON_SUFFIX(slice_z + i, x);
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r, 
+				vandq_NEON_SUFFIX(vmvnq_NEON_SUFFIX(x), z)
             )
         );
     }
@@ -240,15 +240,15 @@ void tableau_SX(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, x);
-        vst1q_NEON_SUF(slice_z + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r, 
-				vandq_NEON_SUF(vmvnq_NEON_SUF(x), z)
+        vst1q_NEON_SUFFIX(slice_x + i, x);
+        vst1q_NEON_SUFFIX(slice_z + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r, 
+				vandq_NEON_SUFFIX(vmvnq_NEON_SUFFIX(x), z)
             )
         );
     }
@@ -275,15 +275,15 @@ void tableau_RX(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, x);
-        vst1q_NEON_SUF(slice_z + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r, 
-                vorrq_NEON_SUF(z, x)
+        vst1q_NEON_SUFFIX(slice_x + i, x);
+        vst1q_NEON_SUFFIX(slice_z + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r, 
+                vorrq_NEON_SUFFIX(z, x)
             )
         );
     }
@@ -309,15 +309,15 @@ void tableau_HZ(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, z);
-        vst1q_NEON_SUF(slice_z + i, x);
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r, 
-				vandq_NEON_SUF(vmvnq_NEON_SUF(z), x);
+        vst1q_NEON_SUFFIX(slice_x + i, z);
+        vst1q_NEON_SUFFIX(slice_z + i, x);
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r, 
+				vandq_NEON_SUFFIX(vmvnq_NEON_SUFFIX(z), x);
             )
         );
     }
@@ -345,17 +345,17 @@ void tableau_HY(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, z);
-        vst1q_NEON_SUF(slice_z + i, x);
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r, 
+        vst1q_NEON_SUFFIX(slice_x + i, z);
+        vst1q_NEON_SUFFIX(slice_z + i, x);
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r, 
 				// I've put an OR here for now, may need to replace
 				// (depending on status of bug)
-                vorrq_NEON_SUF(z, x)
+                vorrq_NEON_SUFFIX(z, x)
             )
         );
     }
@@ -384,13 +384,13 @@ void tableau_SH(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);   
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);   
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
 
-        vst1q_NEON_SUF(slice_x + i, z);
-        vst1q_NEON_SUF(
+        vst1q_NEON_SUFFIX(slice_x + i, z);
+        vst1q_NEON_SUFFIX(
             slice_z + i, 
-            veorq_NEON_SUF(x, z)
+            veorq_NEON_SUFFIX(x, z)
         );
     }
 }
@@ -419,13 +419,13 @@ void tableau_RH(tableau_t* restrict tab, const size_t targ)
     // DONE
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);   
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);   
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, z);
-        vst1q_NEON_SUF(slice_z + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_r + i, veorq_NEON_SUF(r, z));
+        vst1q_NEON_SUFFIX(slice_x + i, z);
+        vst1q_NEON_SUFFIX(slice_z + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_r + i, veorq_NEON_SUFFIX(r, z));
     }  
 }
 
@@ -455,13 +455,13 @@ void tableau_HS(tableau_t* restrict tab, const size_t targ)
      */
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);   
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);   
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_z + i, x);
-        vst1q_NEON_SUF(slice_r + i, veorq_NEON_SUF(r, x));
+        vst1q_NEON_SUFFIX(slice_x + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_z + i, x);
+        vst1q_NEON_SUFFIX(slice_r + i, veorq_NEON_SUFFIX(r, x));
     }  
 }
 
@@ -490,11 +490,11 @@ void tableau_HR(tableau_t* restrict tab, const size_t targ)
     // DONE
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);   
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);   
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
 
-        vst1q_NEON_SUF(slice_x + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_z + i, x);
+        vst1q_NEON_SUFFIX(slice_x + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_z + i, x);
     }  
 }
 
@@ -526,15 +526,15 @@ void tableau_HSX(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_z + i, x);
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r, 
-                veorq_NEON_SUF(z, x)
+        vst1q_NEON_SUFFIX(slice_x + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_z + i, x);
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r, 
+                veorq_NEON_SUFFIX(z, x)
             )
         );
     }
@@ -567,13 +567,13 @@ void tableau_HRX(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_z + i, x);
-        vst1q_NEON_SUF(slice_r + i, veorq_NEON_SUF(r, z));
+        vst1q_NEON_SUFFIX(slice_x + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_z + i, x);
+        vst1q_NEON_SUFFIX(slice_r + i, veorq_NEON_SUFFIX(r, z));
     }
 }
 
@@ -585,13 +585,13 @@ void tableau_SHY(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, z);
-        vst1q_NEON_SUF(slice_z + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_r + i, veorq_NEON_SUF(r, veorq_NEON_SUF(x, z)));
+        vst1q_NEON_SUFFIX(slice_x + i, z);
+        vst1q_NEON_SUFFIX(slice_z + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_r + i, veorq_NEON_SUFFIX(r, veorq_NEON_SUFFIX(x, z)));
     }
 }
 
@@ -603,13 +603,13 @@ void tableau_RHY(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, z);
-        vst1q_NEON_SUF(slice_z + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_r + i, veorq_NEON_SUF(r, x));
+        vst1q_NEON_SUFFIX(slice_x + i, z);
+        vst1q_NEON_SUFFIX(slice_z + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_r + i, veorq_NEON_SUFFIX(r, x));
     }
 }
 
@@ -622,15 +622,15 @@ void tableau_HSH(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_z + i, z);
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r,
-				vandq_NEON_SUF(vmvnq_NEON_SUF(x), z);
+        vst1q_NEON_SUFFIX(slice_x + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_z + i, z);
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r,
+				vandq_NEON_SUFFIX(vmvnq_NEON_SUFFIX(x), z);
             )
         );
     }
@@ -644,15 +644,15 @@ void tableau_HRH(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_z + i, z);
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r,
-				vandq_NEON_SUF(x, z)
+        vst1q_NEON_SUFFIX(slice_x + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_z + i, z);
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r,
+				vandq_NEON_SUFFIX(x, z)
             )
         );
     }
@@ -667,15 +667,15 @@ void tableau_RHS(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_z + i, z);
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r,
-                vorrq_NEON_SUF(x, z)
+        vst1q_NEON_SUFFIX(slice_x + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_z + i, z);
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r,
+                vorrq_NEON_SUFFIX(x, z)
             )
         );
     }
@@ -690,15 +690,15 @@ void tableau_SHR(tableau_t* restrict tab, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC x = vld1q_NEON_SUF(slice_x + i);
-        TABLEAU_SIMD_VEC z = vld1q_NEON_SUF(slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC x = vld1q_NEON_SUFFIX(slice_x + i);
+        TABLEAU_SIMD_VEC z = vld1q_NEON_SUFFIX(slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(slice_x + i, veorq_NEON_SUF(x, z));
-        vst1q_NEON_SUF(slice_z + i, z);
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r,
-                vandq_NEON_SUF(vmvnq_NEON_SUF(z), x)
+        vst1q_NEON_SUFFIX(slice_x + i, veorq_NEON_SUFFIX(x, z));
+        vst1q_NEON_SUFFIX(slice_z + i, z);
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r,
+                vandq_NEON_SUFFIX(vmvnq_NEON_SUFFIX(z), x)
             )
         );
     }
@@ -722,19 +722,19 @@ void tableau_CNOT(tableau_t* restrict tab, const size_t ctrl, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC ctrl_x = vld1q_NEON_SUF(ctrl_slice_x + i);
-        TABLEAU_SIMD_VEC ctrl_z = vld1q_NEON_SUF(ctrl_slice_z + i);
-        TABLEAU_SIMD_VEC targ_x = vld1q_NEON_SUF(targ_slice_x + i);
-        TABLEAU_SIMD_VEC targ_z = vld1q_NEON_SUF(targ_slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC ctrl_x = vld1q_NEON_SUFFIX(ctrl_slice_x + i);
+        TABLEAU_SIMD_VEC ctrl_z = vld1q_NEON_SUFFIX(ctrl_slice_z + i);
+        TABLEAU_SIMD_VEC targ_x = vld1q_NEON_SUFFIX(targ_slice_x + i);
+        TABLEAU_SIMD_VEC targ_z = vld1q_NEON_SUFFIX(targ_slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(targ_slice_x + i, veorq_NEON_SUF(ctrl_x, targ_x));
-        vst1q_NEON_SUF(ctrl_slice_z + i, veorq_NEON_SUF(ctrl_z, targ_z));
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r,
-                vandq_NEON_SUF(
-                    vmvnq_NEON_SUF(veorq_NEON_SUF(targ_x, ctrl_z)), 
-                    vandq_NEON_SUF(ctrl_x, targ_z) 
+        vst1q_NEON_SUFFIX(targ_slice_x + i, veorq_NEON_SUFFIX(ctrl_x, targ_x));
+        vst1q_NEON_SUFFIX(ctrl_slice_z + i, veorq_NEON_SUFFIX(ctrl_z, targ_z));
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r,
+                vandq_NEON_SUFFIX(
+                    vmvnq_NEON_SUFFIX(veorq_NEON_SUFFIX(targ_x, ctrl_z)), 
+                    vandq_NEON_SUFFIX(ctrl_x, targ_z) 
                 )
             )
         );
@@ -787,22 +787,22 @@ void tableau_CZ(tableau_t* restrict tab, const size_t ctrl, const size_t targ)
 
     for (size_t i = 0; i < tab->slice_len; i += TABLEAU_SIMD_STRIDE)
     {
-        TABLEAU_SIMD_VEC ctrl_x = vld1q_NEON_SUF(ctrl_slice_x + i);
-        TABLEAU_SIMD_VEC ctrl_z = vld1q_NEON_SUF(ctrl_slice_z + i);
-        TABLEAU_SIMD_VEC targ_x = vld1q_NEON_SUF(targ_slice_x + i);
-        TABLEAU_SIMD_VEC targ_z = vld1q_NEON_SUF(targ_slice_z + i);
-        TABLEAU_SIMD_VEC r = vld1q_NEON_SUF(slice_r + i);
+        TABLEAU_SIMD_VEC ctrl_x = vld1q_NEON_SUFFIX(ctrl_slice_x + i);
+        TABLEAU_SIMD_VEC ctrl_z = vld1q_NEON_SUFFIX(ctrl_slice_z + i);
+        TABLEAU_SIMD_VEC targ_x = vld1q_NEON_SUFFIX(targ_slice_x + i);
+        TABLEAU_SIMD_VEC targ_z = vld1q_NEON_SUFFIX(targ_slice_z + i);
+        TABLEAU_SIMD_VEC r = vld1q_NEON_SUFFIX(slice_r + i);
 
-        vst1q_NEON_SUF(targ_slice_z + i, veorq_NEON_SUF(ctrl_x, targ_z));
-        vst1q_NEON_SUF(ctrl_slice_z + i, veorq_NEON_SUF(ctrl_z, targ_x));
+        vst1q_NEON_SUFFIX(targ_slice_z + i, veorq_NEON_SUFFIX(ctrl_x, targ_z));
+        vst1q_NEON_SUFFIX(ctrl_slice_z + i, veorq_NEON_SUFFIX(ctrl_z, targ_x));
 
-        TABLEAU_SIMD_VEC x_and_x = vandq_NEON_SUF(ctrl_x, targ_x);
+        TABLEAU_SIMD_VEC x_and_x = vandq_NEON_SUFFIX(ctrl_x, targ_x);
 
-        vst1q_NEON_SUF(slice_r + i, 
-            veorq_NEON_SUF(r,
-                veorq_NEON_SUF(
-                    vandq_NEON_SUF(x_and_x, ctrl_z), 
-                    vandq_NEON_SUF(x_and_x, targ_z) 
+        vst1q_NEON_SUFFIX(slice_r + i, 
+            veorq_NEON_SUFFIX(r,
+                veorq_NEON_SUFFIX(
+                    vandq_NEON_SUFFIX(x_and_x, ctrl_z), 
+                    vandq_NEON_SUFFIX(x_and_x, targ_z) 
                 )
             )
         );

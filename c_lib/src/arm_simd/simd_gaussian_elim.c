@@ -975,7 +975,7 @@ void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
 	// Load 4 copies of the mask into an int32x4
 	// and then reinterpret into the standard form
 	// (note that reinterpret *should* compile to a no-op)
-	TABLEAU_SIMD_VEC v_mask = vreinterpret_NEON_SUF_s32(vdupq_n_s32(mask));
+	TABLEAU_SIMD_VEC v_mask = vreinterpret_NEON_SUFFIX_s32(vdupq_n_s32(mask));
 	
 	// TODO
     __m256i pointer_offset = _mm256_mul_epi32(
