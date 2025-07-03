@@ -245,13 +245,13 @@ void tableau_transpose_slices(tableau_t* tab, uint64_t** slices)
         for (size_t row = col + 1; row < chunk_elements; row++) 
         {
             // Break this up to improve stride detection
-            //#pragma GCC unroll 64
+            #pragma GCC unroll 64
             for (size_t i = 0; i < 64; i++)
             {
                 src_ptr[i] = slices[i + (64 * col)] + row;
             }
 
-            //#pragma GCC unroll 64
+            #pragma GCC unroll 64
             for (size_t i = 0; i < 64; i++)
             {
                targ_ptr[i] = slices[i + (64 * row)] + col;            
@@ -420,7 +420,7 @@ bool tableau_slice_empty_z(const tableau_t* tab, size_t idx)
  */
 size_t tableau_ctz(CHUNK_OBJ* slice, const size_t slice_len)
 {
-    //#pragma GCC unroll 8
+    #pragma GCC unroll 8
     for (size_t i = 0;
          i < slice_len;
          i += CHUNK_STRIDE)
@@ -459,7 +459,7 @@ void tableau_idx_swap(tableau_t* tab, const size_t i, const size_t j)
 
     const size_t term = SLICE_LEN(tab->n_qubits, sizeof(uint64_t));
     // No temporary makes pipelining this easier
-    //#pragma GCC unroll 8
+    #pragma GCC unroll 8
     for (size_t idx = 0; idx < term; idx += sizeof(uint64_t))
     {
         slice_x_i[idx] ^= slice_x_j[idx];

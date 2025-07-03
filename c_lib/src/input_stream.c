@@ -169,7 +169,7 @@ void parse_instruction_block(
     instruction_stream_u* instructions,
     const size_t n_instructions)
 {
-    //#pragma GCC unroll 8
+    #pragma GCC unroll 8
     for (size_t i = 0; i < n_instructions; i++)
     {
         instruction_switch[

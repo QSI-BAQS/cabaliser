@@ -150,7 +150,7 @@ void __inline_decomp_load_block(
     const size_t col_offset 
 )
 {
-        //#pragma GCC unroll 64 
+        #pragma GCC unroll 64 
         for (size_t j = 0; j < BLOCK_STRIDE_BITS; j++)
         {
            block[j] = GET_CHUNK(slices, slice_len, row_offset, col_offset + j);
@@ -180,7 +180,7 @@ void __inline_decomp_store_block(
     const size_t col_offset 
 )
 {
-        //#pragma GCC unroll 64 
+        #pragma GCC unroll 64 
         for (size_t j = 0; j < BLOCK_STRIDE_BITS; j++)
         {
            *(uint64_t*)(
@@ -398,7 +398,7 @@ size_t decomp_non_local_search_and_elim(
         
         decomp_load_block(targ_block, slices, slice_len_bytes, offset, i);
 
-        //#pragma GCC unroll 64 
+        #pragma GCC unroll 64 
         for (size_t j = 0; j < 64; j++)
         {
             // While not all bits unset
@@ -488,7 +488,7 @@ void decomp_col_elim_upper(
     
         decomp_load_block(targ_block, slices, slice_len_bytes, offset, i);
 
-        //#pragma GCC unroll 8 
+        #pragma GCC unroll 8 
         for (size_t j = 0; j < 64; j++)
         {
             // While not all bits unset
@@ -528,7 +528,7 @@ void decomp_col_elim_lower(
         
         decomp_load_block(targ_block, slices, slice_len_bytes, offset, i);
 
-        //#pragma GCC unroll 8 
+        #pragma GCC unroll 8 
         for (size_t j = 0; j < 64; j++)
         {
             // While not all bits unset
@@ -985,7 +985,7 @@ void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
         uint32_t dst[8];
         _mm256_storeu_si256((void*)dst, chunks);
 
-        //#pragma GCC unroll 8
+        #pragma GCC unroll 8
         for (size_t chunk = 0; chunk < 8; chunk++)
         {
             if (dst[chunk])
