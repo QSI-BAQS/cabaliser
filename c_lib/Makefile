@@ -1,7 +1,7 @@
 SHELL := /bin/bash
-CC := gcc 
+CC := clang
 OMPFLAG := -fopenmp
-CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG} 
+CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG}
 
 # Optimisation Flags
 ifeq ($(CC),clang)
@@ -44,10 +44,9 @@ OBJFILES += ${SIMD_OBJFILES}
 # The loop vectorisation flags don't mesh well with the casts between pointer types
 SIMD_TESTS := test_transpose test_rowsum
 ifeq ($(CC),clang)
-	# TODO: Currently passes all tests at O0, fails python cliffords at 
-	# O2
-    SIMD_CFLAGS := -march=native -O2
-    SIMD_CFLAGS += -mllvm -enable-loopinterchange -fno-slp-vectorize -fno-vectorize
+    SIMD_CFLAGS := -march=native -O1
+	SIMD_CFLAGS += -fno-inline -fno-vectorize -fno-slp-vectorize
+    #SIMD_CFLAGS += -mllvm -enable-loopinterchange -fno-slp-vectorize -fno-vectorize -fno-inline -mllvm -enable-unroll-and-jam -mllvm -enable-nontrivial-unswitch 
 else
 	SIMD_CFLAGS := -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
 	SIMD_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
