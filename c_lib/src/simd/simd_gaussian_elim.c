@@ -274,9 +274,19 @@ void decomp_local_elim_lower(
         const size_t end,
         uint64_t ctrl_block[64])
 {
-
     size_t ctrl = 0;
-    uint64_t mask = ((1ull << end) - 1ull);
+    uint64_t mask = 0;
+    
+    // Avoid undefined behaviour for right shifts at or beyond the size of 
+    // mask TODO - replace branch while still avoiding UB?
+    if (end < 64)
+    {
+        mask = ((1ull << end) - 1ull);
+    }
+    else
+    {
+        mask = -1;
+    }
 
     // If end is 64 then mask is zeroed
     // This operation avoids that in a branch-free manner
