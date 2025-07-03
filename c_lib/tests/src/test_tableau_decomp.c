@@ -401,6 +401,8 @@ void test_widget_hadamard_decomp(void)
 
     teleport_input(wid, 1);
 
+    printf("%zu\n", widget_get_n_qubits(wid));
+
     instruction_stream_u *stream = malloc(2 * sizeof(instruction_stream_u));
 
     stream[0].single.opcode = _H_;
