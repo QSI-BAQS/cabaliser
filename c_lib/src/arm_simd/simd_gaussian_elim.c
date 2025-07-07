@@ -276,7 +276,18 @@ void decomp_local_elim_lower(
 {
 
     size_t ctrl = 0;
-    uint64_t mask = ((1ull << end) - 1ull);
+    uint64_t mask = 0;
+
+    // Avoid undefined behaviour for right shifts at or beyond the size of 
+    // mask TODO - replace branch while still avoiding UB?
+    if (end < 64)
+    {
+        mask = ((1ull << end) - 1ull);
+    }
+    else
+    {
+        mask = -1;
+    }
 
     // If end is 64 then mask is zeroed
     // This operation avoids that in a branch-free manner
@@ -969,31 +980,29 @@ void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
     static const uint32_t integers[8] = {0, 1, 2, 3, 4, 5, 6, 7};
     const uint64_t mask = 1 << (idx % 8);
 
-    // x86 - 8 Copies of the mask
-	//__m256i v_mask = _mm256_broadcastd_epi32(_mm_loadu_si32(&mask));
-	
 	// Load 4 copies of the mask into an int32x4
-	// and then reinterpret into the standard form
-	// (note that reinterpret *should* compile to a no-op)
-	TABLEAU_SIMD_VEC v_mask = vreinterpret_NEON_SUFFIX_s32(vdupq_n_s32(mask));
+	int32x4_t v_mask = vdupq_n_s32(mask);
 	
-	// TODO
-    __m256i pointer_offset = _mm256_mul_epi32(
-                        _mm256_lddqu_si256((void*)integers),
-                        _mm256_broadcastd_epi32(_mm_loadu_si32(&stride))    
-                    );
- 
     size_t j = 0;
-    for (size_t j = idx + 1; j < tab->n_qubits - 7; j+=8)
+    for (size_t j = idx + 1; j < tab->n_qubits - 3; j+=4)
     {
-        
-        // Gathers 8 chunks
-        __m256i chunks = _mm256_and_si256(v_mask, _mm256_i32gather_epi32(ptr, pointer_offset, 4));
-        uint32_t dst[8];
-        _mm256_storeu_si256((void*)dst, chunks);
+        // Gather 4 chunks
+        // (has to be done one-by-one)
+        int32x4_t chunks;
 
-        #pragma GCC unroll 8
-        for (size_t chunk = 0; chunk < 8; chunk++)
+        chunks = vld1q_lane_s32(ptr, chunks, 0);
+        chunks = vld1q_lane_s32(ptr + stride, chunks, 0);
+        chunks = vld1q_lane_s32(ptr + stride * 2, chunks, 0);
+        chunks = vld1q_lane_s32(ptr + stride * 3, chunks, 0);
+
+        // Combine with the mask
+        chunks = vandq_s32(chunks, v_mask);
+
+        uint32_t dst[4];
+        vst1q_s32(dst, chunks);
+
+        #pragma GCC unroll 4
+        for (size_t chunk = 0; chunk < 4; chunk++)
         {
             if (dst[chunk])
             {
@@ -1002,7 +1011,7 @@ void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
             }
         }
 
-        ptr += 8 * stride;
+        ptr += 4 * stride;
     }
 
     for (; j < tab->n_qubits; j++)
@@ -1048,20 +1057,19 @@ void simd_swap(
     void* slice_j_z,
     size_t slice_len)
 {
-    for (size_t step = 0; step < slice_len; step += 32)
+    for (size_t step = 0; step < slice_len; step += 16)
     {
-        __m256i v_i_x = _mm256_loadu_si256(slice_i_x + step);
-        __m256i v_j_x = _mm256_loadu_si256(slice_j_x + step);
+        TABLEAU_SIMD_VEC v_i_x = vld1q_NEON_SUFFIX(slice_i_x + step);
+        TABLEAU_SIMD_VEC v_j_x = vld1q_NEON_SUFFIX(slice_j_x + step);
 
-        __m256i v_i_z = _mm256_loadu_si256(slice_i_z + step);
-        __m256i v_j_z = _mm256_loadu_si256(slice_j_z + step);
+        TABLEAU_SIMD_VEC v_i_z = vld1q_NEON_SUFFIX(slice_i_z + step);
+        TABLEAU_SIMD_VEC v_j_z = vld1q_NEON_SUFFIX(slice_j_z + step);
 
-        _mm256_storeu_si256(slice_i_x + step, v_j_x);
-        _mm256_storeu_si256(slice_j_x + step, v_i_x);
+        vst1q_NEON_SUFFIX(slice_i_x + step, v_j_x);
+        vst1q_NEON_SUFFIX(slice_j_x + step, v_i_x);
 
-        _mm256_storeu_si256(slice_i_z + step, v_j_z);
-        _mm256_storeu_si256(slice_j_z + step, v_i_z);
-
+        vst1q_NEON_SUFFIX(slice_i_z + step, v_j_z);
+        vst1q_NEON_SUFFIX(slice_j_z + step, v_i_z);
     }
 
     return;
