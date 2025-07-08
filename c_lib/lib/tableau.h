@@ -52,7 +52,7 @@ typedef struct tableau_t tableau_t;
 #define CHUNK_IDX(slice, offset_byte) (*(CHUNK_OBJ*)((void*)slice + offset_byte))
 
 // TODO - This may be gcc only
-#if defined(__x86-64__)
+#if defined(__x86_64__)
 #define TABLEAU_SIMD_VEC __m256i
 #elif defined(__arm__) || defined(__aarch64__)
 #define TABLEAU_SIMD_VEC uint8x16_t
