@@ -43,6 +43,13 @@ widget_t* widget_create(const size_t initial_qubits, const size_t max_qubits);
 
 
 /*
+ * widget_get_clifford_from_table
+ * Retrieves a clifford byte from the table attached to queue
+ */
+uint8_t widget_get_clifford_from_table(widget_t* wid, size_t i);
+
+
+/*
  * widget_destroy
  * Destructor for the widget object
  * :: wid : widget_t* :: widget to free

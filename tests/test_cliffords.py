@@ -31,7 +31,7 @@ class CliffordsTest(unittest.TestCase):
         self.clifford_sequences(depth=3, test_states=False, test_gates=True) # Floating point kicks in around here
 
     def test_clifford_depth_4(self):
-        self.clifford_sequences(depth=4, test_states=False, test_gates=True)
+       self.clifford_sequences(depth=4, test_states=False, test_gates=True)
 
     def test_clifford_depth_5(self): # Past depth 5 exhaustive search's exponential scaling hits hard
         self.clifford_sequences(depth=5, test_states=False, test_gates=True)
@@ -40,8 +40,7 @@ class CliffordsTest(unittest.TestCase):
         self.clifford_sequences(depth=2, apply=True, test_gates=False, test_states=True)
 
     def test_clifford_depth_3_applied(self):
-        self.clifford_sequences(depth=3, apply=True, test_gates=False, test_states=True) # Floating point kicks in around here
-
+       self.clifford_sequences(depth=3, apply=True, test_gates=False, test_states=True) # Floating point kicks in around here
 
     def test_cnot_clifford_depth_1(self):
         self.clifford_sequences_cnot_first(depth=1)
@@ -81,15 +80,23 @@ class CliffordsTest(unittest.TestCase):
                 if apply:
                     wid.apply_local_cliffords()
 
+                #wid.tableau_print_phases()
+                #wid.tableau_print()
+
+
                 wid.decompose()
 
+                #if wid.get_local_cliffords().to_list()[0] != 'I':
+                    #wid.tableau_print()
+                    #print(ops)
+                    #print(wid.get_local_cliffords().to_list())
 
                 if test_gates:  # Only tests the clifford composition sequences
                     wid_operation = wid.get_local_cliffords().to_list()[1]
                     if not cmp_gates(local_simulator.LOCAL_CLIFFORD_TABLE[wid_operation], operation):
 
-                        print("OPs:", list(map(gates.SINGLE_QUBIT_GATE_ARR.__getitem__, map(lambda x: x[0], operations))))
-                        print("Operation: ", operation)
+                        #print("OPs:", list(map(gates.SINGLE_QUBIT_GATE_ARR.__getitem__, map(lambda x: x[0], operations))))
+                        #print("Operation: ", operation)
                         print(wid_operation)
                         print(local_simulator.LOCAL_CLIFFORD_TABLE[wid_operation])
                         print(wid.get_local_cliffords().to_list())
@@ -116,10 +123,10 @@ class CliffordsTest(unittest.TestCase):
                         dephase(effective_state)
 
                         if (np.abs(effective_state - widget_state) > EPS).any():
-                            print("Operation: ", operation)
-                            print(input_state)
-                            print(effective_state)
-                            print(widget_state)
+                            #print("Operation: ", operation)
+                            #print(input_state)
+                            #print(effective_state)
+                            #print(widget_state)
                             assert False
 
 
@@ -151,11 +158,11 @@ class CliffordsTest(unittest.TestCase):
             wid_operation = wid.get_local_cliffords().to_list()[1]
             if not cmp_gates(local_simulator.LOCAL_CLIFFORD_TABLE[wid_operation], operation):
 
-                print("OPs:", list(map(gates.SINGLE_QUBIT_GATE_ARR.__getitem__, map(lambda x: x[0], operations))))
-                print("Operation: ", operation)
-                print(wid_operation)
-                print(local_simulator.LOCAL_CLIFFORD_TABLE[wid_operation])
-                print(wid.get_local_cliffords().to_list())
+                #print("OPs:", list(map(gates.SINGLE_QUBIT_GATE_ARR.__getitem__, map(lambda x: x[0], operations))))
+                #print("Operation: ", operation)
+                #print(wid_operation)
+                #print(local_simulator.LOCAL_CLIFFORD_TABLE[wid_operation])
+                #print(wid.get_local_cliffords().to_list())
 
                 assert False
 
@@ -204,15 +211,15 @@ class CliffordsTest(unittest.TestCase):
                     dephase(effective_state)
 
                     if (np.abs(effective_state - widget_state) > EPS).any():
-                        print("####")
-                        print("Operation: ", ops, len(ops))
-                        print("####")
+                        #print("####")
+                        #print("Operation: ", ops, len(ops))
+                        #print("####")
 
-                        print({i: ops[i] for i in range(len(ops))})
+                        #print({i: ops[i] for i in range(len(ops))})
 
-                        print(local_simulator.vec(input_state))
-                        print(local_simulator.vec(effective_state))
-                        print(local_simulator.vec(widget_state))
+                        #print(local_simulator.vec(input_state))
+                        #print(local_simulator.vec(effective_state))
+                        #print(local_simulator.vec(widget_state))
                         assert False
 
 
@@ -266,10 +273,10 @@ class CliffordsTest(unittest.TestCase):
                     dephase(effective_state)
 
                     if (np.abs(effective_state - widget_state) > EPS).any():
-                        print("Operation: ", ops, len(operation))
-                        print(input_state)
-                        print(effective_state)
-                        print(widget_state)
+                        #print("Operation: ", ops, len(operation))
+                        #print(input_state)
+                        #print(effective_state)
+                        #print(widget_state)
                         assert False
 
 def cmp_gates(gate_a, gate_b, eps=1e-5):

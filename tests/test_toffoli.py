@@ -28,7 +28,7 @@ class ToffoliTest(unittest.TestCase):
         (gates.RZ, (targ, _T_)),
         (gates.CNOT, (ctrl_b, targ)),
         (gates.RZ, (targ, _Tdag_)),
-        (gates.CNOT, (ctrl_b, targ)),
+        (gates.CNOT, (ctrl_a, targ)),
         (gates.RZ, (targ, _T_)),
         (gates.CNOT, (ctrl_a, ctrl_b)),
         (gates.RZ, (ctrl_a, _T_)),

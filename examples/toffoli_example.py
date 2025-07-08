@@ -27,7 +27,7 @@ def toffoli_gate(ctrl_a, ctrl_b, targ):
     (gates.RZ, (targ, _T_)),
     (gates.CNOT, (ctrl_b, targ)),
     (gates.RZ, (targ, _Tdag_)),
-    (gates.CNOT, (ctrl_b, targ)),
+    (gates.CNOT, (ctrl_a, targ)),
     (gates.RZ, (targ, _T_)),
     (gates.RZ, (ctrl_b, _T_)),
     (gates.CNOT, (ctrl_a, ctrl_b)),

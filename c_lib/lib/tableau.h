@@ -98,6 +98,8 @@ tableau_t* tableau_create(const size_t n_qubits);
 void tableau_destroy(tableau_t* tab);
 
 
+
+size_t tableau_get_slice_len(tableau_t* tab);
 /*
  * slice_set_bit
  * Sets a bit in a slice 
@@ -222,6 +224,10 @@ bool tableau_slice_empty_z(const tableau_t* tab, size_t idx);
  *  :: len : const size_t :: Index of the slice
  */
 size_t tableau_ctz(CHUNK_OBJ* slice, const size_t len);
+
+size_t* tableau_get_slice_z(tableau_t* tab, size_t index);
+
+size_t* tableau_get_slice_x(tableau_t* tab, size_t index);
 
 /*
  * tableau_transverse_hadamard
