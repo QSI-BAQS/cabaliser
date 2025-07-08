@@ -1,5 +1,6 @@
 SHELL := /bin/bash
-CC := clang
+ARCHITECTURE := arm
+CC := gcc
 OMPFLAG := -fopenmp
 CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG}
 
@@ -9,12 +10,20 @@ ifeq ($(CC),clang)
 else
 	CFLAGS += -Ofast -fPIC
 endif
-CFLAGS += -mavx2 -mlzcnt -mbmi2 
+
+ifeq ($(ARCHITECTURE),x86_64) 
+	CFLAGS += -mavx2 -mlzcnt -mbmi2 
+endif
 
 TARGET := lib_cabaliser.so
 TARGET_FLAGS := -shared -Wl,-soname,${TARGET}  
  
 SRCDIR := src
+ifneq ($(filter $(ARCHITECTURE),arm aarch64),)
+	SIMD_DIR := arm_simd
+else
+	SIMD_DIR := simd
+endif
 LIBDIR := lib
 BUILDDIR := build
 
@@ -34,7 +43,7 @@ OBJFILES := $(patsubst ${SRCDIR}/%.c, ${BUILDDIR}/%.o, ${SRCFILES})
 COND_OBJFILES := ${OBJFILES} 
 
 
-SIMD_SRCDIR := ${SRCDIR}/simd
+SIMD_SRCDIR := ${SRCDIR}/${SIMD_DIR}
 SIMD_SRCFILES := $(wildcard ${SIMD_SRCDIR}/*.c)
 SIMD_OBJFILES := $(patsubst ${SIMD_SRCDIR}/%.c, ${BUILDDIR}/simd/%.o, ${SIMD_SRCFILES})
 
@@ -134,7 +143,7 @@ else
 	${CC} $^ ${CFLAGS} ${LINK_LIBS} ${LIBS} -c -o $@
 endif
 
-${BUILDDIR}/simd/%.o : ${SRCDIR}/simd/%.c
+${BUILDDIR}/simd/%.o : ${SRCDIR}/${SIMD_DIR}/%.c
 	${CC} $^ ${CFLAGS} ${SIMD_CFLAGS} ${LIBS} -c -o $@
 
 ${TESTDIR}/%.out : ${OBJFILES} ${TEST_SRCDIR}/%.c
