@@ -4,33 +4,12 @@
 static inline
 void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict targ)
 {
-    __m256i msrc = _mm256_set_epi16(
-            *(uint16_t*)src[15],
-            *(uint16_t*)src[14],
-            *(uint16_t*)src[13],
-            *(uint16_t*)src[12],
-            *(uint16_t*)src[11],
-            *(uint16_t*)src[10],
-            *(uint16_t*)src[9],
-            *(uint16_t*)src[8],
-            *(uint16_t*)src[7],
-            *(uint16_t*)src[6],
-            *(uint16_t*)src[5],
-            *(uint16_t*)src[4],
-            *(uint16_t*)src[3],
-            *(uint16_t*)src[2],
-            *(uint16_t*)src[1],
-            *(uint16_t*)src[0]
-            );     
+    // Goal : load [1-31 : 2] into one vector and [0-30 : 2] into another
+    TABLEAU_SIMD_VEC src_v_lower = vld1q_NEON_SUFFIX(src_values);
+    TABLEAU_SIMD_VEC src_v_upper = vld1q_NEON_SUFFIX(src_values + 8);
 
-    // Transpose high and low bytes
-    // This shuffle is within each 128 byte lane
-    // Better unrolling will skip this setr operation 
-    __m256i shuffle_mask = _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15, 16, 18, 20, 22, 24, 26, 28, 30, 17, 19, 21, 23, 25, 27, 29, 31); 
-    msrc = _mm256_shuffle_epi8(msrc, shuffle_mask); 
-    
-    // Transpose between 128 bit lanes
-    msrc = _mm256_permute4x64_epi64(msrc, 0xd8);
+    TABLEAU_SIMD_VEC src_evens = vtrn1q_NEON_SUFFIX(src_v_lower, src_v_upper);
+    TABLEAU_SIMD_VEC src_odds = vtrn2q_NEON_SUFFIX(src_v_lower, src_v_upper);
 
     // bmi2 operations act 3x faster on registers
     register uint64_t a_tl = _mm_extract_epi64(__builtin_ia32_extract128i256(msrc, 0), 0);

@@ -60,46 +60,50 @@ int8_t simd_rowsum(
     const size_t n_bytes,
     void* restrict ctrl_x, 
     void* restrict ctrl_z, 
-    void* restrict targ_x, 
+    void* restrict targ_x,
     void* restrict targ_z 
 )
 {
-    __m256i mask = _mm256_setr_epi64x(ROWSUM_MASK); 
-    __m256i lookup = _mm256_setr_epi8(ROWSUM_SHUFFLE_MASK); 
-    __m256i accumulator = _mm256_setzero_si256(); 
+    uint64_t mask_vals[] = { MASK_0, MASK_0 };
+    TABLEAU_SIMD_VEC mask = vreinterpret_NEON_SUFFIX_u64(vld1q_u64(mask_vals));
+
+    uint8_t lookup_vals[] = { ROWSUM_SHUFFLE_SEQ };
+    TABLEAU_SIMD_VEC lookup = vreinterpret_NEON_SUFFIX_u8(vld1q_u8(lookup_vals));
+
+    TABLEAU_SIMD_VEC accumulator = vdupq_NEON_SUF(0);
 
     for (size_t i = 0; i < n_bytes; i += ROWSUM_STRIDE)
     {
 
         // Load vecs   
-        __m256i v_ctrl_x = _mm256_loadu_si256(
+        uint16x8_t v_ctrl_x = vld1q_u16(
             ctrl_x + i 
         );
 
-        __m256i v_ctrl_z = _mm256_loadu_si256(
+        uint16x8_t v_ctrl_z = vld1q_u16(
             ctrl_z + i 
         );
 
-        __m256i v_targ_x = _mm256_loadu_si256(
+        uint16x8_t v_targ_x = vld1q_u16(
             targ_x + i 
         );
 
-        __m256i v_targ_z = _mm256_loadu_si256(
+        uint16x8_t v_targ_z = vld1q_u16(
             targ_z + i 
         );
 
         // Perform XOR operations
-        _mm256_storeu_si256(
+        vst1q_u16(
             targ_x + i,
-            _mm256_xor_si256(
+            veorq_u16(
                 v_ctrl_x,
                 v_targ_x
             )
         ); 
 
-        _mm256_storeu_si256(
+        vst1q_u16(
             targ_z + i,
-            _mm256_xor_si256(
+            veorg_u16(
                 v_ctrl_z,
                 v_targ_z
             )
@@ -112,26 +116,26 @@ int8_t simd_rowsum(
         #pragma GCC unroll 8
         for (uint8_t j = 0; j < 8; j++)
         {   
-            __m256i lane = _mm256_and_si256( // Apply the mask
+            uint16x8_t lane = vandq_u16( // Apply the mask
                         mask, 
-                        _mm256_srli_epi16(v_ctrl_x, j) // Shift right by j
+                        vshrq_n_u16(v_ctrl_x, j) // Shift right by j
                     ); 
 
-            lane = _mm256_or_si256( // Or with existing lane  
-                _mm256_slli_epi16( // Shift left by POS_CTRL_Z 
-                    _mm256_and_si256( // Apply the mask
+            lane = vorrq_u16( // Or with existing lane  
+                vshlq_n_u16( // Shift left by POS_CTRL_Z 
+                    vandq_u16( // Apply the mask
                         mask, 
-                        _mm256_srli_epi16(v_ctrl_z, j)
+                        vshlq_n_u16(v_ctrl_z, j)
                     ), 
                 POS_CTRL_Z),
                 lane
             );
 
-            lane = _mm256_or_si256( // Or with existing lane  
-                _mm256_slli_epi16( // Shift left by POS_CTRL_X 
-                    _mm256_and_si256( // Apply the mask
+            lane = vorrq_u16( // Or with existing lane  
+                vshlq_n_u16( // Shift left by POS_CTRL_X 
+                    vandq_u16( // Apply the mask
                         mask, 
-                        _mm256_srli_epi16(v_targ_x, j)
+                        vshlq_n_u16(v_targ_x, j)
                     ), 
                 POS_TARG_X),
                 lane
