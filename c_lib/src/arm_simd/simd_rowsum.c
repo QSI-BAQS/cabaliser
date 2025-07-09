@@ -65,16 +65,15 @@ int8_t simd_rowsum(
 )
 {
     uint64_t mask_vals[] = { MASK_0, MASK_0 };
-    TABLEAU_SIMD_VEC mask = vreinterpret_NEON_SUFFIX_u64(vld1q_u64(mask_vals));
+    uint8x16_t mask = vreinterpretq_u8_u64(vld1q_u64(mask_vals));
 
     uint8_t lookup_vals[] = { ROWSUM_SHUFFLE_SEQ };
-    TABLEAU_SIMD_VEC lookup = vreinterpret_NEON_SUFFIX_u8(vld1q_u8(lookup_vals));
+    uint8x16_t lookup = vld1q_u8(lookup_vals);
 
-    TABLEAU_SIMD_VEC accumulator = vdupq_NEON_SUF(0);
+    uint8x16_t accumulator = vdupq_n_u8(0);
 
     for (size_t i = 0; i < n_bytes; i += ROWSUM_STRIDE)
     {
-
         // Load vecs   
         uint16x8_t v_ctrl_x = vld1q_u16(
             ctrl_x + i 
@@ -103,7 +102,7 @@ int8_t simd_rowsum(
 
         vst1q_u16(
             targ_z + i,
-            veorg_u16(
+            veorq_u16(
                 v_ctrl_z,
                 v_targ_z
             )
@@ -117,15 +116,15 @@ int8_t simd_rowsum(
         for (uint8_t j = 0; j < 8; j++)
         {   
             uint16x8_t lane = vandq_u16( // Apply the mask
-                        mask, 
+                        vreinterpretq_u16_u8(mask), 
                         vshrq_n_u16(v_ctrl_x, j) // Shift right by j
                     ); 
 
             lane = vorrq_u16( // Or with existing lane  
                 vshlq_n_u16( // Shift left by POS_CTRL_Z 
                     vandq_u16( // Apply the mask
-                        mask, 
-                        vshlq_n_u16(v_ctrl_z, j)
+                        vreinterpretq_u16_u8(mask), 
+                        vshrq_n_u16(v_ctrl_z, j)
                     ), 
                 POS_CTRL_Z),
                 lane
@@ -134,34 +133,34 @@ int8_t simd_rowsum(
             lane = vorrq_u16( // Or with existing lane  
                 vshlq_n_u16( // Shift left by POS_CTRL_X 
                     vandq_u16( // Apply the mask
-                        mask, 
-                        vshlq_n_u16(v_targ_x, j)
+                        vreinterpretq_u16_u8(mask), 
+                        vshrq_n_u16(v_targ_x, j)
                     ), 
                 POS_TARG_X),
                 lane
             );
 
-            lane = _mm256_or_si256( // Or with existing lane  
-                _mm256_slli_epi16( // Shift left by POS_CTRL_Z 
-                    _mm256_and_si256( // Apply the mask
-                        mask, 
-                        _mm256_srli_epi16(v_targ_z, j)
+            lane = vorrq_u16( // Or with existing lane  
+                vshlq_n_u16( // Shift left by POS_CTRL_Z 
+                    vandq_u16( // Apply the mask
+                        vreinterpretq_u16_u8(mask), 
+                        vshrq_n_u16(v_targ_z, j)
                     ), 
                 POS_TARG_Z),
                 lane
             );
 
-            __m256i lookup_res = _mm256_shuffle_epi8(lookup, lane); 
+            uint8x16_t lookup_res = vqtbl1q_u8(lookup, vreinterpretq_u8_u16(lane)); 
 
             // Accumulator overflow is just a mod 4 operation
-            accumulator = _mm256_add_epi8(accumulator, lookup_res);  
+            accumulator = vaddq_u8(accumulator, lookup_res);
         }
     }  
 
 
     // Load the accumulator back to regular memory
     int8_t acc[32];  
-    _mm256_storeu_si256((void*)acc, accumulator);
+    vst1q_u8((void*)acc, accumulator);
     //_mm256_storeu_epi8(acc, accumulator);
     for (size_t i = 1; i < 32; i++)
     {
@@ -195,19 +194,19 @@ int8_t simd_xor_rowsum(
     {
 
         // Load vecs   
-        __m256i v_ctrl_x = _mm256_loadu_si256(
+        uint8x16_t v_ctrl_x = vld1q_u8(
             ((void*)ctrl_x) + i 
         );
 
-        __m256i v_ctrl_z = _mm256_loadu_si256(
+        uint8x16_t v_ctrl_z = vld1q_u8(
             ((void*)ctrl_z) + i 
         );
 
-        __m256i v_targ_x = _mm256_loadu_si256(
+        uint8x16_t v_targ_x = vld1q_u8(
             ((void*)targ_x) + i 
         );
 
-        __m256i v_targ_z = _mm256_loadu_si256(
+        uint8x16_t v_targ_z = vld1q_u8(
             ((void*)targ_z) + i 
         );
 
@@ -234,21 +233,21 @@ int8_t simd_xor_rowsum(
         }   
  
         // Perform XOR operations
-        v_targ_x = _mm256_xor_si256(
+        v_targ_x = veorq_u8(
             v_ctrl_x,
             v_targ_x
         ); 
-        v_targ_z = _mm256_xor_si256(
+        v_targ_z = veorq_u8(
             v_ctrl_z,
             v_targ_z
         ); 
        
         // Store target values  
-        _mm256_storeu_si256(
+        vst1q_u8(
             ((void*)targ_x) + i,
             v_targ_x 
         );
-        _mm256_storeu_si256(
+        vst1q_u8(
             ((void*)targ_z) + i,
             v_targ_z 
         );
@@ -270,35 +269,35 @@ void simd_rowsum_xor_only(
 {
     for (size_t i = 0; i < n_bytes; i += ROWSUM_STRIDE)
     {
-        __m256i v_targ_x = _mm256_loadu_si256(
+        uint8x16_t v_targ_x = vld1q_u8(
             targ_x + i 
         );
 
-        __m256i v_ctrl_x = _mm256_loadu_si256(
+        uint8x16_t v_ctrl_x = vld1q_u8(
             ctrl_x + i 
         );
 
         // Perform XOR operations
-        _mm256_storeu_si256(
+        vst1q_u8(
             targ_x + i,
-            _mm256_xor_si256(
+            veorq_u8(
                 v_ctrl_x,
                 v_targ_x
             )
         ); 
 
-        __m256i v_ctrl_z = _mm256_loadu_si256(
+        uint8x16_t v_ctrl_z = vld1q_u8(
             ctrl_z + i 
         );
 
-        __m256i v_targ_z = _mm256_loadu_si256(
+        uint8x16_t v_targ_z = vld1q_u8(
             targ_z + i 
         );
         
         // Perform XOR operations
-        _mm256_storeu_si256(
+        vst1q_u8(
             targ_z + i,
-            _mm256_xor_si256(
+            veorq_u8(
                 v_ctrl_z,
                 v_targ_z
             )
@@ -395,29 +394,23 @@ int8_t simd_rowsum_cnf_popcnt(
 {
     uint64_t pos = 0;
     uint64_t neg = 0;
-    for (size_t i = 0; i < n_bytes; i+=32) {
-        __m256i v_ctrl_x = _mm256_loadu_si256(ctrl_x + i);
-        __m256i v_ctrl_z = _mm256_loadu_si256(ctrl_z + i);
-        __m256i v_targ_x = _mm256_loadu_si256(targ_x + i);
-        __m256i v_targ_z = _mm256_loadu_si256(targ_z + i);
+    for (size_t i = 0; i < n_bytes; i+=16) {
+        uint8x16_t v_ctrl_x = vld1q_u8(ctrl_x + i);
+        uint8x16_t v_ctrl_z = vld1q_u8(ctrl_z + i);
+        uint8x16_t v_targ_x = vld1q_u8(targ_x + i);
+        uint8x16_t v_targ_z = vld1q_u8(targ_z + i);
 
-        __m256i plus = _mm256_or_si256(
-        _mm256_andnot_si256(_mm256_or_si256(v_targ_z, v_ctrl_x), _mm256_and_si256(v_ctrl_z, v_targ_x)),
-        _mm256_and_si256(_mm256_and_si256(v_ctrl_x, v_targ_z), _mm256_xor_si256(v_ctrl_z, v_targ_x)));
+        uint8x16_t plus = vorrq_u8(
+        vandq_u8(vmvnq_u8(vorrq_u8(v_targ_z, v_ctrl_x)), vandq_u8(v_ctrl_z, v_targ_x)),
+        vandq_u8(vandq_u8(v_ctrl_x, v_targ_z), veorq_u8(v_ctrl_z, v_targ_x)));
         
-        __m256i minus = _mm256_or_si256(
-        _mm256_andnot_si256(_mm256_or_si256(v_targ_x, v_ctrl_z), _mm256_and_si256(v_ctrl_x, v_targ_z)),
-        _mm256_and_si256(_mm256_and_si256(v_ctrl_z, v_targ_x), _mm256_xor_si256(v_ctrl_x, v_targ_z)));
+        uint8x16_t minus = vorrq_u8(
+        vandq_u8(vmvnq_u8(vorrq_u8(v_targ_x, v_ctrl_z)), vandq_u8(v_ctrl_x, v_targ_z)),
+        vandq_u8(vandq_u8(v_ctrl_z, v_targ_x), veorq_u8(v_ctrl_x, v_targ_z)));
 
-        pos += _mm_popcnt_u64(_mm256_extract_epi64(plus, 0))
-            + _mm_popcnt_u64(_mm256_extract_epi64(plus, 1))
-            + _mm_popcnt_u64(_mm256_extract_epi64(plus, 2))
-            + _mm_popcnt_u64(_mm256_extract_epi64(plus, 3));
+        pos += vaddvq_u8(vcntq_u8(plus));
 
-        neg += _mm_popcnt_u64(_mm256_extract_epi64(minus, 0))
-            + _mm_popcnt_u64(_mm256_extract_epi64(minus, 1))
-            + _mm_popcnt_u64(_mm256_extract_epi64(minus, 2))
-            + _mm_popcnt_u64(_mm256_extract_epi64(minus, 3));
+        neg += vaddvq_u8(vcntq_u8(minus)); 
     }
 
     simd_rowsum_xor_only(n_bytes, ctrl_x, ctrl_z, targ_x, targ_z);
@@ -432,75 +425,66 @@ int8_t simd_rowsum_cnf(
     void *restrict targ_x,
     void *restrict targ_z) 
 {
-    __m256i pos = _mm256_setzero_si256();
-    __m256i neg = _mm256_setzero_si256();
-    __m256i acc = _mm256_setzero_si256();
+    uint8x16_t pos = vmovq_n_u8(0);
+    uint8x16_t neg = vmovq_n_u8(0);
+    uint8x16_t acc = vmovq_n_u8(0);
 
-    for (size_t i = 0; i < n_bytes; i += 32) {
-        __m256i v_ctrl_x = _mm256_loadu_si256(ctrl_x + i);
-        __m256i v_ctrl_z = _mm256_loadu_si256(ctrl_z + i);
-        __m256i v_targ_x = _mm256_loadu_si256(targ_x + i);
-        __m256i v_targ_z = _mm256_loadu_si256(targ_z + i);
+    for (size_t i = 0; i < n_bytes; i += 16) {
+        uint8x16_t v_ctrl_x = vld1q_u8(ctrl_x + i);
+        uint8x16_t v_ctrl_z = vld1q_u8(ctrl_z + i);
+        uint8x16_t v_targ_x = vld1q_u8(targ_x + i);
+        uint8x16_t v_targ_z = vld1q_u8(targ_z + i);
 
-        __m256i plus = _mm256_or_si256(
-            _mm256_andnot_si256(
-                _mm256_or_si256(v_targ_z, v_ctrl_x),
-                _mm256_and_si256(v_ctrl_z, v_targ_x)),
-            _mm256_and_si256(
-                _mm256_and_si256(v_ctrl_x, v_targ_z),
-                _mm256_xor_si256(v_ctrl_z, v_targ_x)
+        uint8x16_t plus = vorrq_u8(
+            vandq_u8(
+                vmvnq_u8(vorrq_u8(v_targ_z, v_ctrl_x)),
+                vandq_u8(v_ctrl_z, v_targ_x)),
+            vandq_u8(
+                vandq_u8(v_ctrl_x, v_targ_z),
+                veorq_u8(v_ctrl_z, v_targ_x)
             ));
         
-        __m256i minus = _mm256_or_si256(
-            _mm256_andnot_si256(
-                _mm256_or_si256(v_targ_x, v_ctrl_z),
-                _mm256_and_si256(v_ctrl_x, v_targ_z)),
-            _mm256_and_si256(
-                _mm256_and_si256(v_ctrl_z, v_targ_x),
-                _mm256_xor_si256(v_ctrl_x, v_targ_z)
+        uint8x16_t minus = vorrq_u8(
+            vandq_u8(
+                vmvnq_u8(vorrq_u8(v_targ_x, v_ctrl_z)),
+                vandq_u8(v_ctrl_x, v_targ_z)),
+            vandq_u8(
+                vandq_u8(v_ctrl_z, v_targ_x),
+                veorq_u8(v_ctrl_x, v_targ_z)
             ));
         
         // Perform XOR operations
-        _mm256_storeu_si256(
+        vst1q_u8(
             targ_x + i,
-            _mm256_xor_si256(
+            veorq_u8(
                 v_ctrl_x,
                 v_targ_x
             )
         ); 
 
-        _mm256_storeu_si256(
+        vst1q_u8(
             targ_z + i,
-            _mm256_xor_si256(
+            veorq_u8(
                 v_ctrl_z,
                 v_targ_z
             )
         );
 
 
-        acc = _mm256_xor_si256(acc, _mm256_and_si256(pos, plus));
-        acc = _mm256_xor_si256(acc, _mm256_and_si256(neg, minus));
+        acc = veorq_u8(acc, vandq_u8(pos, plus));
+        acc = veorq_u8(acc, vandq_u8(neg, minus));
 
-        pos = _mm256_xor_si256(pos, plus);
-        neg = _mm256_xor_si256(neg, minus);
+        pos = veorq_u8(pos, plus);
+        neg = veorq_u8(neg, minus);
     }
 
     uint64_t total = 0;
 
-    total += _mm_popcnt_u64(_mm256_extract_epi64(pos, 0))
-        + _mm_popcnt_u64(_mm256_extract_epi64(pos, 1))
-        + _mm_popcnt_u64(_mm256_extract_epi64(pos, 2))
-        + _mm_popcnt_u64(_mm256_extract_epi64(pos, 3));
+    total += vaddvq_u8(vcntq_u8(pos));
 
-    total -= _mm_popcnt_u64(_mm256_extract_epi64(neg, 0))
-        + _mm_popcnt_u64(_mm256_extract_epi64(neg, 1))
-        + _mm_popcnt_u64(_mm256_extract_epi64(neg, 2))
-        + _mm_popcnt_u64(_mm256_extract_epi64(neg, 3));
-    
-    total += (_mm_popcnt_u64(_mm256_extract_epi64(acc, 0))
-            + _mm_popcnt_u64(_mm256_extract_epi64(acc, 1))
-            + _mm_popcnt_u64(_mm256_extract_epi64(acc, 2))
-            + _mm_popcnt_u64(_mm256_extract_epi64(acc, 3))) << 1;
+    total -= vaddvq_u8(vcntq_u8(neg));
+
+    total += vaddvq_u8(vcntq_u8(acc)); 
 
     return ((total + 2) % 4) - 2;
 }
