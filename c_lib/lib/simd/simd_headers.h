@@ -8,9 +8,8 @@
 #include <x86gprintrin.h>
 #define ROWSUM_STRIDE (256 / 8) 
 #elif defined(__arm__) || defined(__aarch64__)
+#include <stddef.h>
 #include <arm_neon.h>
-#include <arm_sve.h>
-#include <arm_neon_sve_bridge.h>
 // Halved ROWSUM_STRIDE for Neon
 #define ROWSUM_STRIDE (128 / 8) 
 #endif
