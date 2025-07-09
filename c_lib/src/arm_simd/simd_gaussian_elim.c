@@ -988,7 +988,7 @@ void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
     {
         // Gather 4 chunks
         // (has to be done one-by-one)
-        int32x4_t chunks;
+        int32x4_t chunks = vmovq_n_s32(0);
 
         chunks = vld1q_lane_s32(ptr, chunks, 0);
         chunks = vld1q_lane_s32(ptr + stride, chunks, 0);
@@ -998,7 +998,7 @@ void simd_tableau_X_diag_col_upper(tableau_t* tab, const size_t idx)
         // Combine with the mask
         chunks = vandq_s32(chunks, v_mask);
 
-        uint32_t dst[4];
+        int32_t dst[4];
         vst1q_s32(dst, chunks);
 
         #pragma GCC unroll 4
@@ -1059,17 +1059,17 @@ void simd_swap(
 {
     for (size_t step = 0; step < slice_len; step += 16)
     {
-        TABLEAU_SIMD_VEC v_i_x = vld1q_NEON_SUFFIX(slice_i_x + step);
-        TABLEAU_SIMD_VEC v_j_x = vld1q_NEON_SUFFIX(slice_j_x + step);
+        uint8x16_t v_i_x = vld1q_u8(slice_i_x + step);
+        uint8x16_t v_j_x = vld1q_u8(slice_j_x + step);
 
-        TABLEAU_SIMD_VEC v_i_z = vld1q_NEON_SUFFIX(slice_i_z + step);
-        TABLEAU_SIMD_VEC v_j_z = vld1q_NEON_SUFFIX(slice_j_z + step);
+        uint8x16_t v_i_z = vld1q_u8(slice_i_z + step);
+        uint8x16_t v_j_z = vld1q_u8(slice_j_z + step);
 
-        vst1q_NEON_SUFFIX(slice_i_x + step, v_j_x);
-        vst1q_NEON_SUFFIX(slice_j_x + step, v_i_x);
+        vst1q_u8(slice_i_x + step, v_j_x);
+        vst1q_u8(slice_j_x + step, v_i_x);
 
-        vst1q_NEON_SUFFIX(slice_i_z + step, v_j_z);
-        vst1q_NEON_SUFFIX(slice_j_z + step, v_i_z);
+        vst1q_u8(slice_i_z + step, v_j_z);
+        vst1q_u8(slice_j_z + step, v_i_z);
     }
 
     return;
