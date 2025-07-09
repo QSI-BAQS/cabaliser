@@ -1,29 +1,99 @@
 #include "simd_transpose.h"
 
+/*
+ * Interal bit manipulation functions (naive)
+ *
+ * ARM Neon lacks ext, dup, etc. so either;
+ *      1. SVE is required
+ *      2. Software versions must be used
+ */
+
+static inline uint64_t __naive_bext_u64(uint64_t targ, uint64_t mask)
+{
+    uint64_t res = 0;
+    int r_pos = 0;
+
+    for (int i = 0; i < 64; i++)
+    {
+        if (mask & (1ull << i))
+        {
+            if (targ & (1ull << i))
+            {
+                res |= 1ull << r_pos;
+            }
+
+            r_pos++;
+        }
+    }
+
+    return res;
+}
+
+static inline uint64_t __naive_bdep_u64(uint64_t targ, uint64_t mask)
+{
+    uint64_t res = 0;
+    int t_pos = 0;
+
+    for (int i = 0; i < 64; i++)
+    {
+        if (mask & (1ull << i))
+        {
+            if (targ & (1ull << t_pos))
+            {
+                res |= 1ull << i; 
+            }
+
+            t_pos++;
+        }
+    }
+
+    return res;
+}
+
+
+
 // Transposes two blocks
 static inline
 void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict targ)
 {
     // Goal : load [1-31 : 2] into one vector and [0-30 : 2] into another
-    TABLEAU_SIMD_VEC src_v_lower = vld1q_NEON_SUFFIX(src_values);
-    TABLEAU_SIMD_VEC src_v_upper = vld1q_NEON_SUFFIX(src_values + 8);
+    uint16x8_t src_v_lower = vdupq_n_u16(0);
 
-    TABLEAU_SIMD_VEC src_evens = vtrn1q_NEON_SUFFIX(src_v_lower, src_v_upper);
-    TABLEAU_SIMD_VEC src_odds = vtrn2q_NEON_SUFFIX(src_v_lower, src_v_upper);
+    src_v_lower = vsetq_lane_u16(*(uint16_t *)src[0], src_v_lower, 0);
+    src_v_lower = vsetq_lane_u16(*(uint16_t *)src[1], src_v_lower, 1);
+    src_v_lower = vsetq_lane_u16(*(uint16_t *)src[2], src_v_lower, 2);
+    src_v_lower = vsetq_lane_u16(*(uint16_t *)src[3], src_v_lower, 3);
+    src_v_lower = vsetq_lane_u16(*(uint16_t *)src[4], src_v_lower, 4);
+    src_v_lower = vsetq_lane_u16(*(uint16_t *)src[5], src_v_lower, 5);
+    src_v_lower = vsetq_lane_u16(*(uint16_t *)src[6], src_v_lower, 6);
+    src_v_lower = vsetq_lane_u16(*(uint16_t *)src[7], src_v_lower, 7);
 
-    // bmi2 operations act 3x faster on registers
-    register uint64_t a_tl = _mm_extract_epi64(__builtin_ia32_extract128i256(msrc, 0), 0);
-    register uint64_t a_tr = _mm_extract_epi64(__builtin_ia32_extract128i256(msrc, 1), 0);
-    register uint64_t a_bl = _mm_extract_epi64(__builtin_ia32_extract128i256(msrc, 0), 1);
-    register uint64_t a_br = _mm_extract_epi64(__builtin_ia32_extract128i256(msrc, 1), 1);
+    uint16x8_t src_v_upper = vdupq_n_u16(0);
+
+    src_v_upper = vsetq_lane_u16(*(uint16_t *)src[8], src_v_upper, 0);
+    src_v_upper = vsetq_lane_u16(*(uint16_t *)src[9], src_v_upper, 1);
+    src_v_upper = vsetq_lane_u16(*(uint16_t *)src[10], src_v_upper, 2);
+    src_v_upper = vsetq_lane_u16(*(uint16_t *)src[11], src_v_upper, 3);
+    src_v_upper = vsetq_lane_u16(*(uint16_t *)src[12], src_v_upper, 4);
+    src_v_upper = vsetq_lane_u16(*(uint16_t *)src[13], src_v_upper, 5);
+    src_v_upper = vsetq_lane_u16(*(uint16_t *)src[14], src_v_upper, 6);
+    src_v_upper = vsetq_lane_u16(*(uint16_t *)src[15], src_v_upper, 7);
+
+    uint8x16_t src_evens = vreinterpretq_u8_u16(vtrn1q_u16(src_v_lower, src_v_upper));
+    uint8x16_t src_odds = vreinterpretq_u8_u16(vtrn2q_u16(src_v_lower, src_v_upper));
+
+    register uint64_t a_tl = vdupd_laneq_u64(vreinterpretq_u64_u8(src_odds), 0);
+    register uint64_t a_tr = vdupd_laneq_u64(vreinterpretq_u64_u8(src_odds), 1);
+    register uint64_t a_bl = vdupd_laneq_u64(vreinterpretq_u64_u8(src_evens), 0);
+    register uint64_t a_br = vdupd_laneq_u64(vreinterpretq_u64_u8(src_evens), 1);
 
     // Scopes to attempt to force register use 
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tl = _pext_u64(a_tl, 0x0101010101010101ull);
-            register uint64_t col_bl = _pext_u64(a_bl, 0x0101010101010101ull);
-            col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
+            register uint64_t col_tl = __naive_bext_u64(a_tl, 0x0101010101010101ull);
+            register uint64_t col_bl = __naive_bext_u64(a_bl, 0x0101010101010101ull);
+            col_l = __naive_bdep_u64(col_tl, 0x00000000000000ffull) | __naive_bdep_u64(col_bl, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[0][0] |= (uint64_t)col_l;
     }
@@ -31,9 +101,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tl = _pext_u64(a_tl, 0x0202020202020202ull);
-            register uint64_t col_bl = _pext_u64(a_bl, 0x0202020202020202ull);
-            col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
+            register uint64_t col_tl = __naive_bext_u64(a_tl, 0x0202020202020202ull);
+            register uint64_t col_bl = __naive_bext_u64(a_bl, 0x0202020202020202ull);
+            col_l = __naive_bdep_u64(col_tl, 0x00000000000000ffull) | __naive_bdep_u64(col_bl, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[1][0] |= (uint64_t)col_l;
     }
@@ -41,9 +111,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tl = _pext_u64(a_tl, 0x0404040404040404ull);
-            register uint64_t col_bl = _pext_u64(a_bl, 0x0404040404040404ull);
-            col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
+            register uint64_t col_tl = __naive_bext_u64(a_tl, 0x0404040404040404ull);
+            register uint64_t col_bl = __naive_bext_u64(a_bl, 0x0404040404040404ull);
+            col_l = __naive_bdep_u64(col_tl, 0x00000000000000ffull) | __naive_bdep_u64(col_bl, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[2][0] |= (uint64_t)col_l;
     }
@@ -51,9 +121,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tl = _pext_u64(a_tl, 0x0808080808080808ull);
-            register uint64_t col_bl = _pext_u64(a_bl, 0x0808080808080808ull);
-            col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
+            register uint64_t col_tl = __naive_bext_u64(a_tl, 0x0808080808080808ull);
+            register uint64_t col_bl = __naive_bext_u64(a_bl, 0x0808080808080808ull);
+            col_l = __naive_bdep_u64(col_tl, 0x00000000000000ffull) | __naive_bdep_u64(col_bl, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[3][0] |= (uint64_t)col_l;
     }
@@ -61,9 +131,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tl = _pext_u64(a_tl, 0x1010101010101010ull);
-            register uint64_t col_bl = _pext_u64(a_bl, 0x1010101010101010ull);
-            col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
+            register uint64_t col_tl = __naive_bext_u64(a_tl, 0x1010101010101010ull);
+            register uint64_t col_bl = __naive_bext_u64(a_bl, 0x1010101010101010ull);
+            col_l = __naive_bdep_u64(col_tl, 0x00000000000000ffull) | __naive_bdep_u64(col_bl, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[4][0] |= (uint64_t)col_l;
     }
@@ -71,9 +141,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tl = _pext_u64(a_tl, 0x2020202020202020ull);
-            register uint64_t col_bl = _pext_u64(a_bl, 0x2020202020202020ull);
-            col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
+            register uint64_t col_tl = __naive_bext_u64(a_tl, 0x2020202020202020ull);
+            register uint64_t col_bl = __naive_bext_u64(a_bl, 0x2020202020202020ull);
+            col_l = __naive_bdep_u64(col_tl, 0x00000000000000ffull) | __naive_bdep_u64(col_bl, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[5][0] |= (uint64_t)col_l;
     }
@@ -81,9 +151,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tl = _pext_u64(a_tl, 0x4040404040404040ull);
-            register uint64_t col_bl = _pext_u64(a_bl, 0x4040404040404040ull);
-            col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
+            register uint64_t col_tl = __naive_bext_u64(a_tl, 0x4040404040404040ull);
+            register uint64_t col_bl = __naive_bext_u64(a_bl, 0x4040404040404040ull);
+            col_l = __naive_bdep_u64(col_tl, 0x00000000000000ffull) | __naive_bdep_u64(col_bl, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[6][0] |= (uint64_t)col_l;
     }
@@ -91,9 +161,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tl = _pext_u64(a_tl, 0x8080808080808080ull);
-            register uint64_t col_bl = _pext_u64(a_bl, 0x8080808080808080ull);
-            col_l = _pdep_u64(col_tl, 0x00000000000000ffull) | _pdep_u64(col_bl, 0x000000000000ff00ull);
+            register uint64_t col_tl = __naive_bext_u64(a_tl, 0x8080808080808080ull);
+            register uint64_t col_bl = __naive_bext_u64(a_bl, 0x8080808080808080ull);
+            col_l = __naive_bdep_u64(col_tl, 0x00000000000000ffull) | __naive_bdep_u64(col_bl, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[7][0] |= (uint64_t)col_l;
     }
@@ -104,9 +174,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tr = _pext_u64(a_tr, 0x0101010101010101ull);
-            register uint64_t col_br = _pext_u64(a_br, 0x0101010101010101ull);
-            col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
+            register uint64_t col_tr = __naive_bext_u64(a_tr, 0x0101010101010101ull);
+            register uint64_t col_br = __naive_bext_u64(a_br, 0x0101010101010101ull);
+            col_l = __naive_bdep_u64(col_tr, 0x00000000000000ffull) | __naive_bdep_u64(col_br, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[8][0] |= (uint64_t)col_l;
     }
@@ -114,9 +184,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tr = _pext_u64(a_tr, 0x0202020202020202ull);
-            register uint64_t col_br = _pext_u64(a_br, 0x0202020202020202ull);
-            col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
+            register uint64_t col_tr = __naive_bext_u64(a_tr, 0x0202020202020202ull);
+            register uint64_t col_br = __naive_bext_u64(a_br, 0x0202020202020202ull);
+            col_l = __naive_bdep_u64(col_tr, 0x00000000000000ffull) | __naive_bdep_u64(col_br, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[9][0] |= (uint64_t)col_l;
     }
@@ -124,9 +194,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tr = _pext_u64(a_tr, 0x0404040404040404ull);
-            register uint64_t col_br = _pext_u64(a_br, 0x0404040404040404ull);
-            col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
+            register uint64_t col_tr = __naive_bext_u64(a_tr, 0x0404040404040404ull);
+            register uint64_t col_br = __naive_bext_u64(a_br, 0x0404040404040404ull);
+            col_l = __naive_bdep_u64(col_tr, 0x00000000000000ffull) | __naive_bdep_u64(col_br, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[10][0] |= (uint64_t)col_l;
     }
@@ -134,9 +204,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tr = _pext_u64(a_tr, 0x0808080808080808ull);
-            register uint64_t col_br = _pext_u64(a_br, 0x0808080808080808ull);
-            col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
+            register uint64_t col_tr = __naive_bext_u64(a_tr, 0x0808080808080808ull);
+            register uint64_t col_br = __naive_bext_u64(a_br, 0x0808080808080808ull);
+            col_l = __naive_bdep_u64(col_tr, 0x00000000000000ffull) | __naive_bdep_u64(col_br, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[11][0] |= (uint64_t)col_l;
     }
@@ -144,9 +214,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tr = _pext_u64(a_tr, 0x1010101010101010ull);
-            register uint64_t col_br = _pext_u64(a_br, 0x1010101010101010ull);
-            col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
+            register uint64_t col_tr = __naive_bext_u64(a_tr, 0x1010101010101010ull);
+            register uint64_t col_br = __naive_bext_u64(a_br, 0x1010101010101010ull);
+            col_l = __naive_bdep_u64(col_tr, 0x00000000000000ffull) | __naive_bdep_u64(col_br, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[12][0] |= (uint64_t)col_l;
     }
@@ -154,9 +224,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tr = _pext_u64(a_tr, 0x2020202020202020ull);
-            register uint64_t col_br = _pext_u64(a_br, 0x2020202020202020ull);
-            col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
+            register uint64_t col_tr = __naive_bext_u64(a_tr, 0x2020202020202020ull);
+            register uint64_t col_br = __naive_bext_u64(a_br, 0x2020202020202020ull);
+            col_l = __naive_bdep_u64(col_tr, 0x00000000000000ffull) | __naive_bdep_u64(col_br, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[13][0] |= (uint64_t)col_l;
     }
@@ -164,9 +234,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tr = _pext_u64(a_tr, 0x4040404040404040ull);
-            register uint64_t col_br = _pext_u64(a_br, 0x4040404040404040ull);
-            col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
+            register uint64_t col_tr = __naive_bext_u64(a_tr, 0x4040404040404040ull);
+            register uint64_t col_br = __naive_bext_u64(a_br, 0x4040404040404040ull);
+            col_l = __naive_bdep_u64(col_tr, 0x00000000000000ffull) | __naive_bdep_u64(col_br, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[14][0] |= (uint64_t)col_l;
     }
@@ -174,9 +244,9 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     {
         register uint64_t col_l;
         {
-            register uint64_t col_tr = _pext_u64(a_tr, 0x8080808080808080ull);
-            register uint64_t col_br = _pext_u64(a_br, 0x8080808080808080ull);
-            col_l = _pdep_u64(col_tr, 0x00000000000000ffull) | _pdep_u64(col_br, 0x000000000000ff00ull);
+            register uint64_t col_tr = __naive_bext_u64(a_tr, 0x8080808080808080ull);
+            register uint64_t col_br = __naive_bext_u64(a_br, 0x8080808080808080ull);
+            col_l = __naive_bdep_u64(col_tr, 0x00000000000000ffull) | __naive_bdep_u64(col_br, 0x000000000000ff00ull);
         }
         ((uint64_t**)targ)[15][0] |= (uint64_t)col_l;
     }
