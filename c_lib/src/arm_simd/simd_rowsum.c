@@ -64,45 +64,44 @@ int8_t simd_rowsum(
     void* restrict targ_z 
 )
 {
-    uint64_t mask_vals[] = { MASK_0, MASK_0 };
-    uint8x16_t mask = vreinterpretq_u8_u64(vld1q_u64(mask_vals));
+    int16x8_t mask = vreinterpretq_s16_s64(vdupq_n_s64(MASK_0));
 
-    uint8_t lookup_vals[] = { ROWSUM_SHUFFLE_SEQ };
-    uint8x16_t lookup = vld1q_u8(lookup_vals);
+    int8_t lookup_vals[] = { ROWSUM_SHUFFLE_SEQ };
+    int8x16_t lookup = vld1q_s8(lookup_vals);
 
-    uint8x16_t accumulator = vdupq_n_u8(0);
+    int8x16_t accumulator = vdupq_n_s8(0);
 
     for (size_t i = 0; i < n_bytes; i += ROWSUM_STRIDE)
     {
         // Load vecs   
-        uint16x8_t v_ctrl_x = vld1q_u16(
+        int16x8_t v_ctrl_x = vld1q_s16(
             ctrl_x + i 
         );
 
-        uint16x8_t v_ctrl_z = vld1q_u16(
+        int16x8_t v_ctrl_z = vld1q_s16(
             ctrl_z + i 
         );
-
-        uint16x8_t v_targ_x = vld1q_u16(
+        
+        int16x8_t v_targ_x = vld1q_s16(
             targ_x + i 
         );
 
-        uint16x8_t v_targ_z = vld1q_u16(
+        int16x8_t v_targ_z = vld1q_s16(
             targ_z + i 
         );
-
+        
         // Perform XOR operations
-        vst1q_u16(
+        vst1q_s16(
             targ_x + i,
-            veorq_u16(
+            veorq_s16(
                 v_ctrl_x,
                 v_targ_x
             )
         ); 
 
-        vst1q_u16(
+        vst1q_s16(
             targ_z + i,
-            veorq_u16(
+            veorq_s16(
                 v_ctrl_z,
                 v_targ_z
             )
@@ -115,57 +114,58 @@ int8_t simd_rowsum(
         #pragma GCC unroll 8
         for (uint8_t j = 0; j < 8; j++)
         {   
-            uint16x8_t lane = vandq_u16( // Apply the mask
-                        vreinterpretq_u16_u8(mask), 
-                        vshrq_n_u16(v_ctrl_x, j) // Shift right by j
+            int16x8_t lane = vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_x, j) // Shift right by j
                     ); 
 
-            lane = vorrq_u16( // Or with existing lane  
-                vshlq_n_u16( // Shift left by POS_CTRL_Z 
-                    vandq_u16( // Apply the mask
-                        vreinterpretq_u16_u8(mask), 
-                        vshrq_n_u16(v_ctrl_z, j)
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_z, j)
                     ), 
                 POS_CTRL_Z),
                 lane
             );
 
-            lane = vorrq_u16( // Or with existing lane  
-                vshlq_n_u16( // Shift left by POS_CTRL_X 
-                    vandq_u16( // Apply the mask
-                        vreinterpretq_u16_u8(mask), 
-                        vshrq_n_u16(v_targ_x, j)
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_X 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_x, j)
                     ), 
                 POS_TARG_X),
                 lane
             );
 
-            lane = vorrq_u16( // Or with existing lane  
-                vshlq_n_u16( // Shift left by POS_CTRL_Z 
-                    vandq_u16( // Apply the mask
-                        vreinterpretq_u16_u8(mask), 
-                        vshrq_n_u16(v_targ_z, j)
-                    ), 
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_z, j)
+                    ),
                 POS_TARG_Z),
                 lane
             );
 
-            uint8x16_t lookup_res = vqtbl1q_u8(lookup, vreinterpretq_u8_u16(lane)); 
+            int8x16_t lookup_res = vqtbl1q_s8(lookup, vreinterpretq_u8_s16(lane)); 
 
             // Accumulator overflow is just a mod 4 operation
-            accumulator = vaddq_u8(accumulator, lookup_res);
+            accumulator = vaddq_s8(accumulator, lookup_res);
         }
     }  
 
 
     // Load the accumulator back to regular memory
-    int8_t acc[32];  
-    vst1q_u8((void*)acc, accumulator);
+    int8_t acc[16];  
+    vst1q_s8((void*)acc, accumulator);
     //_mm256_storeu_epi8(acc, accumulator);
-    for (size_t i = 1; i < 32; i++)
+    for (size_t i = 1; i < 16; i++)
     {
         acc[0] += acc[i];
     }
+
     return acc[0];
 }
 
