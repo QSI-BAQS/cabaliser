@@ -211,7 +211,7 @@ int8_t simd_xor_rowsum(
         );
 
         // Goal: avoid dumping to stack    
-        for (size_t j = 0; j < 256; j++)
+        for (size_t j = 0; j < 128; j++)
         {
             int8_t b_ctrl_x = __inline_slice_get_bit(ctrl_x, j + i * 8);
             int8_t b_ctrl_z = __inline_slice_get_bit(ctrl_z, j + i * 8);
