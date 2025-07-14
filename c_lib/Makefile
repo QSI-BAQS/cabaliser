@@ -1,8 +1,18 @@
 SHELL := /bin/bash
-ARCHITECTURE := arm
-#ARCHITECTURE := x86_64
 CC := gcc
 CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result
+
+# Determine architecture based on uname -m
+UNAME_M := $(shell uname -m)
+ifeq ($(UNAME_M),x86_64)
+	ARCHITECTURE := x86_64
+# This is required because uname -m can return anything of the form arm<specific version>
+else ifneq ($(filter arm% aarch64,$(UNAME_M)),)
+	ARCHITECTURE := arm
+else
+	ARCHITECTURE := UNKNOWN
+	$(error Architecture $(UNAME_M) is not recognised)
+endif
 
 # Optimisation Flags
 ifeq ($(CC),clang)
