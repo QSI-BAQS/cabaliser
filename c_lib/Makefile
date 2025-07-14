@@ -1,5 +1,6 @@
 SHELL := /bin/bash
 ARCHITECTURE := arm
+#ARCHITECTURE := x86_64
 CC := gcc
 OMPFLAG := -fopenmp
 CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG}
@@ -57,7 +58,7 @@ ifeq ($(CC),clang)
     SIMD_CFLAGS += -mllvm -enable-loopinterchange -fno-slp-vectorize -fno-vectorize -mllvm -enable-unroll-and-jam -mllvm -enable-nontrivial-unswitch 
 else
 	SIMD_CFLAGS := -march=native -O2 -fno-tree-loop-vectorize -fno-peel-loops
-	SIMD_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides  
+	SIMD_CFLAGS += -fgcse-after-reload -fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution -ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides
 endif
 
 # Test Files

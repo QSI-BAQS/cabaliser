@@ -107,23 +107,19 @@ int8_t simd_rowsum(
             )
         );
 
-        // Strictly required to unroll the shifts
-        // Without this pragma the variables are not 
-        // correctly treated as immediates and the code
-        // will fail to compile  
-        #pragma GCC unroll 8
-        for (uint8_t j = 0; j < 8; j++)
-        {   
+        // Shifts have been manually unrolled, as Clang was not respecting the immediate 
+        // status of j even with full unrolling
+        {
             int16x8_t lane = vandq_s16( // Apply the mask
                         mask, 
-                        vshrq_n_s16(v_ctrl_x, j) // Shift right by j
+                        v_ctrl_x
                     ); 
 
             lane = vorrq_s16( // Or with existing lane  
                 vshlq_n_s16( // Shift left by POS_CTRL_Z 
                     vandq_s16( // Apply the mask
                         mask, 
-                        vshrq_n_s16(v_ctrl_z, j)
+                        v_ctrl_z
                     ), 
                 POS_CTRL_Z),
                 lane
@@ -133,7 +129,7 @@ int8_t simd_rowsum(
                 vshlq_n_s16( // Shift left by POS_CTRL_X 
                     vandq_s16( // Apply the mask
                         mask, 
-                        vshrq_n_s16(v_targ_x, j)
+                        v_targ_x
                     ), 
                 POS_TARG_X),
                 lane
@@ -143,7 +139,301 @@ int8_t simd_rowsum(
                 vshlq_n_s16( // Shift left by POS_CTRL_Z 
                     vandq_s16( // Apply the mask
                         mask, 
-                        vshrq_n_s16(v_targ_z, j)
+                        v_targ_z
+                    ),
+                POS_TARG_Z),
+                lane
+            );
+
+            int8x16_t lookup_res = vqtbl1q_s8(lookup, vreinterpretq_u8_s16(lane)); 
+
+            // Accumulator overflow is just a mod 4 operation
+            accumulator = vaddq_s8(accumulator, lookup_res);
+        }
+
+        {
+            int16x8_t lane = vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_x, 1) // Shift right by j
+                    ); 
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_z, 1)
+                    ), 
+                POS_CTRL_Z),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_X 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_x, 1)
+                    ), 
+                POS_TARG_X),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_z, 1)
+                    ),
+                POS_TARG_Z),
+                lane
+            );
+
+            int8x16_t lookup_res = vqtbl1q_s8(lookup, vreinterpretq_u8_s16(lane)); 
+
+            // Accumulator overflow is just a mod 4 operation
+            accumulator = vaddq_s8(accumulator, lookup_res);
+        }
+
+        {
+            int16x8_t lane = vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_x, 2) // Shift right by j
+                    ); 
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_z, 2)
+                    ), 
+                POS_CTRL_Z),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_X 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_x, 2)
+                    ), 
+                POS_TARG_X),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_z, 2)
+                    ),
+                POS_TARG_Z),
+                lane
+            );
+
+            int8x16_t lookup_res = vqtbl1q_s8(lookup, vreinterpretq_u8_s16(lane)); 
+
+            // Accumulator overflow is just a mod 4 operation
+            accumulator = vaddq_s8(accumulator, lookup_res);
+        }
+
+        {
+            int16x8_t lane = vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_x, 3) // Shift right by j
+                    ); 
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_z, 3)
+                    ), 
+                POS_CTRL_Z),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_X 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_x, 3)
+                    ), 
+                POS_TARG_X),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_z, 3)
+                    ),
+                POS_TARG_Z),
+                lane
+            );
+
+            int8x16_t lookup_res = vqtbl1q_s8(lookup, vreinterpretq_u8_s16(lane)); 
+
+            // Accumulator overflow is just a mod 4 operation
+            accumulator = vaddq_s8(accumulator, lookup_res);
+        }
+
+        {
+            int16x8_t lane = vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_x, 4) // Shift right by j
+                    ); 
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_z, 4)
+                    ), 
+                POS_CTRL_Z),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_X 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_x, 4)
+                    ), 
+                POS_TARG_X),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_z, 4)
+                    ),
+                POS_TARG_Z),
+                lane
+            );
+
+            int8x16_t lookup_res = vqtbl1q_s8(lookup, vreinterpretq_u8_s16(lane)); 
+
+            // Accumulator overflow is just a mod 4 operation
+            accumulator = vaddq_s8(accumulator, lookup_res);
+        }
+
+        {
+            int16x8_t lane = vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_x, 5) // Shift right by j
+                    ); 
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_z, 5)
+                    ), 
+                POS_CTRL_Z),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_X 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_x, 5)
+                    ), 
+                POS_TARG_X),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_z, 5)
+                    ),
+                POS_TARG_Z),
+                lane
+            );
+
+            int8x16_t lookup_res = vqtbl1q_s8(lookup, vreinterpretq_u8_s16(lane)); 
+
+            // Accumulator overflow is just a mod 4 operation
+            accumulator = vaddq_s8(accumulator, lookup_res);
+        }
+
+        {
+            int16x8_t lane = vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_x, 6) // Shift right by j
+                    ); 
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_z, 6)
+                    ), 
+                POS_CTRL_Z),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_X 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_x, 6)
+                    ), 
+                POS_TARG_X),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_z, 6)
+                    ),
+                POS_TARG_Z),
+                lane
+            );
+
+            int8x16_t lookup_res = vqtbl1q_s8(lookup, vreinterpretq_u8_s16(lane)); 
+
+            // Accumulator overflow is just a mod 4 operation
+            accumulator = vaddq_s8(accumulator, lookup_res);
+        }
+
+        {
+            int16x8_t lane = vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_x, 7) // Shift right by j
+                    ); 
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_ctrl_z, 7)
+                    ), 
+                POS_CTRL_Z),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_X 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_x, 7)
+                    ), 
+                POS_TARG_X),
+                lane
+            );
+
+            lane = vorrq_s16( // Or with existing lane  
+                vshlq_n_s16( // Shift left by POS_CTRL_Z 
+                    vandq_s16( // Apply the mask
+                        mask, 
+                        vshrq_n_s16(v_targ_z, 7)
                     ),
                 POS_TARG_Z),
                 lane
