@@ -53,10 +53,10 @@ static inline uint64_t __naive_bdep_u64(uint64_t targ, uint64_t mask)
 
 
 // Transposes two blocks
-// TODO : Fix - incorrect logic
 static inline
 void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict targ)
 {
+    // Do an upper and lower pass (half size Neon registers)
     uint16x8_t src_v_lower = vdupq_n_u16(0);
 
     src_v_lower = vsetq_lane_u16(*(uint16_t *)src[0], src_v_lower, 0);
@@ -79,9 +79,17 @@ void __inline_simd_transpose_2x16(uint8_t** restrict src, uint8_t** restrict tar
     src_v_upper = vsetq_lane_u16(*(uint16_t *)src[14], src_v_upper, 6);
     src_v_upper = vsetq_lane_u16(*(uint16_t *)src[15], src_v_upper, 7);
 
+    // Gather the even and odd elements from the upper and lower halves into two vectors
     uint8x16_t src_evens = vuzp1q_u8(vreinterpretq_u8_u16(src_v_lower), vreinterpretq_u8_u16(src_v_upper));
     uint8x16_t src_odds = vuzp2q_u8(vreinterpretq_u8_u16(src_v_lower), vreinterpretq_u8_u16(src_v_upper));
 
+    /*
+     * Treat groups of elements as uint64_t's
+     * a_tl = <u64> [0, 2, 4, ..., 14]
+     * a_tr = <u64> [1, 3, 5, ..., 15]
+     * a_bl = <u64> [16, 18, ..., 30]
+     * a_br = <u64> [17, 19, ..., 31]
+     */
     register uint64_t a_tl = vdupd_laneq_u64(vreinterpretq_u64_u8(src_evens), 0);
     register uint64_t a_tr = vdupd_laneq_u64(vreinterpretq_u64_u8(src_odds), 0);
     register uint64_t a_bl = vdupd_laneq_u64(vreinterpretq_u64_u8(src_evens), 1);
