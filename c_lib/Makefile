@@ -2,8 +2,7 @@ SHELL := /bin/bash
 ARCHITECTURE := arm
 #ARCHITECTURE := x86_64
 CC := gcc
-OMPFLAG := -fopenmp
-CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result ${OMPFLAG}
+CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result
 
 # Optimisation Flags
 ifeq ($(CC),clang)
@@ -113,7 +112,7 @@ run_tests: test
 
 
 benchmark: benchmarks 
-benchmarks: CFLAGS += ${OMPFLAG} -pg
+benchmarks: CFLAGS += -pg
 benchmarks: ${TARGET} ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS} 
 
 ${BUILDDIR} :
