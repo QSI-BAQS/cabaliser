@@ -96,7 +96,12 @@ PAULI_TRACKER_RUSTLIB_DIR := pauli_tracker
 PAULI_TRACKER_LIB := $(shell pwd)/${PAULI_TRACKER_RUSTLIB_DIR}/target/release
 PAULI_TRACKER_HEADERS := ${PAULI_TRACKER_DIR}/lib
 
-LINK_LIBS := -L${PAULI_TRACKER_LIB} -Wl,-Bstatic -l${PAULI_TRACKER_CLIB} -Wl,-Bdynamic 
+ifeq ($(PLATFORM),OSX)
+	LINK_LIBS := -L${PAULI_TRACKER_LIB} -l${PAULI_TRACKER_CLIB} -Wl,-Bdynamic 
+else
+	LINK_LIBS := -L${PAULI_TRACKER_LIB} -Wl,-Bstatic -l${PAULI_TRACKER_CLIB} -Wl,-Bdynamic 
+endif
+	
 
 LIBS += -I${PAULI_TRACKER_HEADERS} 
 
