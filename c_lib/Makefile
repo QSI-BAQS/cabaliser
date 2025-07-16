@@ -18,6 +18,7 @@ endif
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 	PLATFORM := OSX
+	CC := clang
 else ifeq ($(UNAME_S),Linux)
 	PLATFORM := Linux
 else
@@ -142,7 +143,9 @@ run_tests: test
 
 
 benchmark: benchmarks 
+ifeq ($(PLATFORM),Linux)
 benchmarks: CFLAGS += -pg
+endif
 benchmarks: ${TARGET} ${BUILDDIR} ${OBJFILES} ${BENCHMARK_RUNNERS} 
 
 ${BUILDDIR} :
