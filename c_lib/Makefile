@@ -14,6 +14,17 @@ else
 	$(error Architecture $(UNAME_M) is not recognised)
 endif
 
+# Determine platform based on uname -s
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	PLATFORM := OSX
+else ifeq ($(UNAME_S),Linux)
+	PLATFORM := Linux
+else
+	PLATFORM := UNKNOWN
+	$(error Platform $(UNAME_S) is unsupported)
+endif
+
 # Optimisation Flags
 ifeq ($(CC),clang)
 	CFLAGS += -O3 -ffast-math -fPIC
@@ -26,8 +37,12 @@ ifeq ($(ARCHITECTURE),x86_64)
 endif
 
 TARGET := lib_cabaliser.so
-TARGET_FLAGS := -shared -Wl,-soname,${TARGET}  
- 
+ifeq ($(PLATFORM),OSX)
+	TARGET_FLAGS := -shared -Wl,-install-name,${TARGET}
+else
+	TARGET_FLAGS := -shared -Wl,-soname,${TARGET}
+endif
+
 SRCDIR := src
 ifneq ($(filter $(ARCHITECTURE),arm aarch64),)
 	SIMD_DIR := arm_simd
