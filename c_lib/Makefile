@@ -38,7 +38,7 @@ endif
 
 TARGET := lib_cabaliser.so
 ifeq ($(PLATFORM),OSX)
-	TARGET_FLAGS := -shared -Wl,-install-name,${TARGET}
+	TARGET_FLAGS := -shared -Wl,-install_name,${TARGET}
 else
 	TARGET_FLAGS := -shared -Wl,-soname,${TARGET}
 endif
