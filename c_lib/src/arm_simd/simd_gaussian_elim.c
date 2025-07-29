@@ -278,8 +278,9 @@ void decomp_local_elim_lower(
     size_t ctrl = 0;
     uint64_t mask = 0;
 
-    // Avoid undefined behaviour for right shifts at or beyond the size of 
-    // mask TODO - replace branch while still avoiding UB?
+    // clang requires the UB here is checked for
+    // (gcc handles it correctly)
+#ifdef __clang__
     if (end < 64)
     {
         mask = ((1ull << end) - 1ull);
@@ -288,6 +289,9 @@ void decomp_local_elim_lower(
     {
         mask = -1;
     }
+#else
+    mask = ((1ull << end) - 1ull);
+#endif
 
     // If end is 64 then mask is zeroed
     // This operation avoids that in a branch-free manner
