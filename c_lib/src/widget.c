@@ -23,6 +23,10 @@ widget_t* widget_create(const size_t initial_qubits, const size_t max_qubits)
     return wid;
 }
 
+uint8_t widget_get_clifford_from_table(widget_t* wid, size_t i) {
+    return wid->queue->table[i];
+}
+
 /*
  * widget_destroy
  * Destructor for the widget object
