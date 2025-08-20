@@ -67,7 +67,7 @@ pub extern "C" fn lib_pauli_tracker_get_inv_mapper(
             .iter()
             .enumerate()
         {
-            (*mapping)[index] = *value; 
+            (&mut (*mapping))[index] = *value; 
         }
     }
 
