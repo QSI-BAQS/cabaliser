@@ -5,6 +5,8 @@ from ctypes import c_int32, c_float, POINTER
 
 from cabaliser.gates import RZ, MEAS
 
+# Tests cover that this matches the value in the C library 
+MEASUREMENT_GATE_TAG = 0x0fffffff
 
 def measure(targ: int) -> tuple:
     '''

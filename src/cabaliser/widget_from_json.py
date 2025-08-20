@@ -15,15 +15,25 @@ class WidgetFromJson():
 
     def __init__(self, widget_json):
         self.n_qubits = widget_json['n_qubits']
-        self.state_nodes = widget_json['statenodes']
+   
+        # Duplication of names for readability and backwards compatability 
+        self.statenodes = widget_json['statenodes']
+        self.state_nodes = self.statenodes
+
         self.adjacencies = self.__key_to_int(widget_json['adjacencies'])
         self.local_cliffords =  widget_json['local_cliffords']
         self.consumption_schedule = list(
                 map(list, map(partial(map, self.__key_to_int), widget_json['consumptionschedule']))
             )
+        self.consumptionschedule = self.consumption_schedule
+
         self.measurement_tags = widget_json['measurement_tags']
         self.pauli_corrections = list(map(self.__key_to_int, widget_json['paulicorrections']))
+        self.paulicorrections = self.pauli_corrections
+
         self.outputnodes = widget_json['outputnodes']
+        self.output_nodes = self.outputnodes 
+
         self.time = widget_json['time']
         self.space = widget_json['space']
 

@@ -9,6 +9,14 @@ from cabaliser.gate_constructors import measure
 
 class ConditionalOperationTest(unittest.TestCase):
 
+    def test_tag(self):
+        '''
+            Compares the current value of the measurement gate tag vs the one used in the C library
+        '''
+        from cabaliser.gate_constructors import MEASUREMENT_GATE_TAG
+        from cabaliser.lib_cabaliser import lib
+        assert MEASUREMENT_GATE_TAG == int(lib.conditional_measurement_tag())
+
     def test_measure_qubit(self):
         n_qubits = 2
         max_qubits = 10
