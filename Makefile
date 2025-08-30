@@ -10,6 +10,12 @@ ${PACKAGE}: lib_cabaliser.so
 	pip install -r requirements.txt
 	pip install -e . 
 
+test:
+	cd ${LIB};  \
+	make test;  \
+	for i in tests/*.out; do echo $$i; ./$$i; done
+	pytest
+
 clean:
 	cd ${LIB};  \
 	make clean
