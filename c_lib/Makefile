@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 CC := gcc
-CFLAGS := -Werror -Wvla -Wall --warn-no-unused-variable -Wunused-result
+# W-unused is ignored due to an Apple clang bug w/ static inline functions
+CFLAGS := -Werror -Wvla -Wall -Wno-unused --warn-no-unused-variable -Wunused-result
 
 # Determine architecture based on uname -m
 UNAME_M := $(shell uname -m)
