@@ -8,13 +8,14 @@
 #include "instructions.h"
 #include "debug.h"
 
-
+/*
 #define OPT_PRAGMA
 #ifndef OPT_PRAGMA
 #define OPT_PRAGMA
     #pragma GCC optimize("Ofast,unroll-loops")
     #pragma GCC target("avx2,tune=native")
 #endif
+*/
 
 
 /*

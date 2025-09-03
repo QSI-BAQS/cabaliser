@@ -8,11 +8,13 @@
 #include <string.h>
 #include <assert.h>
 
+#if defined(__x86_64__)
 #include <emmintrin.h>
 #include <smmintrin.h>
 #include <immintrin.h>
 
 #include <x86gprintrin.h>
+#endif
 
 // Due to compiler optimisations, some tweaking with flags is needed here.
 

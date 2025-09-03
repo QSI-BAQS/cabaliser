@@ -90,7 +90,7 @@ void pauli_tracker_disable();
 
 // TODO: Double check these equivalence classes
 #ifdef PAULI_TRACKER_SRC
-const void (*PAULI_TRACKER_LOCAL_TABLE[24])(MappedPauliTracker*, size_t) = {
+void (*PAULI_TRACKER_LOCAL_TABLE[24])(MappedPauliTracker*, size_t) = {
  pauli_track_I_, // _I_
  pauli_track_I_, // _X_
  pauli_track_I_, // _Y_
@@ -117,9 +117,9 @@ const void (*PAULI_TRACKER_LOCAL_TABLE[24])(MappedPauliTracker*, size_t) = {
  pauli_tracker_shs  // _SHR_
 };
 
-const void (*PAULI_TRACKER_NON_LOCAL_TABLE[2])(MappedPauliTracker*, size_t ctrl, size_t targ) = { 
-    pauli_tracker_cx,
-    pauli_tracker_cz
+void (*PAULI_TRACKER_NON_LOCAL_TABLE[2])(MappedPauliTracker*, size_t ctrl, size_t targ) = { 
+    (void *) pauli_tracker_cx,
+    (void *) pauli_tracker_cz
 };
 
 #else
