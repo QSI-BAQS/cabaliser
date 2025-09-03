@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include "widget.h"
+#include "widget_python_api.h"
 #include "tableau_operations.h"
 #include "simd_gaussian_elimination.h"
 
@@ -390,11 +391,59 @@ void test_block_diag_hadamard(const size_t n_qubits, widget_t* wid)
 //    return;
 //}
 
+/*
+ * Tests the creation of a widget on HS,
+ * and the decomposition thereof
+ */
+void test_widget_hadamard_decomp(void)
+{
+    widget_t *wid = widget_create(1, 3);
+
+    teleport_input(wid, 1);
+
+    instruction_stream_u *stream = malloc(2 * sizeof(instruction_stream_u));
+
+    stream[0].single.opcode = _H_;
+    stream[0].single.arg = 0;
+
+    stream[1].single.opcode = _S_;
+    stream[1].single.arg = 0;
+
+    parse_instruction_block(wid, stream, 2);
+
+    apply_local_cliffords(wid);
+
+    widget_decompose(wid);
+
+    // Check the tableau directly
+    tableau_t* tab = wid->tableau;
+
+    for (size_t i = 0; i < tab->n_qubits; i++)
+    {
+        assert(1 == __inline_slice_get_bit(tab->slices_x[i], i));
+
+        
+        for (size_t j = 0; j < i; j++)
+        {
+            assert(0 == __inline_slice_get_bit(tab->slices_x[i], j));
+        }
+
+        for (size_t j = i + 1; j < tab->n_qubits; j++)
+        {
+            assert(0 == __inline_slice_get_bit(tab->slices_x[i], j));
+        }
+    }
+
+    // --- Cleanup ---
+    widget_destroy(wid);
+    free(stream);
+}
 
 
 
 int main()
 {
+    test_widget_hadamard_decomp();
 
     // GHZ 
     for (size_t i = 64; i <=128 ; i += 64)

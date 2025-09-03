@@ -8,19 +8,20 @@ all: ${PACKAGE}
 
 ${PACKAGE}: lib_cabaliser.so
 	pip install -r requirements.txt
-	pip install -e . 
+	pip install -e .
 
 test:
 	cd ${LIB};  \
-	make test;  \
+	${MAKE} test;  \
 	for i in tests/*.out; do echo $$i; ./$$i; done
 	pytest
 
 clean:
 	cd ${LIB};  \
-	make clean
+	${MAKE} clean
 	rm ${LIB}/lib_cabaliser.so
-	pip uninstall -y ${PACKAGE} 
+	pip uninstall -y ${PACKAGE}
+	
 
 lib_cabaliser.so: ${LIB}/lib_cabaliser.so
 
